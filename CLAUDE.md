@@ -68,7 +68,10 @@ Also: a quash-risk checklist, with citations.
 - Engine core (23 Nov): money, time, jurisdiction, policy (+YAML), trace, requisition, gate, score, lifecycle, audit, campaign.
 - Phase 1 (23 Nov, branch `phase-1-engine`): CI workflow; `restoration` and `fairness` modules; golden cases (`test/golden.test.ts`); every Gate check and request finding lists `unverified` sources. 79 tests green, tsc clean.
 - Fix found by golden tests: police-only quash risks (Q5–Q7) now apply only under the MHA_POLICE regime, not after a bank-initiated RBI hold.
-- Pending: fold in research R1–R3 when the answers arrive (YAML edits + extra golden cases). Next: phase 2 (pipeline: sim world + telecom signals + LightGBM).
+- Pending: fold in research R1–R3 when the answers arrive (YAML edits + extra golden cases).
+- Phase 2 (23 Nov, branch `phase-2-sim-ai`, plan `docs/superpowers/plans/2026-11-23-phase-2-sim-ai.md`): fake worlds (v1 practice, five v2 test worlds locked before training, noisy v2 variants), `packages/sim-runner` (runs the engine on a world: holds 0/A/B/C + officer's to-do orders), AI = logistic regression (primary) + LightGBM with calibrated mule score and 3 plain reasons, grader + `pipeline/RESULTS.md`, demo world in `pipeline/demo/` (contains the phase 1 story). One command: `cd pipeline && .venv/bin/python -m scalpel_sim.all`. Tests: engine 84, sim-runner 18, pipeline 70.
+- Phase 2 result (simulated, under stated assumptions): Scalpel's order beats the warning-sign rule (97.6% vs 87.0% of best possible rescue, v2 pooled, K=10) at drain ratios 2/5/10× and both noise levels; it only TIES "biggest amount first" (98.1%). Two-number headline always shown together: Freeze Ratio + victim money missed. Axe ratio on v2 is our simulated 15.22×; the industry 15.12× stays "unverified" and is not used. v1 is too easy (AUC ~1.0, alarm kept visible); v2 AUC 0.94 logistic, 0.82 LightGBM.
+- Python: `pipeline/.venv` via uv (Python 3.12). Only `scalpel_grade` and `scalpel_sim` (world builder) touch truth; the runner refuses world folders with extra files.
 - Laptop has no global pnpm: use `npx -y pnpm@10.28.0`.
 
 ## Timeline

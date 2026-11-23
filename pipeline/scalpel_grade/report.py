@@ -251,9 +251,10 @@ def render(s: dict) -> str:
     return "\n".join(L)
 
 
-def main() -> None:
+def main(run_engine: bool = True) -> None:
     folders = sorted(p.parent for p in OUT.glob("v*-s*/world"))
-    run_engine_all(folders)
+    if run_engine:
+        run_engine_all(folders)
     graded = {f.name: grade_world(f) for f in folders}
     v1 = graded["v1-s101"]
     v2 = [g for n, g in sorted(graded.items()) if n.startswith("v2-s")]
