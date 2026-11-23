@@ -9,3 +9,4 @@ export * from "./score";
 export * from "./lifecycle";
 export * from "./audit";
 export * from "./campaign";
+export * from "./restoration";
