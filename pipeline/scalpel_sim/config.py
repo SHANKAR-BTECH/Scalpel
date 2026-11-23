@@ -37,9 +37,9 @@ class WorldConfig:
     campaign_days: tuple[int, int] = (2, 6)
     # Mule habits (v2 changes these)
     mule_age_days: tuple[int, int] = (3, 28)      # account age at the decision moment
-    mule_old_rented_share: float = 0.10           # mules that are old "rented" accounts
-    mule_dwell_minutes: tuple[int, int] = (2, 14)
-    mule_kyc_change_share: float = 0.5
+    mule_old_rented_share: float = 0.35           # mules that are old "rented" accounts
+    mule_dwell_minutes: tuple[int, int] = (2, 60)
+    mule_kyc_change_share: float = 0.3
     mule_forward_share: tuple[int, int] = (70, 95)  # % of each receipt passed on
     shop_spend_share: tuple[int, int] = (2, 10)     # % a mule spends at a shop (how shields get scam money)
     # Victims
@@ -49,6 +49,7 @@ class WorldConfig:
     mule_drain_per_hour: float = 0.15
     drain_ratio: float = 5.0       # mule money leaves this many times faster than a shop's
     normal_txns_per_account_day: float = 0.33
+    signal_noise: str = "low"      # "low" or "high": how blurry the phone signs are
     extra: dict = field(default_factory=dict)
 
     def scaled(self, f: float) -> "WorldConfig":

@@ -15,9 +15,15 @@ def _dump(path: Path, obj) -> None:
 
 
 def write_world(root: Path, world: dict, truth: dict) -> None:
+    from .signals import compute_signals
     root = Path(root)
     _dump(root / "world" / "world.json", world)
+    _dump(root / "world" / "signals.json", {"asOf": world["cutoff"], "signals": compute_signals(world)})
     _dump(root / "truth" / "truth.json", truth)
+
+
+def dump_json(path: Path, obj) -> None:
+    _dump(Path(path), obj)
 
 
 def read_json(path: Path):

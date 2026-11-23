@@ -18,6 +18,13 @@ export const WorldSchema = z.object({
   txns: z.array(z.object({ id: z.string(), at: instant, from: z.string(), to: z.string(), amount: paise, channel: z.string() })),
   complaints: z.array(z.object({ id: z.string(), victim: z.string(), txnId: z.string(), reportedAt: instant })),
   phones: z.array(z.object({ account: z.string(), msisdn: z.string(), imei: z.string() })).optional(),
+  telecom: z.object({
+    simSwaps: z.array(z.object({ msisdn: z.string(), at: instant })),
+    callForwarding: z.array(z.string()),
+    mnrl: z.array(z.string()),
+    fri: z.record(z.string(), z.enum(["LOW", "HIGH", "VERY_HIGH"])),
+    simbox: z.array(z.string()),
+  }).optional(),
 });
 export type World = z.infer<typeof WorldSchema>;
 

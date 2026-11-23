@@ -14,6 +14,7 @@ from __future__ import annotations
 import random
 
 from .config import WorldConfig
+from .telecom import make_telecom
 from .tracing import trace
 
 DAY = 86_400_000
@@ -208,8 +209,9 @@ def make_world(cfg: WorldConfig) -> tuple[dict, dict]:
 
     visible = [t for t in book.txns if t["at"] <= cutoff]
     accts = sorted(accounts.values(), key=lambda a: a["id"])
+    phones, telecom = make_telecom(cfg.seed, [a["id"] for a in accts], roles, cutoff, cfg.signal_noise)
     world = {"schema": "scalpel-world/1", "name": cfg.name, "seed": cfg.seed, "cutoff": cutoff,
-             "accounts": accts, "txns": visible, "complaints": complaints}
+             "accounts": accts, "txns": visible, "complaints": complaints, "phones": phones, "telecom": telecom}
     traced = trace({a["id"]: a["opening"] for a in accts}, visible, victim_txns, as_of=cutoff)
     at_cutoff = {a: v["tainted"] for a, v in traced.items() if v["tainted"] > 0}
     truth = {

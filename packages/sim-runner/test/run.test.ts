@@ -72,3 +72,11 @@ describe("hold policies 0, A, B", () => {
     for (const r of d.rows) expect(r.held).toBeLessThanOrEqual(r.traced);
   });
 });
+
+describe("signals file", () => {
+  it("the tiny fixture's signals.json uses only the engine's signal names", async () => {
+    const { parseSignals } = await import("../src/schema");
+    const s = parseSignals(JSON.parse(readFileSync(join(__dirname, "../../../pipeline/tests/fixtures/tiny/world/signals.json"), "utf8")));
+    expect(Object.keys(s.signals).length).toBeGreaterThan(40);
+  });
+});
