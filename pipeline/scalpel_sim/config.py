@@ -50,6 +50,13 @@ class WorldConfig:
     mule_drain_per_hour: float = 0.15
     drain_ratio: float = 5.0       # mule money leaves this many times faster than a shop's
     normal_txns_per_account_day: float = 0.33
+    normal_fast_share: float = 0.35          # people who pass money on within hours (rent, own other bank, family)
+    normal_fast_minutes: tuple[int, int] = (2, 180)
+    shield_sweep_share: tuple[int, int] = (50, 85)  # shops settle most of each day's takings every evening
+    normal_new_share: float = 0.08           # innocent new accounts (students, first salary)
+    normal_collector_share: float = 0.04     # innocent collectors: many small senders, passed on fast
+    mule_fresh_life_share: float = 0.3      # new mule accounts see a little everyday use too
+    shield_instant_share: float = 0.3        # shops on instant settlement sweep every hour instead
     signal_noise: str = "low"      # "low" or "high": how blurry the phone signs are
     extra: dict = field(default_factory=dict)
 

@@ -89,7 +89,8 @@ def test_truth_victim_money_matches_tracing_everything(made):
 def test_mule_money_drains_faster_than_shop_money(made):
     _, truth = made
     mule = next(a for a, v in truth["victimMoneyAtCutoff"].items() if truth["roles"][a] == "mule")
-    shop = next(a for a, v in truth["victimMoneyAtCutoff"].items() if truth["roles"][a] == "shield")
+    shop = max((a for a in truth["victimMoneyAtCutoff"] if truth["roles"][a] == "shield"),
+               key=lambda a: truth["victimMoneyAtCutoff"][a])  # biggest, so whole-paise rounding can't hide the curve
     m = remaining_victim_money(truth, mule, 10) / truth["victimMoneyAtCutoff"][mule]
     s = remaining_victim_money(truth, shop, 10) / truth["victimMoneyAtCutoff"][shop]
     assert m < s

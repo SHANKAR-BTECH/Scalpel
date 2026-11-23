@@ -73,11 +73,13 @@ def make_world(cfg: WorldConfig) -> tuple[dict, dict]:
     roles = {**{a: "mule" for a in mules}, **{a: "shield" for a in shields}, **{a: "normal" for a in normals}}
 
     accounts, opened, opening = {}, {}, {}
+    rented: set[str] = set()  # old accounts whose owners still use them day to day
     for a in ids:
         kyc = None
         if roles[a] == "mule":
             if rng.random() < cfg.mule_old_rented_share:
                 age = rng.randint(60, 1500)
+                rented.add(a)
             else:
                 age = rng.randint(*cfg.mule_age_days)
             typ, bal = "SAVINGS", rng.randint(0, 3_000) * 100
@@ -86,7 +88,7 @@ def make_world(cfg: WorldConfig) -> tuple[dict, dict]:
         elif roles[a] == "shield":
             age, typ, bal = rng.randint(300, 4000), rng.choice(["CURRENT", "CURRENT", "SAVINGS"]), rng.randint(20_000, 400_000) * 100
         else:
-            age = rng.randint(5, 5000)
+            age = rng.randint(3, 45) if rng.random() < cfg.normal_new_share else rng.randint(5, 5000)
             typ = rng.choice(["SAVINGS"] * 5 + ["SALARY"] * 2 + ["CURRENT"])
             bal = rng.randint(1_000, 300_000) * 100
             if rng.random() < 0.03:
@@ -104,9 +106,10 @@ def make_world(cfg: WorldConfig) -> tuple[dict, dict]:
 
     # Normal life (whole window incl. after cut-off, but only pre-cut-off is visible).
     shops = shields + rng.sample(normals, k=max(1, len(normals) // 20))
-    for a in normals + shields:
+    for a in normals + shields + mules:
+        rate = cfg.normal_txns_per_account_day * (1.0 if a in rented or roles[a] != "mule" else cfg.mule_fresh_life_share)
         for d in range(cfg.days):
-            if rng.random() < cfg.normal_txns_per_account_day:
+            if rng.random() < rate:
                 at = T0 + d * DAY + rng.randint(8 * 60, 22 * 60) * MIN
                 r = rng.random()
                 if r < 0.15:
@@ -117,6 +120,22 @@ def make_world(cfg: WorldConfig) -> tuple[dict, dict]:
                     events.append((at, "pay", (a, rng.choice(normals), rng.randint(500, 20_000) * 100, "IMPS")))
                 else:
                     events.append((at, "pay", (a, "EXT-MERCHANT", rng.randint(500, 30_000) * 100, "CARD")))
+
+    # Shops settle the day's takings every evening; some people pass money on within hours.
+    for a in shields:
+        instant = rng.random() < cfg.shield_instant_share
+        for d in range(cfg.days):
+            times = [h * 60 + rng.randint(0, 59) for h in range(8, 23)] if instant else [rng.randint(21 * 60, 23 * 60 + 30)]
+            for m in times:
+                events.append((T0 + d * DAY + m * MIN, "sweep", (a, rng.randint(*cfg.shield_sweep_share))))
+    fast = set(rng.sample(normals, k=round(len(normals) * cfg.normal_fast_share)))
+    collectors = rng.sample(sorted(set(normals) - fast), k=round(len(normals) * cfg.normal_collector_share))
+    fast |= set(collectors)
+    for a in collectors:
+        for d in range(cfg.days):
+            for _ in range(rng.randint(0, 3)):
+                at = T0 + d * DAY + rng.randint(8 * 60, 22 * 60) * MIN
+                events.append((at, "pay", (rng.choice(normals), a, rng.randint(200, 5_000) * 100, "UPI")))
 
     # Scam campaigns: chains of mules, hop 1 takes victim money.
     free_mules = mules[:]
@@ -173,7 +192,14 @@ def make_world(cfg: WorldConfig) -> tuple[dict, dict]:
         if at > end:
             break
         if kind == "pay":
-            book.pay(*payload[:2], payload[2], at, payload[3])
+            t = book.pay(*payload[:2], payload[2], at, payload[3])
+            if t and t["to"] in fast and rng.random() < 0.8:
+                share = rng.randint(50, 95)
+                push(at + rng.randint(*cfg.normal_fast_minutes) * MIN, "pay",
+                     (t["to"], rng.choice(["EXT-OWNBANK", "EXT-RENT", "EXT-FAMILY"]), t["amount"] * share // 100, "IMPS"))
+        elif kind == "sweep":
+            a, share = payload
+            book.pay(a, "EXT-SETTLEMENT", book.bal[a] * share // 100, at, "NEFT")
         elif kind == "victim":
             c, victim, amount = payload
             camp = campaigns[c]
