@@ -1,5 +1,7 @@
 # Scalpel — Design Document
 
+> **Superseded (23 Nov 2026):** Shankar chose the TypeScript / Next.js plan in [`docs/ARCHITECTURE.md`](../../ARCHITECTURE.md). This Python design is kept for history; where the two differ, ARCHITECTURE.md wins.
+
 **"Hold, don't freeze."**
 *Fast enough to save the victim. Precise enough to spare the innocent.*
 

@@ -65,13 +65,16 @@ Also: a quash-risk checklist, with citations.
 - `pipeline/` (Python: sim + LightGBM/SHAP, capped at 1.5 days).
 
 ## Status
-- Engine core done 23 Nov: money, time, jurisdiction, policy (+YAML), trace, requisition, gate, score, lifecycle, audit, campaign. 50 tests green.
-- Next: pipeline (sim world + telecom signals + LightGBM), then apps/web. Not committed yet: waiting for user repo + OK.
+- Engine core (23 Nov): money, time, jurisdiction, policy (+YAML), trace, requisition, gate, score, lifecycle, audit, campaign.
+- Phase 1 (23 Nov, branch `phase-1-engine`): CI workflow; `restoration` and `fairness` modules; golden cases (`test/golden.test.ts`); every Gate check and request finding lists `unverified` sources. 79 tests green, tsc clean.
+- Fix found by golden tests: police-only quash risks (Q5–Q7) now apply only under the MHA_POLICE regime, not after a bank-initiated RBI hold.
+- Pending: fold in research R1–R3 when the answers arrive (YAML edits + extra golden cases). Next: phase 2 (pipeline: sim world + telecom signals + LightGBM).
+- Laptop has no global pnpm: use `npx -y pnpm@10.28.0`.
 
 ## Timeline
+Plan: `docs/ARCHITECTURE.md` (section 10). Dates are flexible; Shankar prefers moving on when a task is done.
 | Date | Milestone |
 |---|---|
-| 3 Dec | Engine |
 | 7 Dec | `gate-v1` |
 | 16 Dec | MVP |
 | 22 Dec | Freeze |
