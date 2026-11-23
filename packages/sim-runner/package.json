@@ -1,0 +1,22 @@
+{
+  "name": "@scalpel/sim-runner",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Runs the Scalpel engine over a simulated world. Never given the hidden answers (truth).",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "world": "tsx src/cli.ts"
+  },
+  "dependencies": {
+    "@scalpel/engine": "workspace:*",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "tsx": "^4.20.0",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.1"
+  }
+}
