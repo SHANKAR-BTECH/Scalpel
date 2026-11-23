@@ -1,0 +1,90 @@
+id: scalpel-2026-12
+title: "Scalpel operating policy (RBI draft + MHA SOP), Dec 2026"
+status: draft
+effective_from: "2026-09-01"
+effective_to: null
+sources:
+  - { id: bnss, title: "Bharatiya Nagarik Suraksha Sanhita, 2023 (ss.106, 107)", issuer: "Parliament of India", verified: false }
+  - { id: bsa-63, title: "Bharatiya Sakshya Adhiniyam, 2023 s.63(4)(c) certificate", issuer: "Parliament of India", verified: false }
+  - { id: rbi-draft-mule-2026, title: "RBI draft directions on holds in suspected mule accounts", issuer: "Reserve Bank of India", date: "2026-09-01", verified: false }
+  - { id: mha-sop-2026-01, title: "MHA SOP on freezing/de-freezing of accounts in cyber fraud", issuer: "Ministry of Home Affairs / I4C", date: "2026-01-02", verified: false }
+  - { id: npci-oc-235, title: "NPCI OC 235 - UPI fraud chargeback timelines", issuer: "NPCI", verified: false }
+  - { id: trai-tcccpr-3, title: "TCCCPR (Third Amendment)", issuer: "TRAI", verified: false }
+  - { id: dot-fri, title: "Financial Fraud Risk Indicator and MNRL", issuer: "Department of Telecommunications", verified: false }
+  - { id: allahabad-protocol, title: "Allahabad HC 5-point protocol for freeze requisitions", issuer: "Allahabad High Court", verified: false }
+  - { id: navneet-traders, title: "Navneet Traders (freeze requisition)", issuer: "High Court", verified: false }
+  - { id: kartik-chatur, title: "Kartik Yogeshwar Chatur v State of Maharashtra", issuer: "Bombay High Court", verified: false }
+  - { id: headstar, title: "Headstar (s.106 debit freeze)", issuer: "Kerala High Court", verified: false }
+  - { id: malabar-gold, title: "Malabar Gold (s.106 debit freeze)", issuer: "Delhi High Court", verified: false }
+  - { id: jar-gold, title: "JAR Gold (s.106 freeze)", issuer: "Karnataka High Court", verified: false }
+  - { id: himanshu-gupta, title: "Himanshu Gupta (lien cut to traced amount)", issuer: "Madras High Court", date: "2026-07-01", verified: false }
+gate:
+  exact_hold_max_ratio_of_traced: 1.0
+  whole_account: { min_mule_score: 0.85, min_signals: 2, officer_confirmation: true }
+  fast_restoration_below: 5000000        # paise = Rs 50,000
+  protected_number_prefixes: ["140", "1600", "1601"]
+  telecom_block: { min_signals: 2, min_telecom_signals: 1 }
+  shield_max_action: EXACT_HOLD
+  bank_self_hold_min_signals: 2
+requisition:
+  magistrate_intimation_hours: 24
+  min_signing_rank: "Sub-Inspector"
+  checks:
+    - { id: signed_dated, label: "Signed and dated by an officer of competent rank", applies_to: [BNSS_106, BNSS_107, CRPC_102], severity: defect, sources: [allahabad-protocol] }
+    - { id: case_reference, label: "FIR number or NCRP acknowledgement number given", applies_to: [BNSS_106, BNSS_107, CRPC_102], severity: defect, sources: [allahabad-protocol] }
+    - { id: exact_amount, label: "Exact amount to hold is stated (not 'freeze the account')", applies_to: [BNSS_106, BNSS_107, CRPC_102], severity: defect, sources: [allahabad-protocol, himanshu-gupta] }
+    - { id: account_nexus, label: "Account and the fraud transaction that links it are identified", applies_to: [BNSS_106, BNSS_107, CRPC_102], severity: defect, sources: [navneet-traders], status: assumed }
+    - { id: criminal_nature, label: "Discloses a criminal offence, not a civil or commercial dispute", applies_to: [BNSS_106, BNSS_107, CRPC_102], severity: review, sources: [allahabad-protocol] }
+    - { id: magistrate_intimation, label: "Magistrate informed within 24 hours", applies_to: [BNSS_106, CRPC_102], severity: defect, sources: [allahabad-protocol, bnss] }
+    - { id: magistrate_order, label: "Magistrate's order attached", applies_to: [BNSS_107], severity: defect, sources: [bnss] }
+regimes:
+  RBI_BANK:
+    label: "Bank-initiated hold (RBI draft)"
+    status: draft
+    max_days: 60
+    min_amount: 100000                    # Rs 1,000
+    exempt_account_types: [NODAL, POOL, ESCROW]
+    sources: [rbi-draft-mule-2026]
+    clocks:
+      - { id: notice, label: "Tell the account holder", starts_on: HOLD_PLACED, days: 1, satisfied_by: [NOTICE_SENT, RELEASED], on_expiry: OVERDUE, sources: [rbi-draft-mule-2026] }
+      - { id: explanation, label: "Holder's window to explain", starts_on: NOTICE_SENT, days: 20, satisfied_by: [REPLY_RECEIVED, RELEASED], on_expiry: DECIDE, sources: [rbi-draft-mule-2026] }
+      - { id: decide_after_reply, label: "Decide after the holder replies", starts_on: REPLY_RECEIVED, days: 10, satisfied_by: [RELEASED, REFERRED_TO_LEA, REVIEWED], on_expiry: OVERDUE, sources: [rbi-draft-mule-2026] }
+      - { id: decide_no_reply, label: "Decide if the holder never replies", starts_on: HOLD_PLACED, days: 30, satisfied_by: [REPLY_RECEIVED, RELEASED, REFERRED_TO_LEA, REVIEWED], on_expiry: OVERDUE, sources: [rbi-draft-mule-2026] }
+      - { id: lea_handoff, label: "Hand over to police regime after referral", starts_on: REFERRED_TO_LEA, days: 0, satisfied_by: [RELEASED], on_expiry: CONVERT, convert_to: MHA_POLICE, status: assumed, sources: [rbi-draft-mule-2026] }
+      - { id: max_cap, label: "60-day maximum", starts_on: HOLD_PLACED, days: 60, alert_before_days: 5, satisfied_by: [RELEASED, CONVERTED], on_expiry: AUTO_RELEASE, sources: [rbi-draft-mule-2026] }
+  MHA_POLICE:
+    label: "Police-requested hold (MHA SOP)"
+    status: final
+    max_days: null
+    sources: [mha-sop-2026-01]
+    clocks:
+      - { id: grm_upload, label: "Upload to the I4C grievance module", starts_on: HOLD_PLACED, days: 7, satisfied_by: [GRM_UPLOADED, RELEASED], on_expiry: OVERDUE, sources: [mha-sop-2026-01] }
+      - { id: io_decision, label: "Investigating officer decides", starts_on: HOLD_PLACED, days: 15, satisfied_by: [IO_DECISION, RELEASED, COURT_ORDER_RECEIVED], on_expiry: ESCALATE, sources: [mha-sop-2026-01] }
+      - { id: small_release, label: "Release holds under Rs 50,000", starts_on: HOLD_PLACED, days: 90, amount_below: 5000000, alert_before_days: 15, extendable: { times: 1, days: 90 }, satisfied_by: [RELEASED, COURT_ORDER_RECEIVED], on_expiry: AUTO_RELEASE, sources: [mha-sop-2026-01] }
+  DIGITAL_SUSPENSION:
+    label: "Digital-banking suspension"
+    status: final
+    max_days: 45
+    sources: [mha-sop-2026-01]
+    clocks:
+      - { id: cap, label: "45-day maximum", starts_on: HOLD_PLACED, days: 45, alert_before_days: 3, satisfied_by: [RELEASED], on_expiry: AUTO_RELEASE, sources: [mha-sop-2026-01] }
+  NPCI_CHARGEBACK:
+    label: "UPI fraud chargeback"
+    status: final
+    max_days: 15
+    sources: [npci-oc-235]
+    clocks:
+      - { id: resolve, label: "Resolve the chargeback", starts_on: HOLD_PLACED, days: 15, satisfied_by: [RELEASED, REVIEWED], on_expiry: OVERDUE, sources: [npci-oc-235] }
+  COURT_ORDER:
+    label: "Court-ordered attachment"
+    status: final
+    max_days: null
+    sources: [bnss]
+    clocks: []
+  TRAI_UCC:
+    label: "Telecom restriction for spam/fraud calls (TRAI)"
+    status: final
+    max_days: null
+    sources: [trai-tcccpr-3]
+    clocks:
+      - { id: bar_review, label: "Review the 15-day outgoing-call bar", starts_on: HOLD_PLACED, days: 15, satisfied_by: [REVIEWED, RELEASED], on_expiry: DECIDE, sources: [trai-tcccpr-3] }

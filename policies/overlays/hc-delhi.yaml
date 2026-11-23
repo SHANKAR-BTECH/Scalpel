@@ -1,0 +1,9 @@
+id: hc-delhi
+high_court: "Delhi"
+states: [DL]
+status: final
+effective_from: "2025-01-01"   # ruling date unverified (R1); placeholder
+effective_to: null
+police_debit_freeze_s106: not_allowed
+notes: "High Courts are split on BNSS s.106 vs s.107. Binding only within this High Court's states."
+sources: [malabar-gold]

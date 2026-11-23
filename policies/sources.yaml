@@ -1,0 +1,15 @@
+# Shared source list (all unverified until research prompt R1 comes back).
+- { id: bnss, title: "Bharatiya Nagarik Suraksha Sanhita, 2023 (ss.106, 107)", issuer: "Parliament of India", verified: false }
+- { id: bsa-63, title: "Bharatiya Sakshya Adhiniyam, 2023 s.63(4)(c) certificate", issuer: "Parliament of India", verified: false }
+- { id: rbi-draft-mule-2026, title: "RBI draft directions on holds in suspected mule accounts", issuer: "Reserve Bank of India", date: "2026-09-01", verified: false }
+- { id: mha-sop-2026-01, title: "MHA SOP on freezing/de-freezing of accounts in cyber fraud", issuer: "Ministry of Home Affairs / I4C", date: "2026-01-02", verified: false }
+- { id: npci-oc-235, title: "NPCI OC 235 - UPI fraud chargeback timelines", issuer: "NPCI", verified: false }
+- { id: trai-tcccpr-3, title: "TCCCPR (Third Amendment)", issuer: "TRAI", verified: false }
+- { id: dot-fri, title: "Financial Fraud Risk Indicator and MNRL", issuer: "Department of Telecommunications", verified: false }
+- { id: allahabad-protocol, title: "Allahabad HC 5-point protocol for freeze requisitions", issuer: "Allahabad High Court", verified: false }
+- { id: navneet-traders, title: "Navneet Traders (freeze requisition)", issuer: "High Court", verified: false }
+- { id: kartik-chatur, title: "Kartik Yogeshwar Chatur v State of Maharashtra", issuer: "Bombay High Court", verified: false }
+- { id: headstar, title: "Headstar (s.106 debit freeze)", issuer: "Kerala High Court", verified: false }
+- { id: malabar-gold, title: "Malabar Gold (s.106 debit freeze)", issuer: "Delhi High Court", verified: false }
+- { id: jar-gold, title: "JAR Gold (s.106 freeze)", issuer: "Karnataka High Court", verified: false }
+- { id: himanshu-gupta, title: "Himanshu Gupta (lien cut to traced amount)", issuer: "Madras High Court", date: "2026-07-01", verified: false }
