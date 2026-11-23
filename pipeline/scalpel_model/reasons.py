@@ -14,7 +14,8 @@ TEXT = {
     "is_salary": (lambda v: "Account type is often misused", lambda v: "Salary account with regular income"),
     "dwell_median_min": (lambda v: f"Money left within {_n(v)} minutes of arriving",
                          lambda v: f"Money usually stays a long time ({_n(v)} minutes or more)"),
-    "senders": (lambda v: f"Money came from {_n(v)} different senders", lambda v: f"Few senders ({_n(v)})"),
+    "senders": (lambda v: "All the money came from one sender" if v == 1 else f"Money came from {_n(v)} different senders",
+                lambda v: f"Few senders ({_n(v)})"),
     "reported_senders": (lambda v: f"{_n(v)} people who reported fraud paid into this account",
                          lambda v: "Few or no fraud reporters paid into this account"),
     "share_in_reported": (lambda v: f"{v:.0%} of money in came from reported fraud", lambda v: "Most money in is not from reported fraud"),
@@ -27,7 +28,7 @@ TEXT = {
     "mnrl": (lambda v: "Number is on the MNRL list of revoked numbers", lambda v: "Number not on the MNRL list"),
     "fri_very_high": (lambda v: "DoT fraud-risk rating for the number is Very High", lambda v: "DoT fraud-risk rating is not Very High"),
     "simbox": (lambda v: "Calls routed through a SIM box", lambda v: "No SIM-box routing"),
-    "sign_count": (lambda v: f"{_n(v)} warning signs at once", lambda v: f"Only {_n(v)} warning signs"),
+    "sign_count": (lambda v: f"{_n(v)} warning signs at once", lambda v: "No warning signs" if v == 0 else f"Only {_n(v)} warning sign{'s' if v != 1 else ''}"),
 }
 
 

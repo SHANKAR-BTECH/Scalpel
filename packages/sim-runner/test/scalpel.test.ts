@@ -58,7 +58,7 @@ describe("policy C (Scalpel)", () => {
 describe("officer's to-do order", () => {
   const rows = [
     { account: "MULE", traced: rupees(10_000), firstSeen: 2 },
-    { account: "SHOP", traced: rupees(50_000), firstSeen: 1 },
+    { account: "SHOP", traced: rupees(20_000), firstSeen: 1 },
   ];
   const scores = { MULE: 0.9, SHOP: 0.1 };
   const signals = { MULE: ["DWELL_LT_15M"], SHOP: [] };
@@ -67,6 +67,13 @@ describe("officer's to-do order", () => {
     expect(q.scalpel[0]).toBe("MULE");
     expect(q.biggest[0]).toBe("SHOP");
     expect(q.fcfs[0]).toBe("SHOP");
+  });
+  it("Scalpel orders by money likely lost per hour, so a zero score never buries a big account", () => {
+    const q = buildQueues(
+      [{ account: "BIG", traced: rupees(100_000), firstSeen: 1 }, { account: "SMALL", traced: rupees(10_000), firstSeen: 2 }],
+      { BIG: 0, SMALL: 0.5 }, {});
+    // BIG: 1,00,000 x 3% = 3,000 an hour at risk. SMALL: 10,000 x (0.5 x 15% + 0.5 x 3%) = 900 an hour.
+    expect(q.scalpel).toEqual(["BIG", "SMALL"]);
   });
   it("the warning-sign rule puts accounts with 2+ signs first", () => {
     const q = buildQueues(rows, scores, { MULE: ["DWELL_LT_15M", "SIM_SWAP_LT_72H"], SHOP: [] });

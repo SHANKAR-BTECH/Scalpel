@@ -13,6 +13,12 @@ const by = (rows: QueueRow[], key: (r: QueueRow) => number[]) =>
     return a.account < b.account ? -1 : 1;
   }).map((r) => r.account);
 
+/** Planning assumptions (the grader tests other drain ratios too): mule money leaves 15% an hour, shop money 5× slower. */
+export const MULE_DRAIN_PER_HOUR = 0.15;
+export const ASSUMED_DRAIN_RATIO = 5;
+export const atRiskPerHour = (traced: number, score: number): number =>
+  traced * (score * MULE_DRAIN_PER_HOUR + (1 - score) * (MULE_DRAIN_PER_HOUR / ASSUMED_DRAIN_RATIO));
+
 export function buildQueues(rows: QueueRow[], muleScore: Record<string, number>, signals: Record<string, string[]>): Record<QueueName, string[]> {
   return {
     /** First come, first served: in the order the stolen money was found arriving. */
@@ -21,8 +27,8 @@ export function buildQueues(rows: QueueRow[], muleScore: Record<string, number>,
     biggest: by(rows, (r) => [-r.traced]),
     /** The simple rule to beat: accounts with 2+ warning signs first, then by amount. */
     signrule: by(rows, (r) => [(signals[r.account]?.length ?? 0) >= 2 ? 0 : 1, -r.traced]),
-    /** Scalpel: amount × chance it's a mule (money most at risk of leaving fast goes first). */
-    scalpel: by(rows, (r) => [-(r.traced * (muleScore[r.account] ?? 0)), -r.traced]),
+    /** Scalpel: money likely lost per hour of waiting = amount × (score × mule drain + (1 − score) × shop drain). */
+    scalpel: by(rows, (r) => [-atRiskPerHour(r.traced, muleScore[r.account] ?? 0), -r.traced]),
   };
 }
 

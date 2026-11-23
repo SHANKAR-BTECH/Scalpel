@@ -39,11 +39,13 @@ if __name__ == "__main__":
 
 
 def build_all(out: Path) -> list[Path]:
-    """v1 plus the five locked v2 worlds, and out/WORLDS.md comparing them."""
+    """v1, the five locked v2 worlds, the same v2 worlds with noisier phone signals, and out/WORLDS.md."""
+    from dataclasses import replace
     from . import compare
     from .configs.v2 import V2_SEEDS, v2_config
     folders, rows = [], []
-    for cfg in [config_for("v1")] + [v2_config(s) for s in V2_SEEDS]:
+    noisy = [replace(v2_config(s), name="v2noisy", signal_noise="high") for s in V2_SEEDS]
+    for cfg in [config_for("v1")] + [v2_config(s) for s in V2_SEEDS] + noisy:
         world, truth = make_world(cfg)
         folder = out / f"{cfg.name}-s{cfg.seed}"
         write_world(folder, world, truth)

@@ -120,3 +120,8 @@ def test_fast_moving_money_alone_does_not_give_the_answer():
 def test_check_score_uses_a_whole_unseen_world(trained):
     _, models = trained
     assert models["logistic"].holdout_world == "v1-12"
+
+
+def test_reason_wording_for_one_and_zero():
+    assert reasons_for({"senders": 1.0}, {"senders": 1.0}, k=1) == ["All the money came from one sender"]
+    assert reasons_for({"sign_count": 0.0}, {"sign_count": -1.0}, k=1) == ["No warning signs"]
