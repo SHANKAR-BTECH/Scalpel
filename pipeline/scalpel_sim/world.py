@@ -27,7 +27,8 @@ EXITS = ["EXT-ATM", "EXT-CRYPTO", "EXT-GOLD"]
 class Book:
     """Visible balances, so nobody pays more than they have or before they exist."""
 
-    def __init__(self, opening: dict[str, int], opened: dict[str, int]):
+    def __init__(self, opening: dict[str, int], opened: dict[str, int], prefix: str = "A"):
+        self.prefix = prefix
         self.bal = dict(opening)
         self.opened = opened
         self.txns: list[dict] = []
@@ -41,7 +42,7 @@ class Book:
             return None
         if amount <= 0:
             return None
-        t = {"id": f"T{len(self.txns) + 1:07d}", "at": at, "from": frm, "to": to, "amount": amount, "channel": channel}
+        t = {"id": f"T{self.prefix}{len(self.txns) + 1:07d}", "at": at, "from": frm, "to": to, "amount": amount, "channel": channel}
         self.txns.append(t)
         if frm in self.bal:
             self.bal[frm] -= amount
@@ -64,7 +65,7 @@ def make_world(cfg: WorldConfig) -> tuple[dict, dict]:
     cutoff = T0 + cfg.cutoff_day * DAY
     end = cutoff + cfg.after_hours * HOUR
     n = cfg.n_accounts
-    ids = [f"A{i:05d}" for i in range(1, n + 1)]
+    ids = [f"{cfg.id_prefix}{i:05d}" for i in range(1, n + 1)]
     order = ids[:]
     rng.shuffle(order)
     n_mule, n_shield = round(n * cfg.mule_share), round(n * cfg.shield_share)
@@ -98,7 +99,7 @@ def make_world(cfg: WorldConfig) -> tuple[dict, dict]:
         opening[a] = bal
         accounts[a] = {"id": a, "type": typ, "openedAt": opened[a], "kycChangedAt": kyc, "opening": bal}
 
-    book = Book(opening, opened)
+    book = Book(opening, opened, cfg.id_prefix)
     events: list[tuple] = []  # (at, kind, payload) processed in time order so balances are realistic
 
     # Normal life (whole window incl. after cut-off, but only pre-cut-off is visible).

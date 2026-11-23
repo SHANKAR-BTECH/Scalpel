@@ -20,6 +20,7 @@ class ScamType:
 class WorldConfig:
     name: str = "v1"
     seed: int = 101
+    id_prefix: str = "A"           # v2 uses "B" so the two worlds never share an id
     n_accounts: int = 5000
     days: int = 30
     cutoff_day: int = 22          # the decision moment (start of this day)

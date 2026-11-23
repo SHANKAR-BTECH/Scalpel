@@ -36,3 +36,18 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+def build_all(out: Path) -> list[Path]:
+    """v1 plus the five locked v2 worlds, and out/WORLDS.md comparing them."""
+    from . import compare
+    from .configs.v2 import V2_SEEDS, v2_config
+    folders, rows = [], []
+    for cfg in [config_for("v1")] + [v2_config(s) for s in V2_SEEDS]:
+        world, truth = make_world(cfg)
+        folder = out / f"{cfg.name}-s{cfg.seed}"
+        write_world(folder, world, truth)
+        folders.append(folder)
+        rows.append(compare.world_row(world, truth))
+    compare.write(rows, out / "WORLDS.md")
+    return folders
