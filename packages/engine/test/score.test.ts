@@ -35,3 +35,9 @@ describe("scorer + planner", () => {
     expect(freezeRatio(0, 0)).toBe(0);
   });
 });
+
+describe("freezeRatio no-trace (phase 2 fix)", () => {
+  it("held money with nothing traced is 'no-trace', not Infinity", () => {
+    expect(freezeRatio(rupees(10_000), 0)).toBe("no-trace");
+  });
+});

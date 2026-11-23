@@ -70,5 +70,9 @@ export function planAccount(candidates: Action[], ctx: GateContext, policy: Poli
   return { best: viable[0] ?? null, steps };
 }
 
-/** Freeze Ratio = money held / traced victim money. Industry figure reported: 15.12x. */
-export const freezeRatio = (held: Paise, traced: Paise) => (traced === 0 ? (held === 0 ? 0 : Infinity) : held / traced);
+/**
+ * Freeze Ratio = money held / traced victim money. (The "industry 15.12x" figure is unverified.)
+ * When money is held but nothing was traced the ratio has no meaning: "no-trace" (JSON-safe, unlike Infinity).
+ */
+export type FreezeRatio = number | "no-trace";
+export const freezeRatio = (held: Paise, traced: Paise): FreezeRatio => (traced === 0 ? (held === 0 ? 0 : "no-trace") : held / traced);
