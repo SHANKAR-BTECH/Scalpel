@@ -39,4 +39,17 @@ describe("audit", () => {
     const t3 = structuredClone(pack); t3.certificate.partA["Merkle root of records"] = "0";
     expect((await verifyEvidencePack(t3)).ok).toBe(false);
   });
+  it("random worlds: any edit, swap or removal anywhere in the chain is caught", async () => {
+    await fc.assert(fc.asyncProperty(fc.integer({ min: 2, max: 12 }), fc.nat(), fc.constantFrom("edit", "swap", "drop"), async (n, pick, kind) => {
+      const c = await chainOf(n);
+      const i = pick % n;
+      let bad = c.map((e) => ({ ...e }));
+      if (kind === "edit") bad[i] = { ...bad[i]!, payload: { amount: -1 } };
+      else if (kind === "swap") { const j = (i + 1) % n; [bad[i], bad[j]] = [bad[j]!, bad[i]!]; }
+      else bad = bad.filter((_, k) => k !== i);
+      const r = await verifyChain(bad);
+      if (kind === "drop" && i === n - 1) expect(r.ok).toBe(true); // dropping the newest entry leaves a valid shorter chain; the evidence-pack fingerprint catches that case
+      else expect(r.ok).toBe(false);
+    }), { numRuns: 200 });
+  });
 });

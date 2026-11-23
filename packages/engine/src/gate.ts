@@ -74,7 +74,8 @@ export function quashRisks(action: Action | null, ctx: GateContext, regime: Regi
   const spec = regime ? policy.regimes[regime] : undefined;
   if (held > 0 && (!spec || (spec.max_days === null && spec.clocks.length === 0 && regime !== "COURT_ORDER"))) out.push({ id: "Q4", ground: "No time limit on the hold" });
   const req = ctx.requisition;
-  if (req && ctx.requester === "POLICE") {
+  // Police-specific grounds apply only while the hold runs under the police regime (not after the bank takes over under RBI rules).
+  if (req && ctx.requester === "POLICE" && regime === "MHA_POLICE") {
     if (req.route) out.push({ id: "Q5", ground: `Police debit freeze under s.106 is not allowed in ${req.jurisdiction.strictest.highCourt} High Court's area` });
     if (req.findings.some((f) => f.checkId === "case_reference" && !f.ok)) out.push({ id: "Q6", ground: "No FIR / NCRP particulars" });
     if (req.findings.some((f) => f.checkId === "magistrate_intimation" && !f.ok && !f.pending)) out.push({ id: "Q7", ground: "Magistrate not informed in time" });
