@@ -9,7 +9,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from scalpel_sim.export import read_json
-from .grade import (future_money_stopped, grade_holds, headline_line, oracle_order, rescue, role_counts,
+from .grade import (suggested_on_innocent, future_money_stopped, grade_holds, headline_line, oracle_order, rescue, role_counts,
                     top_mules, verdict)
 
 PIPE = Path(__file__).resolve().parents[1]
@@ -20,9 +20,10 @@ QUEUES = ["fcfs", "biggest", "signrule", "scalpel"]
 QUEUE_NAMES = {"fcfs": "First come, first served", "biggest": "Biggest amount first",
                "signrule": "Warning-sign rule (2+ signs first)", "scalpel": "Scalpel (money likely lost per hour)"}
 KS = [5, 10, 20]
-DRAINS = [2.0, 5.0, 10.0]
+DRAINS = [1.0, 2.0, 5.0, 10.0]  # 1x = shop money leaves as fast as mule money (some shops sweep hourly)
 MODELS = ["logistic", "lightgbm"]
 HEAD_K, HEAD_DRAIN = 10, 5.0
+TOO_EASY = 0.98  # same alarm line as scalpel_model.train.TOO_EASY_AUC
 
 
 # ---------------------------------------------------------------- running the engine
@@ -62,6 +63,7 @@ def grade_world(folder: Path) -> dict:
         g = grade_holds(rows, truth)
         g["futureMoneyStopped"] = future_money_stopped(rows, truth)
         g["suggestedWholeFreezes"] = sum(1 for r in rows if r.get("suggestedWholeFreeze"))
+        g["suggestedOnInnocent"] = suggested_on_innocent(rows, truth)
         out["holds"][p] = g
     for m in MODELS:
         q = read_json(folder / "decisions" / f"queues-{m}.json")
@@ -75,11 +77,20 @@ def grade_world(folder: Path) -> dict:
         out["top10"][m] = {n: top_mules(orders[n], truth, 10) for n in QUEUES}
         a = read_json(folder / "world" / f"assessments-{m}.json")["accounts"]
         out["models"][m] = _model_marks(a, truth, held)
-    mules = [a for a in held if truth["roles"].get(a) == "mule"]
-    from .grade import _saved
-    out["delayPerMuleHour"] = (sum(_saved(a, 0, held, truth, HEAD_DRAIN) - _saved(a, 1, held, truth, HEAD_DRAIN) for a in mules)
-                               / len(mules)) if mules else 0
+    out["delayPerMuleHour"], out["realDrainPerMuleHour"] = delay_per_mule_hour(held, truth, HEAD_DRAIN)
     return out
+
+
+def delay_per_mule_hour(held: dict[str, int], truth: dict, drain: float) -> tuple[float, float]:
+    """Per traced mule, first hour of waiting: (drop in what an exact hold can still secure, real victim money that leaves)."""
+    from scalpel_sim.world import remaining_victim_money
+    from .grade import _saved
+    mules = [a for a in held if truth["roles"].get(a) == "mule"]
+    if not mules:
+        return 0.0, 0.0
+    capped = sum(_saved(a, 0, held, truth, drain) - _saved(a, 1, held, truth, drain) for a in mules) / len(mules)
+    real = sum(remaining_victim_money(truth, a, 0, drain) - remaining_victim_money(truth, a, 1, drain) for a in mules) / len(mules)
+    return capped, real
 
 
 def _model_marks(acc: dict, truth: dict, held: dict) -> dict:
@@ -95,7 +106,8 @@ def _model_marks(acc: dict, truth: dict, held: dict) -> dict:
         "scored085": len(high),
         "mulesAmong085": sum(roles[a] == "mule" for a in high),
         "shields085": sum(roles[a] == "shield" for a in high),
-        "shieldMoney085": sum(held.get(a, 0) for a in high if roles[a] == "shield"),
+        "innocent085": sum(roles[a] != "mule" for a in high),
+        "innocentMoney085": sum(held.get(a, 0) for a in high if roles[a] != "mule"),
         "worst": [{"account": a, "role": roles[a], "muleScore": acc[a]["muleScore"], "traced": held.get(a, 0),
                    "reasons": acc[a]["reasons"]} for a in worst],
     }
@@ -113,13 +125,34 @@ def pooled_pct(worlds: list[dict], model: str, key: str, queue: str) -> tuple[fl
 
 def conditional_sentence(rows: dict[float, str]) -> str:
     """rows: drain ratio -> verdict. Finds the smallest N from which Scalpel beats the rule at every larger ratio."""
+    listed = ", ".join(f"{d:g}x" for d in sorted(rows))
     ok = [d for d in sorted(rows) if all(rows[e] == "beats" for e in sorted(rows) if e >= d)]
     if not ok:
-        return "Scalpel's order does not beat the warning-sign rule at any drain ratio tested (2x, 5x, 10x)."
+        wins = [f"{d:g}x" for d in sorted(rows) if rows[d] == "beats"]
+        if not wins:
+            return f"Scalpel's order does not beat the warning-sign rule at any drain ratio tested ({listed})."
+        rest = [f"{d:g}x ({rows[d]})" for d in sorted(rows) if rows[d] != "beats"]
+        return (f"Scalpel's order beats the warning-sign rule at {', '.join(wins)} but not at {', '.join(rest)} "
+                f"(drain ratios tested: {listed}).")
     n = min(ok)
     if n == min(rows):
-        return f"Scalpel's order beats the warning-sign rule at every drain ratio tested ({', '.join(f'{d:g}x' for d in sorted(rows))})."
+        return f"Scalpel's order beats the warning-sign rule at every drain ratio tested ({listed})."
     return f"Scalpel's order beats the warning-sign rule when mules drain at least {n:g}x faster than shops; below that it doesn't."
+
+
+def vs_biggest_sentence(rows: list[tuple[str, float, float]]) -> str:
+    """rows: (setting, Scalpel %, biggest-first %). Says plainly where Scalpel is worse, and how often it is ahead."""
+    worse = [r for r in rows if verdict(r[1], r[2]) == "does not beat"]
+    ahead = [r for r in rows if verdict(r[1], r[2]) == "beats"]
+    parts = []
+    if worse:
+        w = min(worse, key=lambda r: r[1] - r[2])
+        parts.append(f"It does worse than 'biggest amount first' at {w[0]} ({w[1]:.1f}% vs {w[2]:.1f}%) and in {len(worse)} of {len(rows)} settings tested.")
+    if ahead:
+        parts.append(f"It is ahead of 'biggest amount first' in {len(ahead)} of {len(rows)} settings tested.")
+    else:
+        parts.append(f"It is never ahead of it in any of the {len(rows)} settings tested, so in these worlds the amount alone carries most of the ordering.")
+    return " ".join(parts)
 
 
 def rupees(p: float) -> str:
@@ -131,6 +164,13 @@ def summarise(v1: dict, v2: list[dict], v2noisy: list[dict]) -> dict:
     sc, sc_lo, sc_hi = pooled_pct(v2, "logistic", head, "scalpel")
     sr, sr_lo, sr_hi = pooled_pct(v2, "logistic", head, "signrule")
     bg = pooled_pct(v2, "logistic", head, "biggest")[0]
+    vb = []
+    for label, ws in (("low noise", v2), ("high noise", v2noisy)):
+        for d in DRAINS:
+            for k in KS:
+                key = f"{d:g}x/K{k}"
+                vb.append((f"K={k}, {d:g}x drain, {label}", pooled_pct(ws, "logistic", key, "scalpel")[0],
+                           pooled_pct(ws, "logistic", key, "biggest")[0]))
     cond = {}
     for label, ws in (("low", v2), ("high", v2noisy)):
         for d in DRAINS:
@@ -138,7 +178,8 @@ def summarise(v1: dict, v2: list[dict], v2noisy: list[dict]) -> dict:
             a, b = pooled_pct(ws, "logistic", key, "scalpel")[0], pooled_pct(ws, "logistic", key, "signrule")[0]
             cond[f"{label}/{d:g}x"] = {"scalpel": a, "signrule": b, "verdict": verdict(a, b)}
     return {
-        "firstLine": headline_line(sc, sr, bg),
+        "firstLine": headline_line(sc, sr) + " " + vs_biggest_sentence(vb),
+        "vsBiggest": vb,
         "verdictVsBiggest": verdict(sc, bg),
         "verdict": verdict(sc, sr),
         "headline": {"scalpel": [sc, sc_lo, sc_hi], "signrule": [sr, sr_lo, sr_hi]},
@@ -181,7 +222,7 @@ def render(s: dict) -> str:
                  f"{rupees(h['innocentHeld'])} | {h['wrongly']} | {rupees(h['future'])} | {h1['freezeRatio']:.2f}× |")
     c = _pool_holds(v2, "C")
     L += ["", "Scalpel and the Ruler hold the same amounts: both hold exactly the traced money. Scalpel adds the order, the reasons, the rule checks and the suggestions below.",
-          "", f"Scalpel suggested {c['suggested']} whole freezes on v2 for an officer to decide; none were applied automatically, "
+          "", f"Scalpel suggested {c['suggested']} whole freezes on v2 for an officer to decide; **{sum(w['holds']['C']['suggestedOnInnocent'] for w in v2)} of them were on innocent accounts**. None were applied automatically, "
           "so \"future money stopped\" is ₹0 for Scalpel by design. Only the Axe stops money that arrives later, at the cost of the innocent money it locks.", ""]
 
     L += ["## 2. Rescue: who the officer acts on first", "",
@@ -197,7 +238,7 @@ def render(s: dict) -> str:
         p1 = pooled_pct([v1], "logistic", f"{HEAD_DRAIN:g}x/K{HEAD_K}", n)[0]
         L.append(f"| {QUEUE_NAMES[n]} | {' | '.join(cells)} | {p1:.1f}% |")
     L += ["", "Scalpel's order = amount × (mule score × 15% + (1 − mule score) × 3%), the money likely lost per hour of waiting. "
-          "It uses the 5× drain assumption; section 3 tests it against 2× and 10×.", ""]
+          "It uses the 5× drain assumption; section 3 tests it against 1×, 2× and 10×.", ""]
 
     L += ["## 3. When does it win? (the conditional headline)", "", f"**{s['conditionalSentence']}**", "",
           f"With noisier phone signals: {s['conditionalSentenceNoisy']}", "",
@@ -208,25 +249,35 @@ def render(s: dict) -> str:
     L.append("")
 
     delay = sum(w["delayPerMuleHour"] for w in v2) / len(v2)
+    real = sum(w["realDrainPerMuleHour"] for w in v2) / len(v2)
     L += ["## 4. The cost of waiting", "",
-          f"**Each hour of delay on a mule loses {rupees(delay)} of victim money, on average, in this world** (v2, first hour, 15% an hour drain).", ""]
+          f"**Each hour of delay on a mule lets {rupees(real)} of real victim money leave, on average, in this world** (v2, first hour, 15% an hour drain). "
+          f"An exact hold only covers money traced from complaints made so far, so what the hold itself can still secure drops by only {rupees(delay)} per mule in that hour: "
+          "the bigger loss is money nobody has complained about yet.", ""]
 
     L += ["## 5. Role guesses", "",
-          "| Model | Real mules in the officer's top 10 (Scalpel order) | Same, warning-sign rule | Innocent shops scored 0.85+ | Their held money | Of accounts scored 0.85+, really mules | AUC v2 (range) |",
+          "| Model | Real mules in the officer's top 10 (Scalpel order) | Same, warning-sign rule | Innocent accounts scored 0.85+ (of them shops) | Their held money | Of accounts scored 0.85+, really mules | AUC v2 (range) |",
           "|---|---|---|---|---|---|---|"]
+    aucs_all = []
     for m in MODELS:
         t_sc = sum(w["top10"][m]["scalpel"] for w in v2)
         t_sr = sum(w["top10"][m]["signrule"] for w in v2)
+        inn = sum(w["models"][m]["innocent085"] for w in v2)
         sh = sum(w["models"][m]["shields085"] for w in v2)
-        shm = sum(w["models"][m]["shieldMoney085"] for w in v2)
+        shm = sum(w["models"][m]["innocentMoney085"] for w in v2)
         hi = sum(w["models"][m]["scored085"] for w in v2)
         mh = sum(w["models"][m]["mulesAmong085"] for w in v2)
         aucs = [w["models"][m]["auc"] for w in v2 if w["models"][m]["auc"] is not None]
-        L.append(f"| {m} | {t_sc} of {10 * len(v2)} | {t_sr} of {10 * len(v2)} | {sh} | {rupees(shm)} | "
+        if aucs and sum(aucs) / len(aucs) > TOO_EASY:
+            aucs_all.append(m)
+        L.append(f"| {m} | {t_sc} of {10 * len(v2)} | {t_sr} of {10 * len(v2)} | {inn} ({sh}) | {rupees(shm)} | "
                  f"{(100 * mh / hi if hi else 0):.0f}% of {hi} | {sum(aucs) / len(aucs):.2f} ({min(aucs):.2f}–{max(aucs):.2f}) |")
     saved10 = sum(w["rescue"]["logistic"][f"{HEAD_DRAIN:g}x/K{HEAD_K}"]["scalpel"] for w in v2)
     L += ["", f"For scale: the Scalpel order secured {rupees(saved10)} of victim money across the 5 worlds (K=10). "
-          "Innocent shops scored 0.85+ are listed beside it on purpose: a high score on a shop is a real harm, even though the Gate only ever gives shops an exact hold (R8).",
+          "Innocent accounts scored 0.85+ are listed beside it on purpose: a high score on an innocent person is a real harm, even though the Gate never freezes a whole account without an officer (R2) and gives shops only an exact hold (R8).",
+          "", (f"**v2 is also \"too easy\" by our own alarm for {' and '.join(aucs_all)}** (AUC above {TOO_EASY:.2f} on accounts holding traced money). The fake worlds separate mules more cleanly than real data would, so treat every AI number here as an upper bound."
+               if aucs_all else "No model passes the \"too easy\" alarm on v2."),
+          "", "AUC is measured on the calibrated score, which keeps the raw model's order exactly.",
           "", "Both orders put only real mules in the top 10 on every world, so the top 10 does not separate them; the difference shows further down the list (section 2).",
           "", "The \"really mules\" column is the calibration check: a score of 0.85+ should mean roughly 85%+ of those accounts are mules.", ""]
 
@@ -243,11 +294,13 @@ def render(s: dict) -> str:
     L += ["## 7. Assumptions (change these and the numbers change)", "",
           "- The worlds are invented. v2 changes criminal habits on purpose: older rented mule accounts, slower mules, twice as many innocent shops, more digital-arrest scams.",
           "- Victims complain late or never (40–70% report, up to 72 hours late). Only complaints made before the decision moment are visible.",
-          "- After the decision moment, mule money drains 15% an hour and other money drains 2×, 5× or 10× slower.",
+          "- After the decision moment, mule money drains 15% an hour and other money drains 1×, 2×, 5× or 10× slower. Note the mismatch: before the decision moment, shops in these worlds sweep most of their takings every evening (30% of them hourly), so for those shops the 1× row is the realistic one.",
+          "- The mule score is calibrated with a smooth curve (Platt scaling) fitted on an unseen v1 world. This replaced a step-shaped calibrator after the final review showed it flattened many real mules to exactly 0; that change was made after v2 results had been seen, and is disclosed here.",
+          "- Victim payments in the world file come from neutral outside-account ids, as a bank would see them; only complaints say who reported fraud.",
           "- Officer capacity K = 5, 10 or 20 accounts an hour.",
           "- The AI never saw v2's answers. Only the grader opens truth.json.",
           "- v2's settings were locked before training and re-locked once, openly, when shared world-realism fields were added (no v2 result had been looked at).",
-          "- v1 is easy for the AI (near-perfect on an unseen v1 seed). That is why the v2 numbers are the ones that count.", ""]
+          "- v1 is easy for the AI (near-perfect on an unseen v1 seed). The v1 column is graded on v1 seed 101, which the AI trained on.", ""]
     return "\n".join(L)
 
 

@@ -90,3 +90,8 @@ def headline_line(scalpel_pct: float, signrule_pct: float, biggest_pct: float | 
         line += (f" It {verdict(scalpel_pct, biggest_pct)} the plain 'biggest amount first' order ({biggest_pct:.1f}%), "
                  "so in these worlds the amount alone carries most of the ordering.")
     return line
+
+
+def suggested_on_innocent(rows: list[dict], truth: dict) -> int:
+    """Whole freezes the planner suggested on accounts that are not really mules (never applied, but a real risk if an officer agrees)."""
+    return sum(1 for r in rows if r.get("suggestedWholeFreeze") and truth["roles"].get(r["account"]) != "mule")

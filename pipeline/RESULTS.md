@@ -1,4 +1,4 @@
-Scalpel's order beats the warning-sign rule: it secures 97.6% of the best possible rescue vs 87.0% (5 unseen v2 worlds pooled, 10 actions an hour). It ties the plain 'biggest amount first' order (98.1%), so in these worlds the amount alone carries most of the ordering.
+Scalpel's order beats the warning-sign rule: it secures 97.8% of the best possible rescue vs 87.0% (5 unseen v2 worlds pooled, 10 actions an hour). It does worse than 'biggest amount first' at K=5, 1x drain, low noise (92.5% vs 94.8%) and in 8 of 24 settings tested. It is never ahead of it in any of the 24 settings tested, so in these worlds the amount alone carries most of the ordering.
 
 # Policy test bench under stated assumptions
 
@@ -21,7 +21,7 @@ Freeze Ratio = money held ÷ real victim money (1.00× is exactly right). Victim
 
 Scalpel and the Ruler hold the same amounts: both hold exactly the traced money. Scalpel adds the order, the reasons, the rule checks and the suggestions below.
 
-Scalpel suggested 140 whole freezes on v2 for an officer to decide; none were applied automatically, so "future money stopped" is ₹0 for Scalpel by design. Only the Axe stops money that arrives later, at the cost of the innocent money it locks.
+Scalpel suggested 136 whole freezes on v2 for an officer to decide; **2 of them were on innocent accounts**. None were applied automatically, so "future money stopped" is ₹0 for Scalpel by design. Only the Axe stops money that arrives later, at the cost of the innocent money it locks.
 
 ## 2. Rescue: who the officer acts on first
 
@@ -32,37 +32,43 @@ Every queue uses the same exact-sized holds; only the order differs. The officer
 | First come, first served | 29.4% (15–51) | 41.9% (23–68) | 60.5% (42–82) | 18.9% |
 | Biggest amount first | 95.2% (95–96) | 98.1% (97–99) | 99.6% (99–100) | 93.8% |
 | Warning-sign rule (2+ signs first) | 72.1% (59–81) | 87.0% (77–96) | 96.1% (92–99) | 90.2% |
-| Scalpel (money likely lost per hour) | 92.2% (90–95) | 97.6% (96–99) | 99.4% (99–100) | 93.8% |
+| Scalpel (money likely lost per hour) | 93.2% (92–95) | 97.8% (96–99) | 99.5% (99–100) | 93.9% |
 
-Scalpel's order = amount × (mule score × 15% + (1 − mule score) × 3%), the money likely lost per hour of waiting. It uses the 5× drain assumption; section 3 tests it against 2× and 10×.
+Scalpel's order = amount × (mule score × 15% + (1 − mule score) × 3%), the money likely lost per hour of waiting. It uses the 5× drain assumption; section 3 tests it against 1×, 2× and 10×.
 
 ## 3. When does it win? (the conditional headline)
 
-**Scalpel's order beats the warning-sign rule at every drain ratio tested (2x, 5x, 10x).**
+**Scalpel's order beats the warning-sign rule at every drain ratio tested (1x, 2x, 5x, 10x).**
 
-With noisier phone signals: Scalpel's order beats the warning-sign rule at every drain ratio tested (2x, 5x, 10x).
+With noisier phone signals: Scalpel's order beats the warning-sign rule at every drain ratio tested (1x, 2x, 5x, 10x).
 
 | Mules drain faster than shops by | Phone-signal noise | Scalpel | Warning-sign rule | Result |
 |---|---|---|---|---|
-| 2x | low | 97.1% | 86.2% | beats |
-| 5x | low | 97.6% | 87.0% | beats |
-| 10x | low | 97.8% | 87.2% | beats |
-| 2x | high | 97.0% | 83.1% | beats |
-| 5x | high | 97.5% | 84.0% | beats |
-| 10x | high | 97.7% | 84.2% | beats |
+| 1x | low | 96.3% | 85.0% | beats |
+| 2x | low | 97.3% | 86.2% | beats |
+| 5x | low | 97.8% | 87.0% | beats |
+| 10x | low | 98.0% | 87.2% | beats |
+| 1x | high | 96.3% | 81.8% | beats |
+| 2x | high | 97.2% | 83.1% | beats |
+| 5x | high | 97.8% | 84.0% | beats |
+| 10x | high | 97.9% | 84.2% | beats |
 
 ## 4. The cost of waiting
 
-**Each hour of delay on a mule loses ₹894 of victim money, on average, in this world** (v2, first hour, 15% an hour drain).
+**Each hour of delay on a mule lets ₹11,644 of real victim money leave, on average, in this world** (v2, first hour, 15% an hour drain). An exact hold only covers money traced from complaints made so far, so what the hold itself can still secure drops by only ₹894 per mule in that hour: the bigger loss is money nobody has complained about yet.
 
 ## 5. Role guesses
 
-| Model | Real mules in the officer's top 10 (Scalpel order) | Same, warning-sign rule | Innocent shops scored 0.85+ | Their held money | Of accounts scored 0.85+, really mules | AUC v2 (range) |
+| Model | Real mules in the officer's top 10 (Scalpel order) | Same, warning-sign rule | Innocent accounts scored 0.85+ (of them shops) | Their held money | Of accounts scored 0.85+, really mules | AUC v2 (range) |
 |---|---|---|---|---|---|---|
-| logistic | 50 of 50 | 50 of 50 | 0 | ₹0 | 94% of 254 | 0.94 (0.89–0.97) |
-| lightgbm | 50 of 50 | 50 of 50 | 0 | ₹0 | 99% of 180 | 0.82 (0.78–0.86) |
+| logistic | 50 of 50 | 50 of 50 | 5 (0) | ₹231 | 98% of 203 | 1.00 (0.99–1.00) |
+| lightgbm | 50 of 50 | 50 of 50 | 1 (0) | ₹0 | 99% of 162 | 0.88 (0.87–0.88) |
 
-For scale: the Scalpel order secured ₹10,854,472 of victim money across the 5 worlds (K=10). Innocent shops scored 0.85+ are listed beside it on purpose: a high score on a shop is a real harm, even though the Gate only ever gives shops an exact hold (R8).
+For scale: the Scalpel order secured ₹10,877,361 of victim money across the 5 worlds (K=10). Innocent accounts scored 0.85+ are listed beside it on purpose: a high score on an innocent person is a real harm, even though the Gate never freezes a whole account without an officer (R2) and gives shops only an exact hold (R8).
+
+**v2 is also "too easy" by our own alarm for logistic** (AUC above 0.98 on accounts holding traced money). The fake worlds separate mules more cleanly than real data would, so treat every AI number here as an upper bound.
+
+AUC is measured on the calibrated score, which keeps the raw model's order exactly.
 
 Both orders put only real mules in the top 10 on every world, so the top 10 does not separate them; the difference shows further down the list (section 2).
 
@@ -74,18 +80,20 @@ The 5 costliest v2 mistakes (wrong score × money involved), with the reasons th
 
 | World | Account | Really | Mule score | Traced money | AI's reasons |
 |---|---|---|---|---|---|
-| v2-s201 | B02830 | mule | 0.00 | ₹193,948 | Money came from 3 different senders; No call forwarding; Money left within 63 minutes of arriving |
-| v2-s201 | B01589 | mule | 0.00 | ₹144,557 | All the money came from one sender; No warning signs; Money left within 39 minutes of arriving |
-| v2-s204 | B01118 | mule | 0.00 | ₹137,829 | Money came from 2 different senders; No warning signs; Money left within 72 minutes of arriving |
+| v2-s201 | B02830 | mule | 0.09 | ₹193,948 | Money came from 3 different senders; No call forwarding; Money left within 63 minutes of arriving |
+| v2-s201 | B01589 | mule | 0.02 | ₹144,557 | All the money came from one sender; No warning signs; Money left within 39 minutes of arriving |
+| v2-s204 | B01118 | mule | 0.01 | ₹137,829 | Money came from 2 different senders; No warning signs; Money left within 72 minutes of arriving |
 | v2-s205 | B01316 | mule | 0.00 | ₹110,966 | Money came from 2 different senders; 2 warning signs at once; Money usually stays a long time (1440 minutes or more) |
-| v2-s205 | B02089 | mule | 0.00 | ₹101,861 | Money came from 2 different senders; No warning signs; Money left within 72 minutes of arriving |
+| v2-s205 | B02089 | mule | 0.03 | ₹101,861 | Money came from 2 different senders; No warning signs; Money left within 72 minutes of arriving |
 
 ## 7. Assumptions (change these and the numbers change)
 
 - The worlds are invented. v2 changes criminal habits on purpose: older rented mule accounts, slower mules, twice as many innocent shops, more digital-arrest scams.
 - Victims complain late or never (40–70% report, up to 72 hours late). Only complaints made before the decision moment are visible.
-- After the decision moment, mule money drains 15% an hour and other money drains 2×, 5× or 10× slower.
+- After the decision moment, mule money drains 15% an hour and other money drains 1×, 2×, 5× or 10× slower. Note the mismatch: before the decision moment, shops in these worlds sweep most of their takings every evening (30% of them hourly), so for those shops the 1× row is the realistic one.
+- The mule score is calibrated with a smooth curve (Platt scaling) fitted on an unseen v1 world. This replaced a step-shaped calibrator after the final review showed it flattened many real mules to exactly 0; that change was made after v2 results had been seen, and is disclosed here.
+- Victim payments in the world file come from neutral outside-account ids, as a bank would see them; only complaints say who reported fraud.
 - Officer capacity K = 5, 10 or 20 accounts an hour.
 - The AI never saw v2's answers. Only the grader opens truth.json.
 - v2's settings were locked before training and re-locked once, openly, when shared world-realism fields were added (no v2 result had been looked at).
-- v1 is easy for the AI (near-perfect on an unseen v1 seed). That is why the v2 numbers are the ones that count.
+- v1 is easy for the AI (near-perfect on an unseen v1 seed). The v1 column is graded on v1 seed 101, which the AI trained on.

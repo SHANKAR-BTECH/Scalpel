@@ -1,44 +1,54 @@
 {
  "conditional": {
   "high/10x": {
-   "scalpel": 97.66739314583698,
+   "scalpel": 97.915622621349,
    "signrule": 84.17089285661979,
    "verdict": "beats"
   },
+  "high/1x": {
+   "scalpel": 96.30939183814117,
+   "signrule": 81.81502609127202,
+   "verdict": "beats"
+  },
   "high/2x": {
-   "scalpel": 96.97514020524032,
+   "scalpel": 97.2223037090995,
    "signrule": 83.12813362633914,
    "verdict": "beats"
   },
   "high/5x": {
-   "scalpel": 97.51948529329437,
+   "scalpel": 97.76723055066422,
    "signrule": 83.97752677302417,
    "verdict": "beats"
   },
   "low/10x": {
-   "scalpel": 97.76590028538386,
+   "scalpel": 97.97146955111748,
    "signrule": 87.1706755636274,
    "verdict": "beats"
   },
+  "low/1x": {
+   "scalpel": 96.33838065080184,
+   "signrule": 84.97854746331392,
+   "verdict": "beats"
+  },
   "low/2x": {
-   "scalpel": 97.05995986372682,
+   "scalpel": 97.26045626004807,
    "signrule": 86.21309076505774,
    "verdict": "beats"
   },
   "low/5x": {
-   "scalpel": 97.61765557416801,
+   "scalpel": 97.82350953178269,
    "signrule": 86.98695393201702,
    "verdict": "beats"
   }
  },
- "conditionalSentence": "Scalpel's order beats the warning-sign rule at every drain ratio tested (2x, 5x, 10x).",
- "conditionalSentenceNoisy": "Scalpel's order beats the warning-sign rule at every drain ratio tested (2x, 5x, 10x).",
- "firstLine": "Scalpel's order beats the warning-sign rule: it secures 97.6% of the best possible rescue vs 87.0% (5 unseen v2 worlds pooled, 10 actions an hour). It ties the plain 'biggest amount first' order (98.1%), so in these worlds the amount alone carries most of the ordering.",
+ "conditionalSentence": "Scalpel's order beats the warning-sign rule at every drain ratio tested (1x, 2x, 5x, 10x).",
+ "conditionalSentenceNoisy": "Scalpel's order beats the warning-sign rule at every drain ratio tested (1x, 2x, 5x, 10x).",
+ "firstLine": "Scalpel's order beats the warning-sign rule: it secures 97.8% of the best possible rescue vs 87.0% (5 unseen v2 worlds pooled, 10 actions an hour). It does worse than 'biggest amount first' at K=5, 1x drain, low noise (92.5% vs 94.8%) and in 8 of 24 settings tested. It is never ahead of it in any of the 24 settings tested, so in these worlds the amount alone carries most of the ordering.",
  "headline": {
   "scalpel": [
-   97.61765557416801,
-   95.78583464952652,
-   99.11398366950809
+   97.82350953178269,
+   96.40479809460798,
+   99.11398120070977
   ],
   "signrule": [
    86.98695393201702,
@@ -57,6 +67,7 @@
     "innocentHeld": 0,
     "peopleWronglyRestricted": 0,
     "recoveryRate": 0.0,
+    "suggestedOnInnocent": 0,
     "suggestedWholeFreezes": 0,
     "victimMoney": 1299282580,
     "victimMoneyMissed": 1299282580
@@ -69,6 +80,7 @@
     "innocentHeld": 12585249873,
     "peopleWronglyRestricted": 610,
     "recoveryRate": 0.9105571260718357,
+    "suggestedOnInnocent": 0,
     "suggestedWholeFreezes": 0,
     "victimMoney": 1299282580,
     "victimMoneyMissed": 116211568
@@ -81,6 +93,7 @@
     "innocentHeld": 0,
     "peopleWronglyRestricted": 0,
     "recoveryRate": 0.49264461469190174,
+    "suggestedOnInnocent": 0,
     "suggestedWholeFreezes": 0,
     "victimMoney": 1299282580,
     "victimMoneyMissed": 659198014
@@ -93,7 +106,8 @@
     "innocentHeld": 0,
     "peopleWronglyRestricted": 0,
     "recoveryRate": 0.49264461469190174,
-    "suggestedWholeFreezes": 84,
+    "suggestedOnInnocent": 0,
+    "suggestedWholeFreezes": 83,
     "victimMoney": 1299282580,
     "victimMoneyMissed": 659198014
    }
@@ -101,89 +115,80 @@
   "models": {
    "lightgbm": {
     "auc": 1.0,
+    "innocent085": 0,
+    "innocentMoney085": 0,
     "mulesAmong085": 103,
     "scored085": 103,
-    "shieldMoney085": 0,
     "shields085": 0,
     "worst": [
      {
-      "account": "A00006",
-      "muleScore": 0.0,
+      "account": "A02167",
+      "muleScore": 0.974804,
       "reasons": [
-       "Money usually stays a long time (1440 minutes or more)",
-       "No warning signs",
-       "Account has a long history (4422 days)"
+       "Money left within 42 minutes of arriving",
+       "Only 1 warning sign",
+       "Money came from 2 different senders"
       ],
-      "role": "normal",
-      "traced": 59
+      "role": "mule",
+      "traced": 5941244
      },
      {
-      "account": "A00016",
-      "muleScore": 0.0,
+      "account": "A02591",
+      "muleScore": 0.985958,
       "reasons": [
-       "Money usually stays a long time (1440 minutes or more)",
-       "Few senders (69)",
-       "Account has a long history (3483 days)"
+       "1 people who reported fraud paid into this account",
+       "Money left within 59 minutes of arriving",
+       "No warning signs"
       ],
-      "role": "normal",
-      "traced": 127
+      "role": "mule",
+      "traced": 4179299
      },
      {
-      "account": "A00027",
-      "muleScore": 0.0,
+      "account": "A04849",
+      "muleScore": 0.996653,
       "reasons": [
-       "Money usually stays a long time (394 minutes or more)",
-       "Few senders (76)",
-       "Account has a long history (2705 days)"
-      ],
-      "role": "shield",
-      "traced": 4101
-     },
-     {
-      "account": "A00030",
-      "muleScore": 0.0,
-      "reasons": [
-       "Money usually stays a long time (60 minutes or more)",
-       "Account has a long history (3043 days)",
+       "Money left within 33 minutes of arriving",
+       "Money came from 2 different senders",
        "Only 1 warning sign"
       ],
-      "role": "normal",
-      "traced": 114
+      "role": "mule",
+      "traced": 14303001
      },
      {
-      "account": "A00055",
-      "muleScore": 0.0,
+      "account": "A02597",
+      "muleScore": 0.996975,
       "reasons": [
-       "Money usually stays a long time (1159 minutes or more)",
-       "No warning signs",
-       "Account has a long history (2180 days)"
+       "Money left within 11 minutes of arriving",
+       "2 warning signs at once",
+       "All the money came from one sender"
       ],
-      "role": "normal",
-      "traced": 2197
+      "role": "mule",
+      "traced": 10522199
+     },
+     {
+      "account": "A04481",
+      "muleScore": 0.997147,
+      "reasons": [
+       "2 people who reported fraud paid into this account",
+       "Money usually stays a long time (1440 minutes or more)",
+       "Money came from 3 different senders"
+      ],
+      "role": "mule",
+      "traced": 11129647
      }
     ]
    },
    "logistic": {
-    "auc": 0.9999363361451536,
-    "mulesAmong085": 102,
-    "scored085": 104,
-    "shieldMoney085": 0,
+    "auc": 0.9999681680725767,
+    "innocent085": 0,
+    "innocentMoney085": 0,
+    "mulesAmong085": 100,
+    "scored085": 100,
     "shields085": 0,
     "worst": [
      {
-      "account": "A04634",
-      "muleScore": 0.333333,
-      "reasons": [
-       "Money came from 3 different senders",
-       "Money left within 16 minutes of arriving",
-       "Account opened only 903 days ago"
-      ],
-      "role": "mule",
-      "traced": 2527779
-     },
-     {
       "account": "A02803",
-      "muleScore": 0.9,
+      "muleScore": 0.63326,
       "reasons": [
        "All the money came from one sender",
        "Money left within 23 minutes of arriving",
@@ -193,8 +198,19 @@
       "traced": 3846138
      },
      {
+      "account": "A04634",
+      "muleScore": 0.463475,
+      "reasons": [
+       "Money came from 3 different senders",
+       "Money left within 16 minutes of arriving",
+       "Account opened only 903 days ago"
+      ],
+      "role": "mule",
+      "traced": 2527779
+     },
+     {
       "account": "A04127",
-      "muleScore": 0.9,
+      "muleScore": 0.820825,
       "reasons": [
        "Money came from 2 different senders",
        "Account opened only 106 days ago",
@@ -204,30 +220,31 @@
       "traced": 1649982
      },
      {
-      "account": "A02012",
-      "muleScore": 0.2,
+      "account": "A04158",
+      "muleScore": 0.1646,
       "reasons": [
-       "Money came from 10 different senders",
-       "Account opened only 5 days ago",
-       "Money left within 106 minutes of arriving"
+       "Money came from 2 different senders",
+       "No call forwarding",
+       "Money left within 101 minutes of arriving"
       ],
       "role": "normal",
-      "traced": 4656
+      "traced": 1580756
      },
      {
-      "account": "A04958",
-      "muleScore": 0.9,
+      "account": "A00907",
+      "muleScore": 0.993342,
       "reasons": [
+       "Money came from 2 different senders",
        "2 warning signs at once",
-       "Money came from 23 different senders",
-       "Account opened only 11 days ago"
+       "Account opened only 18 days ago"
       ],
-      "role": "normal",
-      "traced": 360
+      "role": "mule",
+      "traced": 24027420
      }
     ]
    }
   },
+  "realDrainPerMuleHour": 1653030.1067961166,
   "rescue": {
    "lightgbm": {
     "10x/K10": {
@@ -250,6 +267,27 @@
      "oracle": 513452827,
      "scalpel": 481667709,
      "signrule": 465382639
+    },
+    "1x/K10": {
+     "biggest": 576071008,
+     "fcfs": 108702316,
+     "oracle": 615566158,
+     "scalpel": 575650664,
+     "signrule": 551555060
+    },
+    "1x/K20": {
+     "biggest": 624002682,
+     "fcfs": 211017644,
+     "oracle": 638649744,
+     "scalpel": 623362175,
+     "signrule": 606449356
+    },
+    "1x/K5": {
+     "biggest": 461287541,
+     "fcfs": 58998547,
+     "oracle": 493235740,
+     "scalpel": 461709391,
+     "signrule": 445723293
     },
     "2x/K10": {
      "biggest": 585023550,
@@ -299,63 +337,84 @@
      "biggest": 591976443,
      "fcfs": 123797552,
      "oracle": 630532508,
-     "scalpel": 592094229,
+     "scalpel": 592478146,
      "signrule": 569578953
     },
     "10x/K20": {
      "biggest": 631265585,
      "fcfs": 225570987,
      "oracle": 640084558,
-     "scalpel": 631281448,
+     "scalpel": 631290262,
      "signrule": 616524637
     },
     "10x/K5": {
      "biggest": 481217608,
      "fcfs": 70915309,
      "oracle": 513452827,
-     "scalpel": 481679172,
+     "scalpel": 481387038,
      "signrule": 465382639
+    },
+    "1x/K10": {
+     "biggest": 576071008,
+     "fcfs": 108702316,
+     "oracle": 615566158,
+     "scalpel": 575994826,
+     "signrule": 551555060
+    },
+    "1x/K20": {
+     "biggest": 624002682,
+     "fcfs": 211017644,
+     "oracle": 638649744,
+     "scalpel": 623370662,
+     "signrule": 606449356
+    },
+    "1x/K5": {
+     "biggest": 461287541,
+     "fcfs": 58998547,
+     "oracle": 493235740,
+     "scalpel": 461422177,
+     "signrule": 445723293
     },
     "2x/K10": {
      "biggest": 585023550,
      "fcfs": 112200655,
      "oracle": 624383898,
-     "scalpel": 584618514,
+     "scalpel": 585002371,
      "signrule": 560239035
     },
     "2x/K20": {
      "biggest": 629044676,
      "fcfs": 216136109,
      "oracle": 640012253,
-     "scalpel": 628790472,
+     "scalpel": 628799197,
      "signrule": 612983770
     },
     "2x/K5": {
      "biggest": 466787292,
      "fcfs": 60680077,
      "oracle": 498826034,
-     "scalpel": 466777210,
+     "scalpel": 466492612,
      "signrule": 449396099
     },
     "5x/K10": {
      "biggest": 590774824,
      "fcfs": 118987529,
      "oracle": 629691767,
-     "scalpel": 590758856,
+     "scalpel": 591142730,
      "signrule": 567794667
     },
     "5x/K20": {
      "biggest": 630934647,
      "fcfs": 222755742,
      "oracle": 640084548,
-     "scalpel": 630886704,
+     "scalpel": 630895503,
      "signrule": 615885262
     },
     "5x/K5": {
      "biggest": 477514684,
      "fcfs": 65685607,
      "oracle": 509706882,
-     "scalpel": 477655055,
+     "scalpel": 477372945,
      "signrule": 460400387
     }
    }
@@ -393,6 +452,7 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.0,
+     "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 674829338,
      "victimMoneyMissed": 674829338
@@ -405,6 +465,7 @@
      "innocentHeld": 8103470943,
      "peopleWronglyRestricted": 472,
      "recoveryRate": 0.961348405394906,
+     "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 674829338,
      "victimMoneyMissed": 26083230
@@ -417,6 +478,7 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.47225477769610547,
+     "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 674829338,
      "victimMoneyMissed": 356137959
@@ -429,17 +491,19 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.47225477769610547,
-     "suggestedWholeFreezes": 39,
+     "suggestedOnInnocent": 0,
+     "suggestedWholeFreezes": 37,
      "victimMoney": 674829338,
      "victimMoneyMissed": 356137959
     }
    },
    "models": {
     "lightgbm": {
-     "auc": 0.8466666666666667,
-     "mulesAmong085": 49,
-     "scored085": 49,
-     "shieldMoney085": 0,
+     "auc": 0.8824858757062146,
+     "innocent085": 0,
+     "innocentMoney085": 0,
+     "mulesAmong085": 47,
+     "scored085": 47,
      "shields085": 0,
      "worst": [
       {
@@ -466,7 +530,7 @@
       },
       {
        "account": "B01259",
-       "muleScore": 0.357156,
+       "muleScore": 0.240319,
        "reasons": [
         "5 people who reported fraud paid into this account",
         "Money usually stays a long time (72 minutes or more)",
@@ -500,15 +564,16 @@
      ]
     },
     "logistic": {
-     "auc": 0.944180790960452,
-     "mulesAmong085": 66,
-     "scored085": 71,
-     "shieldMoney085": 0,
+     "auc": 0.9963841807909604,
+     "innocent085": 1,
+     "innocentMoney085": 18292,
+     "mulesAmong085": 55,
+     "scored085": 56,
      "shields085": 0,
      "worst": [
       {
        "account": "B02830",
-       "muleScore": 0.0,
+       "muleScore": 0.089729,
        "reasons": [
         "Money came from 3 different senders",
         "No call forwarding",
@@ -519,7 +584,7 @@
       },
       {
        "account": "B01589",
-       "muleScore": 0.0,
+       "muleScore": 0.020109,
        "reasons": [
         "All the money came from one sender",
         "No warning signs",
@@ -530,7 +595,7 @@
       },
       {
        "account": "B02411",
-       "muleScore": 0.0,
+       "muleScore": 0.0383,
        "reasons": [
         "Money came from 2 different senders",
         "No warning signs",
@@ -541,7 +606,7 @@
       },
       {
        "account": "B02224",
-       "muleScore": 0.0,
+       "muleScore": 0.034725,
        "reasons": [
         "Money came from 2 different senders",
         "No warning signs",
@@ -551,26 +616,27 @@
        "traced": 8684547
       },
       {
-       "account": "B02766",
-       "muleScore": 0.0,
+       "account": "B01581",
+       "muleScore": 0.79414,
        "reasons": [
         "Money came from 2 different senders",
-        "No warning signs",
-        "Account opened only 340 days ago"
+        "Account opened only 89 days ago",
+        "Contact details changed 19 days ago"
        ],
        "role": "mule",
-       "traced": 3873042
+       "traced": 19968482
       }
      ]
     }
    },
+   "realDrainPerMuleHour": 1230353.2,
    "rescue": {
     "lightgbm": {
      "10x/K10": {
       "biggest": 314624744,
       "fcfs": 144644494,
       "oracle": 318677444,
-      "scalpel": 309892943,
+      "scalpel": 309903642,
       "signrule": 246980630
      },
      "10x/K20": {
@@ -584,14 +650,35 @@
       "biggest": 294585985,
       "fcfs": 103845064,
       "oracle": 309601948,
-      "scalpel": 276029199,
+      "scalpel": 275795467,
       "signrule": 184485686
+     },
+     "1x/K10": {
+      "biggest": 305014047,
+      "fcfs": 130990358,
+      "oracle": 314392865,
+      "scalpel": 299728901,
+      "signrule": 235580880
+     },
+     "1x/K20": {
+      "biggest": 314074152,
+      "fcfs": 195152837,
+      "oracle": 318349650,
+      "scalpel": 313033229,
+      "signrule": 288432824
+     },
+     "1x/K5": {
+      "biggest": 279841337,
+      "fcfs": 92060808,
+      "oracle": 294572610,
+      "scalpel": 260726553,
+      "signrule": 169090788
      },
      "2x/K10": {
       "biggest": 311098035,
       "fcfs": 134527246,
       "oracle": 317674629,
-      "scalpel": 306107725,
+      "scalpel": 306112620,
       "signrule": 242291552
      },
      "2x/K20": {
@@ -605,14 +692,14 @@
       "biggest": 285704809,
       "fcfs": 93667013,
       "oracle": 300519717,
-      "scalpel": 266620094,
+      "scalpel": 266381418,
       "signrule": 173997493
      },
      "5x/K10": {
       "biggest": 314036851,
       "fcfs": 141230242,
       "oracle": 318636713,
-      "scalpel": 309238019,
+      "scalpel": 309244997,
       "signrule": 246208103
      },
      "5x/K20": {
@@ -626,7 +713,7 @@
       "biggest": 292832461,
       "fcfs": 98748889,
       "oracle": 307974248,
-      "scalpel": 274107552,
+      "scalpel": 273868537,
       "signrule": 182020010
      }
     },
@@ -635,63 +722,84 @@
       "biggest": 314624744,
       "fcfs": 144644494,
       "oracle": 318677444,
-      "scalpel": 312371636,
+      "scalpel": 312371407,
       "signrule": 246980630
      },
      "10x/K20": {
       "biggest": 317818736,
       "fcfs": 206377050,
       "oracle": 318691224,
-      "scalpel": 317102063,
+      "scalpel": 317101958,
       "signrule": 293521520
      },
      "10x/K5": {
       "biggest": 294585985,
       "fcfs": 103845064,
       "oracle": 309601948,
-      "scalpel": 280473331,
+      "scalpel": 284472910,
       "signrule": 184485686
+     },
+     "1x/K10": {
+      "biggest": 305014047,
+      "fcfs": 130990358,
+      "oracle": 314392865,
+      "scalpel": 301930728,
+      "signrule": 235580880
+     },
+     "1x/K20": {
+      "biggest": 314074152,
+      "fcfs": 195152837,
+      "oracle": 318349650,
+      "scalpel": 312955953,
+      "signrule": 288432824
+     },
+     "1x/K5": {
+      "biggest": 279841337,
+      "fcfs": 92060808,
+      "oracle": 294572610,
+      "scalpel": 269287631,
+      "signrule": 169090788
      },
      "2x/K10": {
       "biggest": 311098035,
       "fcfs": 134527246,
       "oracle": 317674629,
-      "scalpel": 308402004,
+      "scalpel": 308406765,
       "signrule": 242291552
      },
      "2x/K20": {
       "biggest": 316717226,
       "fcfs": 200266826,
       "oracle": 318668934,
-      "scalpel": 315823803,
+      "scalpel": 315823473,
       "signrule": 291962655
      },
      "2x/K5": {
       "biggest": 285704809,
       "fcfs": 93667013,
       "oracle": 300519717,
-      "scalpel": 270844684,
+      "scalpel": 274846832,
       "signrule": 173997493
      },
      "5x/K10": {
       "biggest": 314036851,
       "fcfs": 141230242,
       "oracle": 318636713,
-      "scalpel": 311704360,
+      "scalpel": 311704889,
       "signrule": 246208103
      },
      "5x/K20": {
       "biggest": 317609143,
       "fcfs": 205310133,
       "oracle": 318690670,
-      "scalpel": 316828701,
+      "scalpel": 316828512,
       "signrule": 293192025
      },
      "5x/K5": {
       "biggest": 292832461,
       "fcfs": 98748889,
       "oracle": 307974248,
-      "scalpel": 278485316,
+      "scalpel": 282485720,
       "signrule": 182020010
      }
     }
@@ -728,6 +836,7 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.0,
+     "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 512844545,
      "victimMoneyMissed": 512844545
@@ -740,6 +849,7 @@
      "innocentHeld": 7256068598,
      "peopleWronglyRestricted": 420,
      "recoveryRate": 0.9267565437397799,
+     "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 512844545,
      "victimMoneyMissed": 37562507
@@ -752,6 +862,7 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.4552976847984217,
+     "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 512844545,
      "victimMoneyMissed": 279347611
@@ -764,17 +875,19 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.4552976847984217,
-     "suggestedWholeFreezes": 31,
+     "suggestedOnInnocent": 1,
+     "suggestedWholeFreezes": 30,
      "victimMoney": 512844545,
      "victimMoneyMissed": 279347611
     }
    },
    "models": {
     "lightgbm": {
-     "auc": 0.81,
-     "mulesAmong085": 31,
-     "scored085": 31,
-     "shieldMoney085": 0,
+     "auc": 0.880547619047619,
+     "innocent085": 0,
+     "innocentMoney085": 0,
+     "mulesAmong085": 28,
+     "scored085": 28,
      "shields085": 0,
      "worst": [
       {
@@ -790,7 +903,7 @@
       },
       {
        "account": "B02635",
-       "muleScore": 0.0,
+       "muleScore": 0.095682,
        "reasons": [
         "Money left within 59 minutes of arriving",
         "All the money came from one sender",
@@ -801,7 +914,7 @@
       },
       {
        "account": "B00776",
-       "muleScore": 0.0,
+       "muleScore": 0.021874,
        "reasons": [
         "6 people who reported fraud paid into this account",
         "Money usually stays a long time (69 minutes or more)",
@@ -812,7 +925,7 @@
       },
       {
        "account": "B02882",
-       "muleScore": 0.0,
+       "muleScore": 0.007344,
        "reasons": [
         "8 people who reported fraud paid into this account",
         "Money usually stays a long time (63 minutes or more)",
@@ -835,15 +948,16 @@
      ]
     },
     "logistic": {
-     "auc": 0.9654523809523808,
-     "mulesAmong085": 44,
-     "scored085": 48,
-     "shieldMoney085": 0,
+     "auc": 0.9961428571428572,
+     "innocent085": 2,
+     "innocentMoney085": 253,
+     "mulesAmong085": 37,
+     "scored085": 39,
      "shields085": 0,
      "worst": [
       {
        "account": "B01342",
-       "muleScore": 0.0,
+       "muleScore": 0.134603,
        "reasons": [
         "Money came from 2 different senders",
         "No warning signs",
@@ -854,7 +968,7 @@
       },
       {
        "account": "B01962",
-       "muleScore": 0.0,
+       "muleScore": 0.012315,
        "reasons": [
         "Money came from 2 different senders",
         "No warning signs",
@@ -864,19 +978,8 @@
        "traced": 3111943
       },
       {
-       "account": "B00930",
-       "muleScore": 0.278353,
-       "reasons": [
-        "Money came from 2 different senders",
-        "Money left within 61 minutes of arriving",
-        "Account opened only 777 days ago"
-       ],
-       "role": "mule",
-       "traced": 4084579
-      },
-      {
        "account": "B00347",
-       "muleScore": 0.9,
+       "muleScore": 0.82754,
        "reasons": [
         "Money came from 2 different senders",
         "Account opened only 15 days ago",
@@ -886,26 +989,38 @@
        "traced": 16799967
       },
       {
-       "account": "B00997",
-       "muleScore": 0.0,
+       "account": "B00930",
+       "muleScore": 0.36938,
        "reasons": [
-        "Money came from 3 different senders",
-        "No warning signs",
-        "Money left within 40 minutes of arriving"
+        "Money came from 2 different senders",
+        "Money left within 61 minutes of arriving",
+        "Account opened only 777 days ago"
        ],
        "role": "mule",
-       "traced": 1589907
+       "traced": 4084579
+      },
+      {
+       "account": "B02355",
+       "muleScore": 0.805841,
+       "reasons": [
+        "All the money came from one sender",
+        "Money left within 46 minutes of arriving",
+        "Account opened only 1010 days ago"
+       ],
+       "role": "mule",
+       "traced": 11915747
       }
      ]
     }
    },
+   "realDrainPerMuleHour": 1345793.64,
    "rescue": {
     "lightgbm": {
      "10x/K10": {
       "biggest": 229314847,
       "fcfs": 77379328,
       "oracle": 233493347,
-      "scalpel": 228755423,
+      "scalpel": 228736855,
       "signrule": 215379483
      },
      "10x/K20": {
@@ -919,14 +1034,35 @@
       "biggest": 218752955,
       "fcfs": 49160993,
       "oracle": 227604961,
-      "scalpel": 204919045,
+      "scalpel": 205703818,
       "signrule": 181642411
+     },
+     "1x/K10": {
+      "biggest": 222949560,
+      "fcfs": 66249805,
+      "oracle": 230450004,
+      "scalpel": 222228123,
+      "signrule": 207552767
+     },
+     "1x/K20": {
+      "biggest": 230895395,
+      "fcfs": 114285560,
+      "oracle": 233169362,
+      "scalpel": 230783116,
+      "signrule": 228357315
+     },
+     "1x/K5": {
+      "biggest": 207191772,
+      "fcfs": 39498713,
+      "oracle": 216537319,
+      "scalpel": 193945354,
+      "signrule": 169257255
      },
      "2x/K10": {
       "biggest": 227228514,
       "fcfs": 69112151,
       "oracle": 232826335,
-      "scalpel": 226654300,
+      "scalpel": 226572463,
       "signrule": 212465961
      },
      "2x/K20": {
@@ -940,28 +1076,28 @@
       "biggest": 212804263,
       "fcfs": 40831307,
       "oracle": 222109199,
-      "scalpel": 198798887,
+      "scalpel": 199540816,
       "signrule": 174382136
      },
      "5x/K10": {
       "biggest": 228976867,
       "fcfs": 74618646,
       "oracle": 233466304,
-      "scalpel": 228410900,
+      "scalpel": 228392332,
       "signrule": 214919958
      },
      "5x/K20": {
       "biggest": 232970868,
       "fcfs": 122620635,
       "oracle": 233496803,
-      "scalpel": 232868161,
+      "scalpel": 232868160,
       "signrule": 231222591
      },
      "5x/K5": {
       "biggest": 217646246,
       "fcfs": 44968423,
       "oracle": 226785758,
-      "scalpel": 203784900,
+      "scalpel": 204566112,
       "signrule": 180185032
      }
     },
@@ -970,7 +1106,7 @@
       "biggest": 229314847,
       "fcfs": 77379328,
       "oracle": 233493347,
-      "scalpel": 229724186,
+      "scalpel": 230377417,
       "signrule": 215379483
      },
      "10x/K20": {
@@ -984,49 +1120,70 @@
       "biggest": 218752955,
       "fcfs": 49160993,
       "oracle": 227604961,
-      "scalpel": 215925637,
+      "scalpel": 217402228,
       "signrule": 181642411
+     },
+     "1x/K10": {
+      "biggest": 222949560,
+      "fcfs": 66249805,
+      "oracle": 230450004,
+      "scalpel": 223668158,
+      "signrule": 207552767
+     },
+     "1x/K20": {
+      "biggest": 230895395,
+      "fcfs": 114285560,
+      "oracle": 233169362,
+      "scalpel": 231106474,
+      "signrule": 228357315
+     },
+     "1x/K5": {
+      "biggest": 207191772,
+      "fcfs": 39498713,
+      "oracle": 216537319,
+      "scalpel": 205563068,
+      "signrule": 169257255
      },
      "2x/K10": {
       "biggest": 227228514,
       "fcfs": 69112151,
       "oracle": 232826335,
-      "scalpel": 227516459,
+      "scalpel": 228127184,
       "signrule": 212465961
      },
      "2x/K20": {
       "biggest": 232436935,
       "fcfs": 118578358,
       "oracle": 233481103,
-      "scalpel": 232655438,
+      "scalpel": 232656081,
       "signrule": 230533223
      },
      "2x/K5": {
       "biggest": 212804263,
       "fcfs": 40831307,
       "oracle": 222109199,
-      "scalpel": 209737410,
+      "scalpel": 211150572,
       "signrule": 174382136
      },
      "5x/K10": {
       "biggest": 228976867,
       "fcfs": 74618646,
       "oracle": 233466304,
-      "scalpel": 229364487,
+      "scalpel": 230018381,
       "signrule": 214919958
      },
      "5x/K20": {
       "biggest": 232970868,
       "fcfs": 122620635,
       "oracle": 233496803,
-      "scalpel": 233189842,
+      "scalpel": 233189844,
       "signrule": 231222591
      },
      "5x/K5": {
       "biggest": 217646246,
       "fcfs": 44968423,
       "oracle": 226785758,
-      "scalpel": 214778799,
+      "scalpel": 216254417,
       "signrule": 180185032
      }
     }
@@ -1063,6 +1220,7 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.0,
+     "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 469406518,
      "victimMoneyMissed": 469406518
@@ -1075,6 +1233,7 @@
      "innocentHeld": 7394198833,
      "peopleWronglyRestricted": 405,
      "recoveryRate": 0.838336004955091,
+     "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 469406518,
      "victimMoneyMissed": 75886133
@@ -1087,6 +1246,7 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.2588728774320087,
+     "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 469406518,
      "victimMoneyMissed": 347889902
@@ -1099,22 +1259,24 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.2588728774320087,
-     "suggestedWholeFreezes": 28,
+     "suggestedOnInnocent": 1,
+     "suggestedWholeFreezes": 27,
      "victimMoney": 469406518,
      "victimMoneyMissed": 347889902
     }
    },
    "models": {
     "lightgbm": {
-     "auc": 0.8629629629629629,
-     "mulesAmong085": 38,
-     "scored085": 39,
-     "shieldMoney085": 0,
+     "auc": 0.879158819836786,
+     "innocent085": 1,
+     "innocentMoney085": 1,
+     "mulesAmong085": 33,
+     "scored085": 34,
      "shields085": 0,
      "worst": [
       {
        "account": "B02946",
-       "muleScore": 0.0,
+       "muleScore": 0.017504,
        "reasons": [
         "7 people who reported fraud paid into this account",
         "Money usually stays a long time (62 minutes or more)",
@@ -1136,7 +1298,7 @@
       },
       {
        "account": "B02953",
-       "muleScore": 0.0,
+       "muleScore": 1e-06,
        "reasons": [
         "Money usually stays a long time (70 minutes or more)",
         "All the money came from one sender",
@@ -1146,19 +1308,8 @@
        "traced": 4341938
       },
       {
-       "account": "B00473",
-       "muleScore": 0.0,
-       "reasons": [
-        "Money left within 30 minutes of arriving",
-        "Only 1 warning sign",
-        "Quiet, steady account (0.4 payments a day)"
-       ],
-       "role": "mule",
-       "traced": 2968244
-      },
-      {
        "account": "B00759",
-       "muleScore": 0.279911,
+       "muleScore": 0.216767,
        "reasons": [
         "2 people who reported fraud paid into this account",
         "Money usually stays a long time (66 minutes or more)",
@@ -1166,30 +1317,31 @@
        ],
        "role": "mule",
        "traced": 3976582
+      },
+      {
+       "account": "B00473",
+       "muleScore": 0.003203,
+       "reasons": [
+        "Money left within 30 minutes of arriving",
+        "Only 1 warning sign",
+        "Quiet, steady account (0.4 payments a day)"
+       ],
+       "role": "mule",
+       "traced": 2968244
       }
      ]
     },
     "logistic": {
-     "auc": 0.9552416823603264,
-     "mulesAmong085": 50,
-     "scored085": 52,
-     "shieldMoney085": 0,
+     "auc": 0.9966938690102533,
+     "innocent085": 2,
+     "innocentMoney085": 4550,
+     "mulesAmong085": 39,
+     "scored085": 41,
      "shields085": 0,
      "worst": [
       {
-       "account": "B01121",
-       "muleScore": 0.0,
-       "reasons": [
-        "Money came from 2 different senders",
-        "No warning signs",
-        "Money left within 48 minutes of arriving"
-       ],
-       "role": "mule",
-       "traced": 2835001
-      },
-      {
        "account": "B02263",
-       "muleScore": 0.0,
+       "muleScore": 0.021142,
        "reasons": [
         "All the money came from one sender",
         "No warning signs",
@@ -1199,8 +1351,19 @@
        "traced": 2797316
       },
       {
+       "account": "B01121",
+       "muleScore": 0.034805,
+       "reasons": [
+        "Money came from 2 different senders",
+        "No warning signs",
+        "Money left within 48 minutes of arriving"
+       ],
+       "role": "mule",
+       "traced": 2835001
+      },
+      {
        "account": "B00473",
-       "muleScore": 0.222861,
+       "muleScore": 0.324575,
        "reasons": [
         "Money came from 2 different senders",
         "Money left within 30 minutes of arriving",
@@ -1210,8 +1373,19 @@
        "traced": 2968244
       },
       {
+       "account": "B00572",
+       "muleScore": 0.79488,
+       "reasons": [
+        "All the money came from one sender",
+        "Account opened only 26 days ago",
+        "Money left within 45 minutes of arriving"
+       ],
+       "role": "mule",
+       "traced": 9197182
+      },
+      {
        "account": "B01366",
-       "muleScore": 0.0,
+       "muleScore": 0.024017,
        "reasons": [
         "Money came from 2 different senders",
         "No warning signs",
@@ -1219,28 +1393,18 @@
        ],
        "role": "mule",
        "traced": 1816265
-      },
-      {
-       "account": "B02036",
-       "muleScore": 0.0,
-       "reasons": [
-        "Money came from 3 different senders",
-        "No warning signs",
-        "Money left within 50 minutes of arriving"
-       ],
-       "role": "mule",
-       "traced": 1751470
       }
      ]
     }
    },
+   "realDrainPerMuleHour": 927159.966101695,
    "rescue": {
     "lightgbm": {
      "10x/K10": {
       "biggest": 120887265,
       "fcfs": 82382595,
       "oracle": 121516609,
-      "scalpel": 119715309,
+      "scalpel": 120287215,
       "signrule": 116997114
      },
      "10x/K20": {
@@ -1254,14 +1418,35 @@
       "biggest": 115980856,
       "fcfs": 64596749,
       "oracle": 121511043,
-      "scalpel": 112359316,
+      "scalpel": 112888066,
       "signrule": 97190808
+     },
+     "1x/K10": {
+      "biggest": 119011789,
+      "fcfs": 76118166,
+      "oracle": 121136534,
+      "scalpel": 118234560,
+      "signrule": 114353612
+     },
+     "1x/K20": {
+      "biggest": 121021982,
+      "fcfs": 95666126,
+      "oracle": 121503079,
+      "scalpel": 120990192,
+      "signrule": 120242099
+     },
+     "1x/K5": {
+      "biggest": 110349356,
+      "fcfs": 57109603,
+      "oracle": 117316601,
+      "scalpel": 106598195,
+      "signrule": 90541559
      },
      "2x/K10": {
       "biggest": 120434036,
       "fcfs": 78750278,
       "oracle": 121492976,
-      "scalpel": 119251262,
+      "scalpel": 119823168,
       "signrule": 116450254
      },
      "2x/K20": {
@@ -1275,14 +1460,14 @@
       "biggest": 114211196,
       "fcfs": 58755694,
       "oracle": 120402419,
-      "scalpel": 110385783,
+      "scalpel": 110914533,
       "signrule": 94650647
      },
      "5x/K10": {
       "biggest": 120819918,
       "fcfs": 82025363,
       "oracle": 121516609,
-      "scalpel": 119644485,
+      "scalpel": 120216391,
       "signrule": 116917358
      },
      "5x/K20": {
@@ -1296,7 +1481,7 @@
       "biggest": 115771940,
       "fcfs": 62380486,
       "oracle": 121489039,
-      "scalpel": 112145700,
+      "scalpel": 112674450,
       "signrule": 96939154
      }
     },
@@ -1305,63 +1490,84 @@
       "biggest": 120887265,
       "fcfs": 82382595,
       "oracle": 121516609,
-      "scalpel": 120510548,
+      "scalpel": 120510549,
       "signrule": 116997114
      },
      "10x/K20": {
       "biggest": 121493660,
       "fcfs": 99492298,
       "oracle": 121516616,
-      "scalpel": 121145069,
+      "scalpel": 121145068,
       "signrule": 120821474
      },
      "10x/K5": {
       "biggest": 115980856,
       "fcfs": 64596749,
       "oracle": 121511043,
-      "scalpel": 115069330,
+      "scalpel": 115587018,
       "signrule": 97190808
+     },
+     "1x/K10": {
+      "biggest": 119011789,
+      "fcfs": 76118166,
+      "oracle": 121136534,
+      "scalpel": 118350610,
+      "signrule": 114353612
+     },
+     "1x/K20": {
+      "biggest": 121021982,
+      "fcfs": 95666126,
+      "oracle": 121503079,
+      "scalpel": 120644422,
+      "signrule": 120242099
+     },
+     "1x/K5": {
+      "biggest": 110349356,
+      "fcfs": 57109603,
+      "oracle": 117316601,
+      "scalpel": 109236384,
+      "signrule": 90541559
      },
      "2x/K10": {
       "biggest": 120434036,
       "fcfs": 78750278,
       "oracle": 121492976,
-      "scalpel": 120046141,
+      "scalpel": 120039367,
       "signrule": 116450254
      },
      "2x/K20": {
       "biggest": 121366242,
       "fcfs": 98593090,
       "oracle": 121516612,
-      "scalpel": 121002041,
+      "scalpel": 121002034,
       "signrule": 120667943
      },
      "2x/K5": {
       "biggest": 114211196,
       "fcfs": 58755694,
       "oracle": 120402419,
-      "scalpel": 113048664,
+      "scalpel": 113557605,
       "signrule": 94650647
      },
      "5x/K10": {
       "biggest": 120819918,
       "fcfs": 82025363,
       "oracle": 121516609,
-      "scalpel": 120439952,
+      "scalpel": 120439949,
       "signrule": 116917358
      },
      "5x/K20": {
       "biggest": 121465224,
       "fcfs": 99399429,
       "oracle": 121516616,
-      "scalpel": 121112519,
+      "scalpel": 121112520,
       "signrule": 120786767
      },
      "5x/K5": {
       "biggest": 115771940,
       "fcfs": 62380486,
       "oracle": 121489039,
-      "scalpel": 114848967,
+      "scalpel": 115366118,
       "signrule": 96939154
      }
     }
@@ -1398,6 +1604,7 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.0,
+     "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 473897396,
      "victimMoneyMissed": 473897396
@@ -1410,6 +1617,7 @@
      "innocentHeld": 7120910294,
      "peopleWronglyRestricted": 399,
      "recoveryRate": 0.9680614345473213,
+     "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 473897396,
      "victimMoneyMissed": 15135603
@@ -1422,6 +1630,7 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.5592499499617424,
+     "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 473897396,
      "victimMoneyMissed": 208870301
@@ -1434,6 +1643,7 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.5592499499617424,
+     "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 25,
      "victimMoney": 473897396,
      "victimMoneyMissed": 208870301
@@ -1441,15 +1651,16 @@
    },
    "models": {
     "lightgbm": {
-     "auc": 0.8128530280926196,
-     "mulesAmong085": 39,
-     "scored085": 40,
-     "shieldMoney085": 0,
+     "auc": 0.865896083492313,
+     "innocent085": 0,
+     "innocentMoney085": 0,
+     "mulesAmong085": 35,
+     "scored085": 35,
      "shields085": 0,
      "worst": [
       {
        "account": "B01118",
-       "muleScore": 0.0,
+       "muleScore": 1e-06,
        "reasons": [
         "Money usually stays a long time (72 minutes or more)",
         "Money came from 2 different senders",
@@ -1471,7 +1682,7 @@
       },
       {
        "account": "B01857",
-       "muleScore": 0.0,
+       "muleScore": 2.3e-05,
        "reasons": [
         "Money usually stays a long time (68 minutes or more)",
         "Contact details changed 20 days ago",
@@ -1482,7 +1693,7 @@
       },
       {
        "account": "B01477",
-       "muleScore": 0.0,
+       "muleScore": 1e-06,
        "reasons": [
         "Money usually stays a long time (78 minutes or more)",
         "3 warning signs at once",
@@ -1505,15 +1716,16 @@
      ]
     },
     "logistic": {
-     "auc": 0.8928664945946956,
-     "mulesAmong085": 48,
-     "scored085": 50,
-     "shieldMoney085": 0,
+     "auc": 0.9934911906632252,
+     "innocent085": 0,
+     "innocentMoney085": 0,
+     "mulesAmong085": 42,
+     "scored085": 42,
      "shields085": 0,
      "worst": [
       {
        "account": "B01118",
-       "muleScore": 0.0,
+       "muleScore": 0.012472,
        "reasons": [
         "Money came from 2 different senders",
         "No warning signs",
@@ -1524,7 +1736,7 @@
       },
       {
        "account": "B02262",
-       "muleScore": 0.0,
+       "muleScore": 0.084635,
        "reasons": [
         "All the money came from one sender",
         "No warning signs",
@@ -1534,19 +1746,8 @@
        "traced": 7923940
       },
       {
-       "account": "B01094",
-       "muleScore": 0.209117,
-       "reasons": [
-        "Money came from 2 different senders",
-        "2 warning signs at once",
-        "No call forwarding"
-       ],
-       "role": "mule",
-       "traced": 9548480
-      },
-      {
        "account": "B00712",
-       "muleScore": 0.0,
+       "muleScore": 0.035797,
        "reasons": [
         "Money came from 2 different senders",
         "No warning signs",
@@ -1556,8 +1757,19 @@
        "traced": 7083260
       },
       {
+       "account": "B01094",
+       "muleScore": 0.314001,
+       "reasons": [
+        "Money came from 2 different senders",
+        "2 warning signs at once",
+        "No call forwarding"
+       ],
+       "role": "mule",
+       "traced": 9548480
+      },
+      {
        "account": "B01448",
-       "muleScore": 0.207193,
+       "muleScore": 0.312537,
        "reasons": [
         "Money came from 2 different senders",
         "Money left within 80 minutes of arriving",
@@ -1569,13 +1781,14 @@
      ]
     }
    },
+   "realDrainPerMuleHour": 943582.2089552239,
    "rescue": {
     "lightgbm": {
      "10x/K10": {
       "biggest": 255877385,
       "fcfs": 63502998,
       "oracle": 264254602,
-      "scalpel": 250950646,
+      "scalpel": 250931818,
       "signrule": 229159081
      },
      "10x/K20": {
@@ -1589,14 +1802,35 @@
       "biggest": 232541492,
       "fcfs": 42100589,
       "oracle": 245152934,
-      "scalpel": 216482515,
+      "scalpel": 216390885,
       "signrule": 176883042
+     },
+     "1x/K10": {
+      "biggest": 246991021,
+      "fcfs": 48123434,
+      "oracle": 257277862,
+      "scalpel": 241248269,
+      "signrule": 217992331
+     },
+     "1x/K20": {
+      "biggest": 259596479,
+      "fcfs": 100871193,
+      "oracle": 264405555,
+      "scalpel": 256598933,
+      "signrule": 250183224
+     },
+     "1x/K5": {
+      "biggest": 216872390,
+      "fcfs": 27667255,
+      "oracle": 229065052,
+      "scalpel": 200063518,
+      "signrule": 159932400
      },
      "2x/K10": {
       "biggest": 252777462,
       "fcfs": 52589271,
       "oracle": 262289885,
-      "scalpel": 247544372,
+      "scalpel": 247478312,
       "signrule": 224958297
      },
      "2x/K20": {
@@ -1610,14 +1844,14 @@
       "biggest": 224274898,
       "fcfs": 30061409,
       "oracle": 236520241,
-      "scalpel": 207484082,
+      "scalpel": 207334176,
       "signrule": 166498329
      },
      "5x/K10": {
       "biggest": 255405751,
       "fcfs": 60291828,
       "oracle": 264050650,
-      "scalpel": 250422830,
+      "scalpel": 250404002,
       "signrule": 228524991
      },
      "5x/K20": {
@@ -1631,7 +1865,7 @@
       "biggest": 230965155,
       "fcfs": 36307111,
       "oracle": 243697584,
-      "scalpel": 214759546,
+      "scalpel": 214667916,
       "signrule": 174755606
      }
     },
@@ -1640,63 +1874,84 @@
       "biggest": 255877385,
       "fcfs": 63502998,
       "oracle": 264254602,
-      "scalpel": 253455771,
+      "scalpel": 255089154,
       "signrule": 229159081
      },
      "10x/K20": {
       "biggest": 262742393,
       "fcfs": 112775124,
       "oracle": 265025874,
-      "scalpel": 261747722,
+      "scalpel": 262122494,
       "signrule": 254537659
      },
      "10x/K5": {
       "biggest": 232541492,
       "fcfs": 42100589,
       "oracle": 245152934,
-      "scalpel": 221719786,
+      "scalpel": 226087743,
       "signrule": 176883042
+     },
+     "1x/K10": {
+      "biggest": 246991021,
+      "fcfs": 48123434,
+      "oracle": 257277862,
+      "scalpel": 245092921,
+      "signrule": 217992331
+     },
+     "1x/K20": {
+      "biggest": 259596479,
+      "fcfs": 100871193,
+      "oracle": 264405555,
+      "scalpel": 258430958,
+      "signrule": 250183224
+     },
+     "1x/K5": {
+      "biggest": 216872390,
+      "fcfs": 27667255,
+      "oracle": 229065052,
+      "scalpel": 209595551,
+      "signrule": 159932400
      },
      "2x/K10": {
       "biggest": 252777462,
       "fcfs": 52589271,
       "oracle": 262289885,
-      "scalpel": 249863328,
+      "scalpel": 251476833,
       "signrule": 224958297
      },
      "2x/K20": {
       "biggest": 261818497,
       "fcfs": 106927565,
       "oracle": 264965601,
-      "scalpel": 260700260,
+      "scalpel": 261075111,
       "signrule": 253337931
      },
      "2x/K5": {
       "biggest": 224274898,
       "fcfs": 30061409,
       "oracle": 236520241,
-      "scalpel": 212435390,
+      "scalpel": 216776843,
       "signrule": 166498329
      },
      "5x/K10": {
       "biggest": 255405751,
       "fcfs": 60291828,
       "oracle": 264050650,
-      "scalpel": 252923119,
+      "scalpel": 254557496,
       "signrule": 228524991
      },
      "5x/K20": {
       "biggest": 262576167,
       "fcfs": 111939044,
       "oracle": 265021453,
-      "scalpel": 261563191,
+      "scalpel": 261937685,
       "signrule": 254338948
      },
      "5x/K5": {
       "biggest": 230965155,
       "fcfs": 36307111,
       "oracle": 243697584,
-      "scalpel": 219947406,
+      "scalpel": 224313575,
       "signrule": 174755606
      }
     }
@@ -1733,6 +1988,7 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.0,
+     "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 397183632,
      "victimMoneyMissed": 397183632
@@ -1745,6 +2001,7 @@
      "innocentHeld": 6244026643,
      "peopleWronglyRestricted": 362,
      "recoveryRate": 0.974291853497125,
+     "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 397183632,
      "victimMoneyMissed": 10210855
@@ -1757,6 +2014,7 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.43887056503879296,
+     "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 397183632,
      "victimMoneyMissed": 222871427
@@ -1769,6 +2027,7 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.43887056503879296,
+     "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 17,
      "victimMoney": 397183632,
      "victimMoneyMissed": 222871427
@@ -1776,10 +2035,11 @@
    },
    "models": {
     "lightgbm": {
-     "auc": 0.775,
-     "mulesAmong085": 21,
-     "scored085": 21,
-     "shieldMoney085": 0,
+     "auc": 0.8694751381215469,
+     "innocent085": 0,
+     "innocentMoney085": 0,
+     "mulesAmong085": 18,
+     "scored085": 18,
      "shields085": 0,
      "worst": [
       {
@@ -1795,7 +2055,7 @@
       },
       {
        "account": "B01316",
-       "muleScore": 0.0,
+       "muleScore": 1e-06,
        "reasons": [
         "Money usually stays a long time (1440 minutes or more)",
         "Contact details changed 10 days ago",
@@ -1840,15 +2100,16 @@
      ]
     },
     "logistic": {
-     "auc": 0.9237914364640885,
-     "mulesAmong085": 32,
-     "scored085": 33,
-     "shieldMoney085": 0,
+     "auc": 0.9948204419889503,
+     "innocent085": 0,
+     "innocentMoney085": 0,
+     "mulesAmong085": 25,
+     "scored085": 25,
      "shields085": 0,
      "worst": [
       {
        "account": "B01316",
-       "muleScore": 0.0,
+       "muleScore": 0.002729,
        "reasons": [
         "Money came from 2 different senders",
         "2 warning signs at once",
@@ -1859,7 +2120,7 @@
       },
       {
        "account": "B02089",
-       "muleScore": 0.0,
+       "muleScore": 0.029116,
        "reasons": [
         "Money came from 2 different senders",
         "No warning signs",
@@ -1870,7 +2131,7 @@
       },
       {
        "account": "B01037",
-       "muleScore": 0.0,
+       "muleScore": 0.013691,
        "reasons": [
         "Money came from 3 different senders",
         "No warning signs",
@@ -1881,7 +2142,7 @@
       },
       {
        "account": "B00462",
-       "muleScore": 0.0,
+       "muleScore": 0.034304,
        "reasons": [
         "Money came from 3 different senders",
         "No warning signs",
@@ -1891,19 +2152,20 @@
        "traced": 5636021
       },
       {
-       "account": "B02276",
-       "muleScore": 0.203534,
+       "account": "B00894",
+       "muleScore": 0.736062,
        "reasons": [
         "Money came from 2 different senders",
-        "Money left within 64 minutes of arriving",
-        "Account opened only 694 days ago"
+        "Account opened only 20 days ago",
+        "Money left within 60 minutes of arriving"
        ],
        "role": "mule",
-       "traced": 5190764
+       "traced": 14238848
       }
      ]
     }
    },
+   "realDrainPerMuleHour": 1375218.075,
    "rescue": {
     "lightgbm": {
      "10x/K10": {
@@ -1924,14 +2186,35 @@
       "biggest": 165766344,
       "fcfs": 75848139,
       "oracle": 174028306,
-      "scalpel": 160731648,
+      "scalpel": 159493808,
       "signrule": 140940321
+     },
+     "1x/K10": {
+      "biggest": 167901906,
+      "fcfs": 100956731,
+      "oracle": 173248493,
+      "scalpel": 165356839,
+      "signrule": 156315076
+     },
+     "1x/K20": {
+      "biggest": 172619981,
+      "fcfs": 129689876,
+      "oracle": 174170127,
+      "scalpel": 171744205,
+      "signrule": 169008438
+     },
+     "1x/K5": {
+      "biggest": 158717036,
+      "fcfs": 67626956,
+      "oracle": 169097624,
+      "scalpel": 152000724,
+      "signrule": 132536217
      },
      "2x/K10": {
       "biggest": 170152401,
       "fcfs": 104195587,
       "oracle": 174006419,
-      "scalpel": 167850232,
+      "scalpel": 167850231,
       "signrule": 159325210
      },
      "2x/K20": {
@@ -1945,7 +2228,7 @@
       "biggest": 162474254,
       "fcfs": 69386743,
       "oracle": 171996197,
-      "scalpel": 157122686,
+      "scalpel": 155884845,
       "signrule": 136542080
      },
      "5x/K10": {
@@ -1966,7 +2249,7 @@
       "biggest": 165111004,
       "fcfs": 73672002,
       "oracle": 173679580,
-      "scalpel": 160042250,
+      "scalpel": 158804408,
       "signrule": 140080580
      }
     },
@@ -1975,7 +2258,7 @@
       "biggest": 171450133,
       "fcfs": 108846518,
       "oracle": 174298192,
-      "scalpel": 171329498,
+      "scalpel": 171329536,
       "signrule": 161030983
      },
      "10x/K20": {
@@ -1989,49 +2272,70 @@
       "biggest": 165766344,
       "fcfs": 75848139,
       "oracle": 174028306,
-      "scalpel": 162784484,
+      "scalpel": 163383270,
       "signrule": 140940321
+     },
+     "1x/K10": {
+      "biggest": 167901906,
+      "fcfs": 100956731,
+      "oracle": 173248493,
+      "scalpel": 167313474,
+      "signrule": 156315076
+     },
+     "1x/K20": {
+      "biggest": 172619981,
+      "fcfs": 129689876,
+      "oracle": 174170127,
+      "scalpel": 172535406,
+      "signrule": 169008438
+     },
+     "1x/K5": {
+      "biggest": 158717036,
+      "fcfs": 67626956,
+      "oracle": 169097624,
+      "scalpel": 155753397,
+      "signrule": 132536217
      },
      "2x/K10": {
       "biggest": 170152401,
       "fcfs": 104195587,
       "oracle": 174006419,
-      "scalpel": 169878134,
+      "scalpel": 169877999,
       "signrule": 159325210
      },
      "2x/K20": {
       "biggest": 173425600,
       "fcfs": 132388884,
       "oracle": 174286580,
-      "scalpel": 173523995,
+      "scalpel": 173524266,
       "signrule": 170107947
      },
      "2x/K5": {
       "biggest": 162474254,
       "fcfs": 69386743,
       "oracle": 171996197,
-      "scalpel": 159045154,
+      "scalpel": 159645861,
       "signrule": 136542080
      },
      "5x/K10": {
       "biggest": 171156984,
       "fcfs": 107483006,
       "oracle": 174267054,
-      "scalpel": 171015235,
+      "scalpel": 171015405,
       "signrule": 160670003
      },
      "5x/K20": {
       "biggest": 173834287,
       "fcfs": 134384673,
       "oracle": 174309251,
-      "scalpel": 174004455,
+      "scalpel": 174004477,
       "signrule": 170610270
      },
      "5x/K5": {
       "biggest": 165111004,
       "fcfs": 73672002,
       "oracle": 173679580,
-      "scalpel": 162053032,
+      "scalpel": 162653504,
       "signrule": 140080580
      }
     }
@@ -2070,6 +2374,7 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.0,
+     "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 674829338,
      "victimMoneyMissed": 674829338
@@ -2082,6 +2387,7 @@
      "innocentHeld": 8103470943,
      "peopleWronglyRestricted": 472,
      "recoveryRate": 0.961348405394906,
+     "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 674829338,
      "victimMoneyMissed": 26083230
@@ -2094,6 +2400,7 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.47225477769610547,
+     "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 674829338,
      "victimMoneyMissed": 356137959
@@ -2106,6 +2413,7 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.47225477769610547,
+     "suggestedOnInnocent": 1,
      "suggestedWholeFreezes": 30,
      "victimMoney": 674829338,
      "victimMoneyMissed": 356137959
@@ -2113,10 +2421,11 @@
    },
    "models": {
     "lightgbm": {
-     "auc": 0.8533333333333333,
-     "mulesAmong085": 48,
-     "scored085": 48,
-     "shieldMoney085": 0,
+     "auc": 0.8820903954802259,
+     "innocent085": 0,
+     "innocentMoney085": 0,
+     "mulesAmong085": 45,
+     "scored085": 45,
      "shields085": 0,
      "worst": [
       {
@@ -2143,7 +2452,7 @@
       },
       {
        "account": "B01259",
-       "muleScore": 0.357156,
+       "muleScore": 0.240319,
        "reasons": [
         "5 people who reported fraud paid into this account",
         "Money usually stays a long time (72 minutes or more)",
@@ -2177,15 +2486,16 @@
      ]
     },
     "logistic": {
-     "auc": 0.9439265536723164,
-     "mulesAmong085": 63,
-     "scored085": 66,
-     "shieldMoney085": 0,
+     "auc": 0.9961581920903955,
+     "innocent085": 2,
+     "innocentMoney085": 21996,
+     "mulesAmong085": 49,
+     "scored085": 51,
      "shields085": 0,
      "worst": [
       {
        "account": "B01589",
-       "muleScore": 0.0,
+       "muleScore": 0.020109,
        "reasons": [
         "All the money came from one sender",
         "No warning signs",
@@ -2195,19 +2505,8 @@
        "traced": 14455653
       },
       {
-       "account": "B02830",
-       "muleScore": 0.333333,
-       "reasons": [
-        "Money came from 3 different senders",
-        "Money left within 63 minutes of arriving",
-        "Account type is often misused"
-       ],
-       "role": "mule",
-       "traced": 19394779
-      },
-      {
        "account": "B01304",
-       "muleScore": 0.236954,
+       "muleScore": 0.335636,
        "reasons": [
         "Money came from 2 different senders",
         "Money left within 54 minutes of arriving",
@@ -2217,8 +2516,19 @@
        "traced": 16164223
       },
       {
+       "account": "B02830",
+       "muleScore": 0.473746,
+       "reasons": [
+        "Money came from 3 different senders",
+        "Money left within 63 minutes of arriving",
+        "Account type is often misused"
+       ],
+       "role": "mule",
+       "traced": 19394779
+      },
+      {
        "account": "B02224",
-       "muleScore": 0.0,
+       "muleScore": 0.034725,
        "reasons": [
         "Money came from 2 different senders",
         "No warning signs",
@@ -2229,7 +2539,7 @@
       },
       {
        "account": "B00293",
-       "muleScore": 0.0,
+       "muleScore": 0.03633,
        "reasons": [
         "Money came from 3 different senders",
         "No warning signs",
@@ -2241,13 +2551,14 @@
      ]
     }
    },
+   "realDrainPerMuleHour": 1230353.2,
    "rescue": {
     "lightgbm": {
      "10x/K10": {
       "biggest": 314624744,
       "fcfs": 144644494,
       "oracle": 318677444,
-      "scalpel": 309786518,
+      "scalpel": 309797217,
       "signrule": 239040962
      },
      "10x/K20": {
@@ -2261,14 +2572,35 @@
       "biggest": 294585985,
       "fcfs": 103845064,
       "oracle": 309601948,
-      "scalpel": 275638674,
+      "scalpel": 275774374,
       "signrule": 159683489
+     },
+     "1x/K10": {
+      "biggest": 305014047,
+      "fcfs": 130990358,
+      "oracle": 314392865,
+      "scalpel": 299622476,
+      "signrule": 227121310
+     },
+     "1x/K20": {
+      "biggest": 314074152,
+      "fcfs": 195152837,
+      "oracle": 318349650,
+      "scalpel": 312859933,
+      "signrule": 291559203
+     },
+     "1x/K5": {
+      "biggest": 279841337,
+      "fcfs": 92060808,
+      "oracle": 294572610,
+      "scalpel": 260705460,
+      "signrule": 144244628
      },
      "2x/K10": {
       "biggest": 311098035,
       "fcfs": 134527246,
       "oracle": 317674629,
-      "scalpel": 306001300,
+      "scalpel": 306006195,
       "signrule": 233940336
      },
      "2x/K20": {
@@ -2282,14 +2614,14 @@
       "biggest": 285704809,
       "fcfs": 93667013,
       "oracle": 300519717,
-      "scalpel": 266229569,
+      "scalpel": 266360325,
       "signrule": 148784140
      },
      "5x/K10": {
       "biggest": 314036851,
       "fcfs": 141230242,
       "oracle": 318636713,
-      "scalpel": 309131594,
+      "scalpel": 309138572,
       "signrule": 238220691
      },
      "5x/K20": {
@@ -2303,7 +2635,7 @@
       "biggest": 292832461,
       "fcfs": 98748889,
       "oracle": 307974248,
-      "scalpel": 273717027,
+      "scalpel": 273847444,
       "signrule": 156974361
      }
     },
@@ -2312,7 +2644,7 @@
       "biggest": 314624744,
       "fcfs": 144644494,
       "oracle": 318677444,
-      "scalpel": 310919744,
+      "scalpel": 312714588,
       "signrule": 239040962
      },
      "10x/K20": {
@@ -2326,35 +2658,56 @@
       "biggest": 294585985,
       "fcfs": 103845064,
       "oracle": 309601948,
-      "scalpel": 284726570,
+      "scalpel": 288599483,
       "signrule": 159683489
+     },
+     "1x/K10": {
+      "biggest": 305014047,
+      "fcfs": 130990358,
+      "oracle": 314392865,
+      "scalpel": 302353888,
+      "signrule": 227121310
+     },
+     "1x/K20": {
+      "biggest": 314074152,
+      "fcfs": 195152837,
+      "oracle": 318349650,
+      "scalpel": 312956327,
+      "signrule": 291559203
+     },
+     "1x/K5": {
+      "biggest": 279841337,
+      "fcfs": 92060808,
+      "oracle": 294572610,
+      "scalpel": 273441611,
+      "signrule": 144244628
      },
      "2x/K10": {
       "biggest": 311098035,
       "fcfs": 134527246,
       "oracle": 317674629,
-      "scalpel": 306954681,
+      "scalpel": 308816917,
       "signrule": 233940336
      },
      "2x/K20": {
       "biggest": 316717226,
       "fcfs": 200266826,
       "oracle": 318668934,
-      "scalpel": 315822555,
+      "scalpel": 315823811,
       "signrule": 295306001
      },
      "2x/K5": {
       "biggest": 285704809,
       "fcfs": 93667013,
       "oracle": 300519717,
-      "scalpel": 275132913,
+      "scalpel": 279013933,
       "signrule": 148784140
      },
      "5x/K10": {
       "biggest": 314036851,
       "fcfs": 141230242,
       "oracle": 318636713,
-      "scalpel": 310251635,
+      "scalpel": 312047005,
       "signrule": 238220691
      },
      "5x/K20": {
@@ -2368,7 +2721,7 @@
       "biggest": 292832461,
       "fcfs": 98748889,
       "oracle": 307974248,
-      "scalpel": 282738170,
+      "scalpel": 286611261,
       "signrule": 156974361
      }
     }
@@ -2405,6 +2758,7 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.0,
+     "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 512844545,
      "victimMoneyMissed": 512844545
@@ -2417,6 +2771,7 @@
      "innocentHeld": 7256068598,
      "peopleWronglyRestricted": 420,
      "recoveryRate": 0.9267565437397799,
+     "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 512844545,
      "victimMoneyMissed": 37562507
@@ -2429,6 +2784,7 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.4552976847984217,
+     "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 512844545,
      "victimMoneyMissed": 279347611
@@ -2441,17 +2797,19 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.4552976847984217,
-     "suggestedWholeFreezes": 28,
+     "suggestedOnInnocent": 1,
+     "suggestedWholeFreezes": 27,
      "victimMoney": 512844545,
      "victimMoneyMissed": 279347611
     }
    },
    "models": {
     "lightgbm": {
-     "auc": 0.8200000000000001,
-     "mulesAmong085": 32,
-     "scored085": 32,
-     "shieldMoney085": 0,
+     "auc": 0.880547619047619,
+     "innocent085": 0,
+     "innocentMoney085": 0,
+     "mulesAmong085": 28,
+     "scored085": 28,
      "shields085": 0,
      "worst": [
       {
@@ -2467,7 +2825,7 @@
       },
       {
        "account": "B02635",
-       "muleScore": 0.0,
+       "muleScore": 0.095682,
        "reasons": [
         "Money left within 59 minutes of arriving",
         "All the money came from one sender",
@@ -2478,7 +2836,7 @@
       },
       {
        "account": "B00776",
-       "muleScore": 0.0,
+       "muleScore": 0.021874,
        "reasons": [
         "6 people who reported fraud paid into this account",
         "Money usually stays a long time (69 minutes or more)",
@@ -2489,7 +2847,7 @@
       },
       {
        "account": "B02882",
-       "muleScore": 0.0,
+       "muleScore": 0.007344,
        "reasons": [
         "8 people who reported fraud paid into this account",
         "Money usually stays a long time (63 minutes or more)",
@@ -2512,15 +2870,16 @@
      ]
     },
     "logistic": {
-     "auc": 0.9255238095238094,
-     "mulesAmong085": 41,
-     "scored085": 45,
-     "shieldMoney085": 0,
+     "auc": 0.994952380952381,
+     "innocent085": 2,
+     "innocentMoney085": 253,
+     "mulesAmong085": 34,
+     "scored085": 36,
      "shields085": 0,
      "worst": [
       {
        "account": "B02635",
-       "muleScore": 0.0,
+       "muleScore": 0.0888,
        "reasons": [
         "All the money came from one sender",
         "No warning signs",
@@ -2531,7 +2890,7 @@
       },
       {
        "account": "B00930",
-       "muleScore": 0.0,
+       "muleScore": 0.04158,
        "reasons": [
         "Money came from 2 different senders",
         "No warning signs",
@@ -2542,7 +2901,7 @@
       },
       {
        "account": "B00222",
-       "muleScore": 0.0,
+       "muleScore": 0.042037,
        "reasons": [
         "Money came from 2 different senders",
         "No warning signs",
@@ -2553,7 +2912,7 @@
       },
       {
        "account": "B01727",
-       "muleScore": 0.0,
+       "muleScore": 0.038909,
        "reasons": [
         "Money came from 2 different senders",
         "No warning signs",
@@ -2564,7 +2923,7 @@
       },
       {
        "account": "B01962",
-       "muleScore": 0.0,
+       "muleScore": 0.012315,
        "reasons": [
         "Money came from 2 different senders",
         "No warning signs",
@@ -2576,6 +2935,7 @@
      ]
     }
    },
+   "realDrainPerMuleHour": 1345793.64,
    "rescue": {
     "lightgbm": {
      "10x/K10": {
@@ -2596,14 +2956,35 @@
       "biggest": 218752955,
       "fcfs": 49160993,
       "oracle": 227604961,
-      "scalpel": 204780161,
+      "scalpel": 205530789,
       "signrule": 178880665
+     },
+     "1x/K10": {
+      "biggest": 222949560,
+      "fcfs": 66249805,
+      "oracle": 230450004,
+      "scalpel": 222228123,
+      "signrule": 203536575
+     },
+     "1x/K20": {
+      "biggest": 230895395,
+      "fcfs": 114285560,
+      "oracle": 233169362,
+      "scalpel": 230783116,
+      "signrule": 227604011
+     },
+     "1x/K5": {
+      "biggest": 207191772,
+      "fcfs": 39498713,
+      "oracle": 216537319,
+      "scalpel": 193772325,
+      "signrule": 166327363
      },
      "2x/K10": {
       "biggest": 227228514,
       "fcfs": 69112151,
       "oracle": 232826335,
-      "scalpel": 226572464,
+      "scalpel": 226572463,
       "signrule": 208657448
      },
      "2x/K20": {
@@ -2617,7 +2998,7 @@
       "biggest": 212804263,
       "fcfs": 40831307,
       "oracle": 222109199,
-      "scalpel": 198617159,
+      "scalpel": 199367787,
       "signrule": 171161861
      },
      "5x/K10": {
@@ -2631,14 +3012,14 @@
       "biggest": 232970868,
       "fcfs": 122620635,
       "oracle": 233496803,
-      "scalpel": 232868161,
+      "scalpel": 232868160,
       "signrule": 230763740
      },
      "5x/K5": {
       "biggest": 217646246,
       "fcfs": 44968423,
       "oracle": 226785758,
-      "scalpel": 203642455,
+      "scalpel": 204393083,
       "signrule": 177238769
      }
     },
@@ -2647,7 +3028,7 @@
       "biggest": 229314847,
       "fcfs": 77379328,
       "oracle": 233493347,
-      "scalpel": 228671270,
+      "scalpel": 229172725,
       "signrule": 211827067
      },
      "10x/K20": {
@@ -2661,49 +3042,70 @@
       "biggest": 218752955,
       "fcfs": 49160993,
       "oracle": 227604961,
-      "scalpel": 214559234,
+      "scalpel": 216088744,
       "signrule": 178880665
+     },
+     "1x/K10": {
+      "biggest": 222949560,
+      "fcfs": 66249805,
+      "oracle": 230450004,
+      "scalpel": 222593438,
+      "signrule": 203536575
+     },
+     "1x/K20": {
+      "biggest": 230895395,
+      "fcfs": 114285560,
+      "oracle": 233169362,
+      "scalpel": 231106474,
+      "signrule": 227604011
+     },
+     "1x/K5": {
+      "biggest": 207191772,
+      "fcfs": 39498713,
+      "oracle": 216537319,
+      "scalpel": 204307253,
+      "signrule": 166327363
      },
      "2x/K10": {
       "biggest": 227228514,
       "fcfs": 69112151,
       "oracle": 232826335,
-      "scalpel": 226463543,
+      "scalpel": 226963594,
       "signrule": 208657448
      },
      "2x/K20": {
       "biggest": 232436935,
       "fcfs": 118578358,
       "oracle": 233481103,
-      "scalpel": 232655438,
+      "scalpel": 232656081,
       "signrule": 229970439
      },
      "2x/K5": {
       "biggest": 212804263,
       "fcfs": 40831307,
       "oracle": 222109199,
-      "scalpel": 208371007,
+      "scalpel": 209898807,
       "signrule": 171161861
      },
      "5x/K10": {
       "biggest": 228976867,
       "fcfs": 74618646,
       "oracle": 233466304,
-      "scalpel": 228311571,
+      "scalpel": 228813689,
       "signrule": 211326777
      },
      "5x/K20": {
       "biggest": 232970868,
       "fcfs": 122620635,
       "oracle": 233496803,
-      "scalpel": 233189842,
+      "scalpel": 233189844,
       "signrule": 230763740
      },
      "5x/K5": {
       "biggest": 217646246,
       "fcfs": 44968423,
       "oracle": 226785758,
-      "scalpel": 213412396,
+      "scalpel": 214940933,
       "signrule": 177238769
      }
     }
@@ -2740,6 +3142,7 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.0,
+     "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 469406518,
      "victimMoneyMissed": 469406518
@@ -2752,6 +3155,7 @@
      "innocentHeld": 7394198833,
      "peopleWronglyRestricted": 405,
      "recoveryRate": 0.838336004955091,
+     "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 469406518,
      "victimMoneyMissed": 75886133
@@ -2764,6 +3168,7 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.2588728774320087,
+     "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 469406518,
      "victimMoneyMissed": 347889902
@@ -2776,6 +3181,7 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.2588728774320087,
+     "suggestedOnInnocent": 1,
      "suggestedWholeFreezes": 27,
      "victimMoney": 469406518,
      "victimMoneyMissed": 347889902
@@ -2783,10 +3189,11 @@
    },
    "models": {
     "lightgbm": {
-     "auc": 0.8714793889935133,
-     "mulesAmong085": 39,
-     "scored085": 40,
-     "shieldMoney085": 0,
+     "auc": 0.8788240217618749,
+     "innocent085": 1,
+     "innocentMoney085": 1,
+     "mulesAmong085": 36,
+     "scored085": 37,
      "shields085": 0,
      "worst": [
       {
@@ -2802,7 +3209,7 @@
       },
       {
        "account": "B02953",
-       "muleScore": 0.0,
+       "muleScore": 1e-06,
        "reasons": [
         "Money usually stays a long time (70 minutes or more)",
         "All the money came from one sender",
@@ -2812,8 +3219,19 @@
        "traced": 4341938
       },
       {
+       "account": "B02946",
+       "muleScore": 0.317361,
+       "reasons": [
+        "7 people who reported fraud paid into this account",
+        "Money usually stays a long time (62 minutes or more)",
+        "Money came from 9 different senders"
+       ],
+       "role": "mule",
+       "traced": 5652731
+      },
+      {
        "account": "B00473",
-       "muleScore": 0.0,
+       "muleScore": 0.001564,
        "reasons": [
         "Money left within 30 minutes of arriving",
         "No warning signs",
@@ -2832,30 +3250,20 @@
        ],
        "role": "mule",
        "traced": 2781774
-      },
-      {
-       "account": "B02946",
-       "muleScore": 0.541171,
-       "reasons": [
-        "7 people who reported fraud paid into this account",
-        "Money usually stays a long time (62 minutes or more)",
-        "Money came from 9 different senders"
-       ],
-       "role": "mule",
-       "traced": 5652731
       }
      ]
     },
     "logistic": {
-     "auc": 0.9651391504498849,
-     "mulesAmong085": 51,
-     "scored085": 52,
-     "shieldMoney085": 0,
+     "auc": 0.9976145637162587,
+     "innocent085": 1,
+     "innocentMoney085": 1,
+     "mulesAmong085": 40,
+     "scored085": 41,
      "shields085": 0,
      "worst": [
       {
        "account": "B00473",
-       "muleScore": 0.0,
+       "muleScore": 0.034342,
        "reasons": [
         "Money came from 2 different senders",
         "No warning signs",
@@ -2866,7 +3274,7 @@
       },
       {
        "account": "B01121",
-       "muleScore": 0.0,
+       "muleScore": 0.034805,
        "reasons": [
         "Money came from 2 different senders",
         "No warning signs",
@@ -2877,7 +3285,7 @@
       },
       {
        "account": "B02263",
-       "muleScore": 0.0,
+       "muleScore": 0.143416,
        "reasons": [
         "All the money came from one sender",
         "No call forwarding",
@@ -2887,8 +3295,19 @@
        "traced": 2797316
       },
       {
+       "account": "B02188",
+       "muleScore": 0.75482,
+       "reasons": [
+        "Money came from 2 different senders",
+        "Account opened only 20 days ago",
+        "Money left within 47 minutes of arriving"
+       ],
+       "role": "mule",
+       "traced": 6091593
+      },
+      {
        "account": "B01340",
-       "muleScore": 0.307243,
+       "muleScore": 0.394005,
        "reasons": [
         "Money came from 2 different senders",
         "54% of money in came from reported fraud",
@@ -2896,21 +3315,11 @@
        ],
        "role": "mule",
        "traced": 2294630
-      },
-      {
-       "account": "B02036",
-       "muleScore": 0.2,
-       "reasons": [
-        "Money came from 3 different senders",
-        "Money left within 50 minutes of arriving",
-        "Account type is often misused"
-       ],
-       "role": "mule",
-       "traced": 1751470
       }
      ]
     }
    },
+   "realDrainPerMuleHour": 927159.966101695,
    "rescue": {
     "lightgbm": {
      "10x/K10": {
@@ -2933,6 +3342,27 @@
       "oracle": 121511043,
       "scalpel": 114382343,
       "signrule": 88932840
+     },
+     "1x/K10": {
+      "biggest": 119011789,
+      "fcfs": 76118166,
+      "oracle": 121136534,
+      "scalpel": 118234560,
+      "signrule": 109846214
+     },
+     "1x/K20": {
+      "biggest": 121021982,
+      "fcfs": 95666126,
+      "oracle": 121503079,
+      "scalpel": 120990192,
+      "signrule": 119340293
+     },
+     "1x/K5": {
+      "biggest": 110349356,
+      "fcfs": 57109603,
+      "oracle": 117316601,
+      "scalpel": 108092472,
+      "signrule": 81874288
      },
      "2x/K10": {
       "biggest": 120434036,
@@ -2982,63 +3412,84 @@
       "biggest": 120887265,
       "fcfs": 82382595,
       "oracle": 121516609,
-      "scalpel": 120742866,
+      "scalpel": 120644970,
       "signrule": 113008454
      },
      "10x/K20": {
       "biggest": 121493660,
       "fcfs": 99492298,
       "oracle": 121516616,
-      "scalpel": 121145069,
+      "scalpel": 121145068,
       "signrule": 120013834
      },
      "10x/K5": {
       "biggest": 115980856,
       "fcfs": 64596749,
       "oracle": 121511043,
-      "scalpel": 115020690,
+      "scalpel": 115343581,
       "signrule": 88932840
+     },
+     "1x/K10": {
+      "biggest": 119011789,
+      "fcfs": 76118166,
+      "oracle": 121136534,
+      "scalpel": 118486587,
+      "signrule": 109846214
+     },
+     "1x/K20": {
+      "biggest": 121021982,
+      "fcfs": 95666126,
+      "oracle": 121503079,
+      "scalpel": 120645956,
+      "signrule": 119340293
+     },
+     "1x/K5": {
+      "biggest": 110349356,
+      "fcfs": 57109603,
+      "oracle": 117316601,
+      "scalpel": 108993215,
+      "signrule": 81874288
      },
      "2x/K10": {
       "biggest": 120434036,
       "fcfs": 78750278,
       "oracle": 121492976,
-      "scalpel": 120278938,
+      "scalpel": 120174324,
       "signrule": 112390261
      },
      "2x/K20": {
       "biggest": 121366242,
       "fcfs": 98593090,
       "oracle": 121516612,
-      "scalpel": 121003102,
+      "scalpel": 121001698,
       "signrule": 119835845
      },
      "2x/K5": {
       "biggest": 114211196,
       "fcfs": 58755694,
       "oracle": 120402419,
-      "scalpel": 113000493,
+      "scalpel": 113314390,
       "signrule": 85887878
      },
      "5x/K10": {
       "biggest": 120819918,
       "fcfs": 82025363,
       "oracle": 121516609,
-      "scalpel": 120672176,
+      "scalpel": 120574273,
       "signrule": 112920841
      },
      "5x/K20": {
       "biggest": 121465224,
       "fcfs": 99399429,
       "oracle": 121516616,
-      "scalpel": 121112519,
+      "scalpel": 121112520,
       "signrule": 119973729
      },
      "5x/K5": {
       "biggest": 115771940,
       "fcfs": 62380486,
       "oracle": 121489039,
-      "scalpel": 114800769,
+      "scalpel": 115123072,
       "signrule": 88634718
      }
     }
@@ -3075,6 +3526,7 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.0,
+     "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 473897396,
      "victimMoneyMissed": 473897396
@@ -3087,6 +3539,7 @@
      "innocentHeld": 7120910294,
      "peopleWronglyRestricted": 399,
      "recoveryRate": 0.9680614345473213,
+     "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 473897396,
      "victimMoneyMissed": 15135603
@@ -3099,6 +3552,7 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.5592499499617424,
+     "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 473897396,
      "victimMoneyMissed": 208870301
@@ -3111,6 +3565,7 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.5592499499617424,
+     "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 19,
      "victimMoney": 473897396,
      "victimMoneyMissed": 208870301
@@ -3118,15 +3573,16 @@
    },
    "models": {
     "lightgbm": {
-     "auc": 0.8185949949500616,
-     "mulesAmong085": 40,
-     "scored085": 41,
-     "shieldMoney085": 0,
+     "auc": 0.8578535891968728,
+     "innocent085": 1,
+     "innocentMoney085": 2,
+     "mulesAmong085": 37,
+     "scored085": 38,
      "shields085": 0,
      "worst": [
       {
        "account": "B01118",
-       "muleScore": 0.0,
+       "muleScore": 1e-06,
        "reasons": [
         "Money usually stays a long time (72 minutes or more)",
         "Money came from 2 different senders",
@@ -3148,7 +3604,7 @@
       },
       {
        "account": "B01857",
-       "muleScore": 0.0,
+       "muleScore": 2.3e-05,
        "reasons": [
         "Money usually stays a long time (68 minutes or more)",
         "Contact details changed 20 days ago",
@@ -3182,15 +3638,16 @@
      ]
     },
     "logistic": {
-     "auc": 0.8466502076085737,
-     "mulesAmong085": 45,
-     "scored085": 47,
-     "shieldMoney085": 0,
+     "auc": 0.9891519844387087,
+     "innocent085": 1,
+     "innocentMoney085": 2,
+     "mulesAmong085": 38,
+     "scored085": 39,
      "shields085": 0,
      "worst": [
       {
        "account": "B01052",
-       "muleScore": 0.0,
+       "muleScore": 0.165423,
        "reasons": [
         "Money came from 2 different senders",
         "No call forwarding",
@@ -3201,7 +3658,7 @@
       },
       {
        "account": "B01118",
-       "muleScore": 0.0,
+       "muleScore": 0.012472,
        "reasons": [
         "Money came from 2 different senders",
         "No warning signs",
@@ -3212,7 +3669,7 @@
       },
       {
        "account": "B01094",
-       "muleScore": 0.0,
+       "muleScore": 0.000828,
        "reasons": [
         "Money came from 2 different senders",
         "No warning signs",
@@ -3223,7 +3680,7 @@
       },
       {
        "account": "B01448",
-       "muleScore": 0.0,
+       "muleScore": 0.032581,
        "reasons": [
         "Money came from 2 different senders",
         "No warning signs",
@@ -3234,7 +3691,7 @@
       },
       {
        "account": "B00712",
-       "muleScore": 0.0,
+       "muleScore": 0.035797,
        "reasons": [
         "Money came from 2 different senders",
         "No warning signs",
@@ -3246,69 +3703,91 @@
      ]
     }
    },
+   "realDrainPerMuleHour": 943582.2089552239,
    "rescue": {
     "lightgbm": {
      "10x/K10": {
       "biggest": 255877385,
       "fcfs": 63502998,
       "oracle": 264254602,
-      "scalpel": 250556630,
+      "scalpel": 250210985,
       "signrule": 216722011
      },
      "10x/K20": {
       "biggest": 262742393,
       "fcfs": 112775124,
       "oracle": 265025874,
-      "scalpel": 260184745,
+      "scalpel": 259896197,
       "signrule": 249637333
      },
      "10x/K5": {
       "biggest": 232541492,
       "fcfs": 42100589,
       "oracle": 245152934,
-      "scalpel": 216346468,
+      "scalpel": 216335828,
       "signrule": 149613991
+     },
+     "1x/K10": {
+      "biggest": 246991021,
+      "fcfs": 48123434,
+      "oracle": 257277862,
+      "scalpel": 240520113,
+      "signrule": 206128696
+     },
+     "1x/K20": {
+      "biggest": 259596479,
+      "fcfs": 100871193,
+      "oracle": 264405555,
+      "scalpel": 256302919,
+      "signrule": 245463595
+     },
+     "1x/K5": {
+      "biggest": 216872390,
+      "fcfs": 27667255,
+      "oracle": 229065052,
+      "scalpel": 200008176,
+      "signrule": 133445872
      },
      "2x/K10": {
       "biggest": 252777462,
       "fcfs": 52589271,
       "oracle": 262289885,
-      "scalpel": 247114586,
+      "scalpel": 246735569,
       "signrule": 212712663
      },
      "2x/K20": {
       "biggest": 261818497,
       "fcfs": 106927565,
       "oracle": 264965601,
-      "scalpel": 259136710,
+      "scalpel": 258875621,
       "signrule": 248459161
      },
      "2x/K5": {
       "biggest": 224274898,
       "fcfs": 30061409,
       "oracle": 236520241,
-      "scalpel": 207369350,
+      "scalpel": 207279466,
       "signrule": 139730990
      },
      "5x/K10": {
       "biggest": 255405751,
       "fcfs": 60291828,
       "oracle": 264050650,
-      "scalpel": 250023844,
+      "scalpel": 249683170,
       "signrule": 216117325
      },
      "5x/K20": {
       "biggest": 262576167,
       "fcfs": 111939044,
       "oracle": 265021453,
-      "scalpel": 260000641,
+      "scalpel": 259724759,
       "signrule": 249426843
      },
      "5x/K5": {
       "biggest": 230965155,
       "fcfs": 36307111,
       "oracle": 243697584,
-      "scalpel": 214601563,
+      "scalpel": 214598628,
       "signrule": 147562333
      }
     },
@@ -3317,63 +3796,84 @@
       "biggest": 255877385,
       "fcfs": 63502998,
       "oracle": 264254602,
-      "scalpel": 255294448,
+      "scalpel": 255856922,
       "signrule": 216722011
      },
      "10x/K20": {
       "biggest": 262742393,
       "fcfs": 112775124,
       "oracle": 265025874,
-      "scalpel": 261968628,
+      "scalpel": 262343400,
       "signrule": 249637333
      },
      "10x/K5": {
       "biggest": 232541492,
       "fcfs": 42100589,
       "oracle": 245152934,
-      "scalpel": 220770473,
+      "scalpel": 226531522,
       "signrule": 149613991
+     },
+     "1x/K10": {
+      "biggest": 246991021,
+      "fcfs": 48123434,
+      "oracle": 257277862,
+      "scalpel": 245961708,
+      "signrule": 206128696
+     },
+     "1x/K20": {
+      "biggest": 259596479,
+      "fcfs": 100871193,
+      "oracle": 264405555,
+      "scalpel": 258734774,
+      "signrule": 245463595
+     },
+     "1x/K5": {
+      "biggest": 216872390,
+      "fcfs": 27667255,
+      "oracle": 229065052,
+      "scalpel": 210152525,
+      "signrule": 133445872
      },
      "2x/K10": {
       "biggest": 252777462,
       "fcfs": 52589271,
       "oracle": 262289885,
-      "scalpel": 251858280,
+      "scalpel": 252340031,
       "signrule": 212712663
      },
      "2x/K20": {
       "biggest": 261818497,
       "fcfs": 106927565,
       "oracle": 264965601,
-      "scalpel": 260948625,
+      "scalpel": 261296016,
       "signrule": 248459161
      },
      "2x/K5": {
       "biggest": 224274898,
       "fcfs": 30061409,
       "oracle": 236520241,
-      "scalpel": 211738023,
+      "scalpel": 217393180,
       "signrule": 139730990
      },
      "5x/K10": {
       "biggest": 255405751,
       "fcfs": 60291828,
       "oracle": 264050650,
-      "scalpel": 254766767,
+      "scalpel": 255321792,
       "signrule": 216117325
      },
      "5x/K20": {
       "biggest": 262576167,
       "fcfs": 111939044,
       "oracle": 265021453,
-      "scalpel": 261796763,
+      "scalpel": 262158591,
       "signrule": 249426843
      },
      "5x/K5": {
       "biggest": 230965155,
       "fcfs": 36307111,
       "oracle": 243697584,
-      "scalpel": 219041513,
+      "scalpel": 224773615,
       "signrule": 147562333
      }
     }
@@ -3410,6 +3910,7 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.0,
+     "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 397183632,
      "victimMoneyMissed": 397183632
@@ -3422,6 +3923,7 @@
      "innocentHeld": 6244026643,
      "peopleWronglyRestricted": 362,
      "recoveryRate": 0.974291853497125,
+     "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 397183632,
      "victimMoneyMissed": 10210855
@@ -3434,6 +3936,7 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.43887056503879296,
+     "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 397183632,
      "victimMoneyMissed": 222871427
@@ -3446,17 +3949,19 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.43887056503879296,
-     "suggestedWholeFreezes": 14,
+     "suggestedOnInnocent": 0,
+     "suggestedWholeFreezes": 13,
      "victimMoney": 397183632,
      "victimMoneyMissed": 222871427
     }
    },
    "models": {
     "lightgbm": {
-     "auc": 0.774378453038674,
-     "mulesAmong085": 21,
-     "scored085": 21,
-     "shieldMoney085": 0,
+     "auc": 0.8692679558011049,
+     "innocent085": 0,
+     "innocentMoney085": 0,
+     "mulesAmong085": 19,
+     "scored085": 19,
      "shields085": 0,
      "worst": [
       {
@@ -3472,7 +3977,7 @@
       },
       {
        "account": "B01316",
-       "muleScore": 0.0,
+       "muleScore": 1e-06,
        "reasons": [
         "Money usually stays a long time (1440 minutes or more)",
         "Contact details changed 10 days ago",
@@ -3517,15 +4022,16 @@
      ]
     },
     "logistic": {
-     "auc": 0.8980662983425414,
-     "mulesAmong085": 32,
-     "scored085": 34,
-     "shieldMoney085": 0,
+     "auc": 0.9941988950276244,
+     "innocent085": 0,
+     "innocentMoney085": 0,
+     "mulesAmong085": 24,
+     "scored085": 24,
      "shields085": 0,
      "worst": [
       {
        "account": "B01316",
-       "muleScore": 0.0,
+       "muleScore": 0.014198,
        "reasons": [
         "Money came from 2 different senders",
         "2 warning signs at once",
@@ -3536,7 +4042,7 @@
       },
       {
        "account": "B02089",
-       "muleScore": 0.0,
+       "muleScore": 0.029116,
        "reasons": [
         "Money came from 2 different senders",
         "No warning signs",
@@ -3547,7 +4053,7 @@
       },
       {
        "account": "B01037",
-       "muleScore": 0.0,
+       "muleScore": 0.157911,
        "reasons": [
         "Money came from 3 different senders",
         "Money left within 61 minutes of arriving",
@@ -3558,7 +4064,7 @@
       },
       {
        "account": "B00462",
-       "muleScore": 0.0,
+       "muleScore": 0.034304,
        "reasons": [
         "Money came from 3 different senders",
         "No warning signs",
@@ -3569,7 +4075,7 @@
       },
       {
        "account": "B02276",
-       "muleScore": 0.0,
+       "muleScore": 0.032168,
        "reasons": [
         "Money came from 2 different senders",
         "No warning signs",
@@ -3581,13 +4087,14 @@
      ]
     }
    },
+   "realDrainPerMuleHour": 1375218.075,
    "rescue": {
     "lightgbm": {
      "10x/K10": {
       "biggest": 171450133,
       "fcfs": 108846518,
       "oracle": 174298192,
-      "scalpel": 169179711,
+      "scalpel": 169179717,
       "signrule": 155584008
      },
      "10x/K20": {
@@ -3601,14 +4108,35 @@
       "biggest": 165766344,
       "fcfs": 75848139,
       "oracle": 174028306,
-      "scalpel": 160405378,
+      "scalpel": 159493800,
       "signrule": 125629119
+     },
+     "1x/K10": {
+      "biggest": 167901906,
+      "fcfs": 100956731,
+      "oracle": 173248493,
+      "scalpel": 165356841,
+      "signrule": 150473677
+     },
+     "1x/K20": {
+      "biggest": 172619981,
+      "fcfs": 129689876,
+      "oracle": 174170127,
+      "scalpel": 171744206,
+      "signrule": 166812771
+     },
+     "1x/K5": {
+      "biggest": 158717036,
+      "fcfs": 67626956,
+      "oracle": 169097624,
+      "scalpel": 152000725,
+      "signrule": 117094814
      },
      "2x/K10": {
       "biggest": 170152401,
       "fcfs": 104195587,
       "oracle": 174006419,
-      "scalpel": 167850244,
+      "scalpel": 167850237,
       "signrule": 153600287
      },
      "2x/K20": {
@@ -3622,14 +4150,14 @@
       "biggest": 162474254,
       "fcfs": 69386743,
       "oracle": 171996197,
-      "scalpel": 156796441,
+      "scalpel": 155884849,
       "signrule": 120950342
      },
      "5x/K10": {
       "biggest": 171156984,
       "fcfs": 107483006,
       "oracle": 174267054,
-      "scalpel": 168877359,
+      "scalpel": 168877368,
       "signrule": 155191835
      },
      "5x/K20": {
@@ -3643,7 +4171,7 @@
       "biggest": 165111004,
       "fcfs": 73672002,
       "oracle": 173679580,
-      "scalpel": 159715971,
+      "scalpel": 158804390,
       "signrule": 124639855
      }
     },
@@ -3652,7 +4180,7 @@
       "biggest": 171450133,
       "fcfs": 108846518,
       "oracle": 174298192,
-      "scalpel": 170667675,
+      "scalpel": 170667706,
       "signrule": 155584008
      },
      "10x/K20": {
@@ -3666,49 +4194,70 @@
       "biggest": 165766344,
       "fcfs": 75848139,
       "oracle": 174028306,
-      "scalpel": 163130074,
+      "scalpel": 162840568,
       "signrule": 125629119
+     },
+     "1x/K10": {
+      "biggest": 167901906,
+      "fcfs": 100956731,
+      "oracle": 173248493,
+      "scalpel": 166642406,
+      "signrule": 150473677
+     },
+     "1x/K20": {
+      "biggest": 172619981,
+      "fcfs": 129689876,
+      "oracle": 174170127,
+      "scalpel": 171753357,
+      "signrule": 166812771
+     },
+     "1x/K5": {
+      "biggest": 158717036,
+      "fcfs": 67626956,
+      "oracle": 169097624,
+      "scalpel": 155214897,
+      "signrule": 117094814
      },
      "2x/K10": {
       "biggest": 170152401,
       "fcfs": 104195587,
       "oracle": 174006419,
-      "scalpel": 169210576,
+      "scalpel": 169210441,
       "signrule": 153600287
      },
      "2x/K20": {
       "biggest": 173425600,
       "fcfs": 132388884,
       "oracle": 174286580,
-      "scalpel": 172747093,
+      "scalpel": 172747365,
       "signrule": 168095583
      },
      "2x/K5": {
       "biggest": 162474254,
       "fcfs": 69386743,
       "oracle": 171996197,
-      "scalpel": 159383766,
+      "scalpel": 159106734,
       "signrule": 120950342
      },
      "5x/K10": {
       "biggest": 171156984,
       "fcfs": 107483006,
       "oracle": 174267054,
-      "scalpel": 170353412,
+      "scalpel": 170353574,
       "signrule": 155191835
      },
      "5x/K20": {
       "biggest": 173834287,
       "fcfs": 134384673,
       "oracle": 174309251,
-      "scalpel": 173225840,
+      "scalpel": 173225860,
       "signrule": 168656425
      },
      "5x/K5": {
       "biggest": 165111004,
       "fcfs": 73672002,
       "oracle": 173679580,
-      "scalpel": 162400671,
+      "scalpel": 162110889,
       "signrule": 124639855
      }
     }
@@ -3736,5 +4285,127 @@
   }
  ],
  "verdict": "beats",
- "verdictVsBiggest": "ties"
+ "verdictVsBiggest": "ties",
+ "vsBiggest": [
+  [
+   "K=5, 1x drain, low noise",
+   92.48451332343349,
+   94.77714019525742
+  ],
+  [
+   "K=10, 1x drain, low noise",
+   96.33838065080184,
+   96.84110778741574
+  ],
+  [
+   "K=20, 1x drain, low noise",
+   98.56741706516534,
+   98.79544702902172
+  ],
+  [
+   "K=5, 2x drain, low noise",
+   92.81344491041017,
+   95.04745724947676
+  ],
+  [
+   "K=10, 2x drain, low noise",
+   97.26045626004807,
+   97.59992509687741
+  ],
+  [
+   "K=20, 2x drain, low noise",
+   99.20588413442515,
+   99.35715617283607
+  ],
+  [
+   "K=5, 5x drain, low noise",
+   93.24225932714725,
+   95.22185630622957
+  ],
+  [
+   "K=10, 5x drain, low noise",
+   97.82350953178269,
+   98.06275422015015
+  ],
+  [
+   "K=20, 5x drain, low noise",
+   99.46436939460526,
+   99.58859291472302
+  ],
+  [
+   "K=5, 10x drain, low noise",
+   93.41626531249872,
+   95.336153846936
+  ],
+  [
+   "K=10, 10x drain, low noise",
+   97.97146955111748,
+   98.19411129822916
+  ],
+  [
+   "K=20, 10x drain, low noise",
+   99.52916261958532,
+   99.6431368624815
+  ],
+  [
+   "K=5, 1x drain, high noise",
+   92.74493589405614,
+   94.77714019525742
+  ],
+  [
+   "K=10, 1x drain, high noise",
+   96.30939183814117,
+   96.84110778741574
+  ],
+  [
+   "K=20, 1x drain, high noise",
+   98.52456658349206,
+   98.79544702902172
+  ],
+  [
+   "K=5, 2x drain, high noise",
+   93.07490055423283,
+   95.04745724947676
+  ],
+  [
+   "K=10, 2x drain, high noise",
+   97.2223037090995,
+   97.59992509687741
+  ],
+  [
+   "K=20, 2x drain, high noise",
+   99.15592595373734,
+   99.35715617283607
+  ],
+  [
+   "K=5, 5x drain, high noise",
+   93.47385166153298,
+   95.22185630622957
+  ],
+  [
+   "K=10, 5x drain, high noise",
+   97.76723055066422,
+   98.06275422015015
+  ],
+  [
+   "K=20, 5x drain, high noise",
+   99.41427940608861,
+   99.58859291472302
+  ],
+  [
+   "K=5, 10x drain, high noise",
+   93.64548238755893,
+   95.336153846936
+  ],
+  [
+   "K=10, 10x drain, high noise",
+   97.915622621349,
+   98.19411129822916
+  ],
+  [
+   "K=20, 10x drain, high noise",
+   99.47906549075603,
+   99.6431368624815
+  ]
+ ]
 }

@@ -62,10 +62,44 @@ def test_conditional_sentence_names_the_smallest_winning_ratio():
     from scalpel_grade.report import conditional_sentence
     assert "at least 5x" in conditional_sentence({2.0: "ties", 5.0: "beats", 10.0: "beats"})
     assert "every drain ratio" in conditional_sentence({2.0: "beats", 5.0: "beats", 10.0: "beats"})
-    assert "does not beat" in conditional_sentence({2.0: "beats", 5.0: "beats", 10.0: "ties"})
+    assert "but not at 10x (ties)" in conditional_sentence({2.0: "beats", 5.0: "beats", 10.0: "ties"})
 
 
 def test_first_line_also_says_how_it_does_against_biggest_first():
     line = headline_line(scalpel_pct=97.6, signrule_pct=87.0, biggest_pct=98.1)
     assert "ties the plain 'biggest amount first' order" in line
     assert "does not beat the plain" in headline_line(scalpel_pct=90.0, signrule_pct=87.0, biggest_pct=98.0)
+
+
+def test_comparison_with_biggest_first_uses_every_setting():
+    from scalpel_grade.report import vs_biggest_sentence
+    s = vs_biggest_sentence([("K=5", 92.2, 95.2), ("K=10", 97.6, 98.1), ("K=20", 99.4, 99.6)])
+    assert "does worse than 'biggest amount first' at K=5 (92.2% vs 95.2%)" in s
+    assert "never ahead of it in any of the 3 settings" in s
+    assert "ahead of 'biggest amount first' in 1 of 2" in vs_biggest_sentence([("a", 99.0, 97.0), ("b", 90.0, 90.5)])
+
+
+def test_delay_shows_both_hold_capped_and_real_drain():
+    from scalpel_grade.report import delay_per_mule_hour
+    truth = {"roles": {"M": "mule"}, "victimMoneyAtCutoff": {"M": 100_00}, "muleDrainPerHour": 0.15, "drainRatio": 5.0}
+    capped, real = delay_per_mule_hour({"M": 40_00}, truth, 5.0)
+    assert capped == 0          # after 1 hour 85.00 is still there, more than the 40.00 hold
+    assert real == 15_00        # but 15.00 of real victim money left
+
+
+def test_innocent_harm_counts_normals_too():
+    from scalpel_grade.report import _model_marks
+    from scalpel_grade.grade import suggested_on_innocent
+    acc = {a: {"muleScore": s, "reasons": ["a", "b", "c"]} for a, s in {"M": 0.9, "S": 0.9, "N": 0.95}.items()}
+    marks = _model_marks(acc, TRUTH, {"M": 1, "S": 2, "N": 3})
+    assert marks["innocent085"] == 2 and marks["innocentMoney085"] == 5
+    rows = [{"account": "N", "suggestedWholeFreeze": True}, {"account": "M", "suggestedWholeFreeze": True}]
+    assert suggested_on_innocent(rows, TRUTH) == 1
+
+
+def test_conditional_sentence_lists_the_ratios_it_was_given():
+    from scalpel_grade.report import conditional_sentence
+    s = conditional_sentence({1.0: "does not beat", 2.0: "beats", 5.0: "beats"})
+    assert "at least 2x" in s
+    mixed = conditional_sentence({1.0: "beats", 2.0: "beats", 10.0: "ties"})
+    assert "any drain ratio" not in mixed and "1x, 2x, 10x" in mixed

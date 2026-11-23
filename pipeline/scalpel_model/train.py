@@ -13,7 +13,6 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 from lightgbm import LGBMClassifier
-from sklearn.isotonic import IsotonicRegression
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score
 from sklearn.pipeline import make_pipeline
@@ -24,6 +23,29 @@ from .features import FEATURES, build_features
 from .reasons import reasons_for
 
 CLASSES = ["mule", "normal", "shield"]
+
+
+class Calibrator:
+    """Platt scaling: a smooth, strictly increasing curve from raw mule probability to calibrated score.
+
+    Replaced isotonic regression (review fix): fitted on a near-separable world, isotonic became a step function
+    that gave many real mules exactly 0 and erased the model's ranking. A smooth curve keeps the order.
+    """
+
+    def __init__(self):
+        self.lr = LogisticRegression(C=1.0)
+
+    @staticmethod
+    def _logit(p):
+        p = np.clip(np.asarray(p, dtype=float), 1e-6, 1 - 1e-6)
+        return np.log(p / (1 - p)).reshape(-1, 1)
+
+    def fit(self, raw, y):
+        self.lr.fit(self._logit(raw), y)
+        return self
+
+    def predict(self, raw):
+        return self.lr.predict_proba(self._logit(raw))[:, 1]
 TOO_EASY_AUC = 0.98
 
 
@@ -31,7 +53,7 @@ TOO_EASY_AUC = 0.98
 class Model:
     name: str
     clf: object
-    calib: IsotonicRegression
+    calib: Calibrator
     means: pd.Series
     holdout_auc: float
     holdout_world: str = ""
@@ -91,7 +113,7 @@ def train_models(worlds: list[tuple[dict, dict]], seed: int = 7) -> dict[str, Mo
             clf = LGBMClassifier(n_estimators=150, learning_rate=0.05, num_leaves=15, min_child_samples=10,
                                  class_weight="balanced", random_state=seed, deterministic=True, n_jobs=1, verbose=-1)
         clf.fit(X.loc[tr, FEATURES], y.loc[tr])
-        tmp = Model(name, clf, IsotonicRegression(out_of_bounds="clip"), X.loc[tr, FEATURES].mean(), 0.0)
+        tmp = Model(name, clf, Calibrator(), X.loc[tr, FEATURES].mean(), 0.0)
         raw = tmp.proba(X.loc[ho])[:, 0]
         is_mule = (y.loc[ho] == "mule").astype(int).to_numpy()
         tmp.calib.fit(raw, is_mule)  # straighten the scores bent by class weights

@@ -108,3 +108,19 @@ def test_there_is_money_left_to_rescue(made):
     world, truth = made
     share = rescue_share(world, truth)
     assert 0 < share <= 1
+
+
+def test_world_file_never_names_victims(made):
+    """Review fix 5: a real bank sees a remitter account, not a 'victim' label or a campaign number."""
+    world, _ = made
+
+    def values(o):
+        if isinstance(o, dict):
+            for v in o.values():
+                yield from values(v)
+        elif isinstance(o, list):
+            for v in o:
+                yield from values(v)
+        elif isinstance(o, str):
+            yield o
+    assert not [v for v in values(world) if "VIC" in v.upper()]

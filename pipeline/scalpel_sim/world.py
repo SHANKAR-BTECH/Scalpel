@@ -51,6 +51,12 @@ class Book:
         return t
 
 
+def _victim_id(cfg: WorldConfig, c: int, v: int) -> str:
+    """A neutral outside-account id: no 'victim' label and no campaign number (a bank only sees a remitter)."""
+    import hashlib
+    return "R" + hashlib.sha256(f"{cfg.name}|{cfg.seed}|{c}|{v}".encode()).hexdigest()[:10].upper()
+
+
 def _pick_scam(rng: random.Random, cfg: WorldConfig):
     x, acc = rng.random(), 0.0
     for s in cfg.scams:
@@ -158,7 +164,7 @@ def make_world(cfg: WorldConfig) -> tuple[dict, dict]:
         campaigns.append({"id": f"K{c + 1:03d}", "scam": scam.name, "chain": chain, "start": start, "end": start + length})
         for v in range(rng.randint(*scam.victims)):
             at = start + rng.randint(0, length // MIN) * MIN
-            events.append((at, "victim", (c, f"VIC-{c + 1:03d}-{v + 1:02d}", rng.randint(*scam.amount_rupees) * 100)))
+            events.append((at, "victim", (c, _victim_id(cfg, c, v), rng.randint(*scam.amount_rupees) * 100)))
 
     # Mules wake up after their accounts are open; make sure hop-1 mules exist before the campaign.
     for camp in campaigns:

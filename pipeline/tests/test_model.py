@@ -125,3 +125,16 @@ def test_check_score_uses_a_whole_unseen_world(trained):
 def test_reason_wording_for_one_and_zero():
     assert reasons_for({"senders": 1.0}, {"senders": 1.0}, k=1) == ["All the money came from one sender"]
     assert reasons_for({"sign_count": 0.0}, {"sign_count": -1.0}, k=1) == ["No warning signs"]
+
+
+def test_calibration_keeps_the_order_and_never_flattens_to_zero(trained):
+    """Review fix 1: a step-shaped calibrator gave many real mules exactly 0.00 and hid the model's real ranking."""
+    from sklearn.metrics import roc_auc_score
+    worlds, models = trained
+    w, t = worlds[1]
+    X = build_features(w, compute_signals(w))
+    y = [t["roles"][a] == "mule" for a in X.index]
+    for name, m in models.items():
+        cal, raw = m.mule_score(X), m.proba(X)[:, 0]
+        assert (cal > 0).all() and (cal < 1).all(), name
+        assert roc_auc_score(y, cal) == pytest.approx(roc_auc_score(y, raw), abs=1e-12), name
