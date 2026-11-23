@@ -31,6 +31,19 @@ export function traceWorld(world: World): Record<string, { balance: number; trac
   return Object.fromEntries(Object.entries(r.accounts).map(([id, a]) => [id, { balance: a.balance, traced: a.tainted }]));
 }
 
+/** When stolen money was first found arriving in each account (from REPORTED complaints). */
+export function firstSeen(world: World): Record<string, number> {
+  const victimTxns = Object.fromEntries(world.complaints.map((c) => [c.txnId, c.victim]));
+  const r = trace({
+    opening: Object.fromEntries(world.accounts.map((a) => [a.id, a.opening])),
+    txns: world.txns.map((t) => ({ id: t.id, at: t.at, from: t.from, to: t.to, amount: t.amount })),
+    victimTxns, asOf: world.cutoff,
+  });
+  const out: Record<string, number> = {};
+  for (const f of r.flows) if (Object.keys(f.taint).length && out[f.to] === undefined) out[f.to] = f.at;
+  return out;
+}
+
 /** Policies 0 (do nothing), A (Axe: whole freeze), B (Ruler: exact hold of traced). Policy C lives in scalpel.ts. */
 export function runHolds(world: World, policy: Exclude<HoldPolicy, "C">): Decisions {
   const traced = traceWorld(world);
