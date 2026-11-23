@@ -10,3 +10,4 @@ export * from "./lifecycle";
 export * from "./audit";
 export * from "./campaign";
 export * from "./restoration";
+export * from "./fairness";
