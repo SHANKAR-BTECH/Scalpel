@@ -6,7 +6,7 @@
 import type { Paise } from "./money";
 import { formatINR } from "./money";
 import type { Instant } from "./time";
-import type { PolicySet, Regime } from "./policy";
+import { unverifiedSources, type PolicySet, type Regime } from "./policy";
 import type { RequisitionResult } from "./requisition";
 
 export const BANK_SIGNALS = ["ACCOUNT_AGE_LT_30D", "DWELL_LT_15M", "GE3_CASE_LINKED_SENDERS", "KYC_CHANGED_LT_30D"] as const;
@@ -38,7 +38,7 @@ export interface GateContext {
 }
 
 export type RuleId = "R0" | "R1" | "R2" | "R3" | "R4" | "R5" | "R6" | "R7" | "R8" | "R9";
-export interface Check { rule: RuleId; ok: boolean; note: string; sources: string[] }
+export interface Check { rule: RuleId; ok: boolean; note: string; sources: string[]; /** cited sources not yet verified: show "unverified" */ unverified: string[] }
 export interface QuashRisk { id: string; ground: string }
 
 export interface GateResult {
@@ -89,7 +89,7 @@ export function evaluateGate(original: Action, ctx: GateContext, policy: PolicyS
   const g = policy.gate;
   const checks: Check[] = [];
   const flags: string[] = [];
-  const ok = (rule: RuleId, pass: boolean, note: string, sources: string[] = []) => { checks.push({ rule, ok: pass, note, sources }); return pass; };
+  const ok = (rule: RuleId, pass: boolean, note: string, sources: string[] = []) => { checks.push({ rule, ok: pass, note, sources, unverified: unverifiedSources(policy, sources) }); return pass; };
   let regime = regimeFor(ctx.requester);
   let action: Action | null = original;
   let decision: GateResult["decision"] = "ALLOW";
@@ -104,6 +104,7 @@ export function evaluateGate(original: Action, ctx: GateContext, policy: PolicyS
     const timed = !isMoney || (spec !== undefined && (spec.max_days !== null || spec.clocks.length > 0 || regime === "COURT_ORDER"));
     if (isMoney && spec) ok("R3", timed, spec.max_days ? `${spec.label}: at most ${spec.max_days} days, ${spec.clocks.length} deadlines tracked` : `${spec.label}: ${spec.clocks.length} deadlines tracked`, spec.sources);
     if (spec && spec.status !== "final") flags.push(`${spec.label} rules are ${spec.status}`);
+    if (checks.some((c) => c.unverified.length > 0)) flags.push("Some cited sources are unverified");
     return {
       decision, original, action, regime: action ? regime : null, checks, flags,
       badges: {

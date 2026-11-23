@@ -5,7 +5,7 @@
 import type { Paise } from "./money";
 import type { Instant } from "./time";
 import type { StateCode } from "./jurisdiction";
-import { strictestJurisdiction, type Overlay, type PolicySet } from "./policy";
+import { strictestJurisdiction, unverifiedSources, type Overlay, type PolicySet } from "./policy";
 
 export type LegalBasis = "BNSS_106" | "BNSS_107" | "CRPC_102" | "COURT_ORDER" | "DOT_DIRECTION";
 
@@ -31,7 +31,7 @@ export interface Requisition {
 }
 
 export type PoliceAuthority = "FULL" | "EXACT_ONLY" | "NONE";
-export interface Finding { checkId: string; ok: boolean; pending?: boolean; severity: "defect" | "review"; message: string; sources: string[] }
+export interface Finding { checkId: string; ok: boolean; pending?: boolean; severity: "defect" | "review"; message: string; sources: string[]; /** cited sources not yet verified */ unverified: string[] }
 
 export interface RequisitionResult {
   status: "VALID" | "DEFECTIVE" | "NEEDS_REVIEW";
@@ -52,7 +52,7 @@ export function checkRequisition(req: Requisition, policy: PolicySet, overlays: 
   const add = (checkId: string, ok: boolean, message: string, extra: Partial<Finding> = {}) => {
     const def = policy.requisition.checks.find((c) => c.id === checkId);
     if (!def || !def.applies_to.includes(req.basis)) return;
-    findings.push({ checkId, ok, severity: def.severity, message: ok ? def.label : message, sources: def.sources, ...extra });
+    findings.push({ checkId, ok, severity: def.severity, message: ok ? def.label : message, sources: def.sources, unverified: unverifiedSources(policy, def.sources), ...extra });
   };
 
   const minRank = RANKS.indexOf(policy.requisition.min_signing_rank as Rank);

@@ -115,6 +115,11 @@ export function parsePolicy(text: string): PolicySet {
   return p;
 }
 
+/** Source ids that are not yet checked against the original (unknown ids count as unverified). */
+export function unverifiedSources(policy: PolicySet, ids: readonly string[]): string[] {
+  return ids.filter((id) => !policy.sources.find((s) => s.id === id)?.verified);
+}
+
 export function parseOverlay(text: string): Overlay {
   const o = Overlay.parse(yamlLoad(text));
   for (const s of o.states) if (HIGH_COURT_OF[s] !== o.high_court) throw new Error(`overlay ${o.id}: ${s} is under ${HIGH_COURT_OF[s]} HC, not ${o.high_court}`);
