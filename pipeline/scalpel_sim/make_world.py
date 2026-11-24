@@ -44,8 +44,10 @@ def build_all(out: Path) -> list[Path]:
     from . import compare
     from .configs.v2 import V2_SEEDS, v2_config
     folders, rows = [], []
+    from .configs.v3_split import V3_SEEDS, v3_config
     noisy = [replace(v2_config(s), name="v2noisy", signal_noise="high") for s in V2_SEEDS]
-    for cfg in [config_for("v1")] + [v2_config(s) for s in V2_SEEDS] + noisy:
+    v3 = [v3_config(s, n) for n in ("low", "high") for s in V3_SEEDS]
+    for cfg in [config_for("v1")] + [v2_config(s) for s in V2_SEEDS] + noisy + v3:
         world, truth = make_world(cfg)
         folder = out / f"{cfg.name}-s{cfg.seed}"
         write_world(folder, world, truth)

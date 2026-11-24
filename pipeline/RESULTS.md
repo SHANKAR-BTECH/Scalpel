@@ -31,6 +31,7 @@ Every queue uses the same exact-sized holds; only the order differs. The officer
 |---|---|---|---|---|
 | First come, first served | 29.4% (15–51) | 41.9% (23–68) | 60.5% (42–82) | 18.9% |
 | Biggest amount first | 95.2% (95–96) | 98.1% (97–99) | 99.6% (99–100) | 93.8% |
+| Biggest case first | 36.5% (32–43) | 48.3% (47–54) | 68.6% (66–71) | 30.9% |
 | Warning-sign rule (2+ signs first) | 72.1% (59–81) | 87.0% (77–96) | 96.1% (92–99) | 90.2% |
 | Scalpel (money likely lost per hour) | 93.2% (92–95) | 97.8% (96–99) | 99.5% (99–100) | 93.9% |
 
@@ -85,6 +86,20 @@ The 5 costliest v2 mistakes (wrong score × money involved), with the reasons th
 | v2-s204 | B01118 | mule | 0.01 | ₹137,829 | Money came from 2 different senders; No warning signs; Money left within 72 minutes of arriving |
 | v2-s205 | B01316 | mule | 0.00 | ₹110,966 | Money came from 2 different senders; 2 warning signs at once; Money usually stays a long time (1440 minutes or more) |
 | v2-s205 | B02089 | mule | 0.03 | ₹101,861 | Money came from 2 different senders; No warning signs; Money left within 72 minutes of arriving |
+
+## 6b. The harder split-payment world (pre-registered)
+
+Settings, the stronger simple rule (biggest case first) and the pass mark (+2 points over both simple rules) were locked in `configs/v3_split.lock` before any v3 world was graded. The mule-score model was not retrained.
+
+**Split-payment world (locked in advance; high phone-signal noise, K=10, 3 seeds): the mule-score model's order got 97.1% of the best possible, against 96.7% for biggest amount first and 42.2% for biggest case first. That is +0.3 points against the better simple rule; the pass mark was +2, so the model's order has not earned its place in this world.**
+
+| Order | K=5 high noise | K=10 high noise | K=20 high noise | K=10 low noise |
+|---|---|---|---|---|
+| First come, first served | 9.8% (8–13) | 13.9% (11–18) | 26.8% (21–33) | 13.9% |
+| Biggest amount first | 95.7% (95–97) | 96.7% (96–97) | 98.8% (98–99) | 96.7% |
+| Biggest case first | 33.1% (22–38) | 42.2% (28–53) | 59.5% (45–75) | 42.2% |
+| Warning-sign rule (2+ signs first) | 66.9% (60–77) | 75.3% (73–79) | 88.4% (87–89) | 79.6% |
+| Scalpel (money likely lost per hour) | 95.4% (94–97) | 97.1% (96–97) | 99.0% (99–99) | 97.0% |
 
 ## 7. Assumptions (change these and the numbers change)
 

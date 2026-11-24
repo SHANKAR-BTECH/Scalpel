@@ -57,7 +57,10 @@ export const DemoData = z.object({
     source: z.string(),
     byK: z.record(z.string(), z.object(Object.fromEntries(ORDER_KEYS.map((k) => [k, Band])) as Record<(typeof ORDER_KEYS)[number], typeof Band>)),
     caption: z.array(z.string()),
-    v3: z.unknown().nullable(),
+    v3: z.object({
+      verdict: z.enum(["earned", "not earned"]), sentence: z.string(), marginPoints: z.number(), passMarkPoints: z.number(),
+      headline: z.record(z.string(), z.number()), high: z.record(z.string(), z.record(z.string(), z.array(z.number()).length(3))), lock: z.string(),
+    }).nullable(),
   }),
   worst: z.array(z.object({ world: z.string(), account: z.string(), reallyMule: z.boolean(), muleScore: z.number(), tracedPaise: paise, reasons: z.array(z.string()) })),
   memo: z.object({ policyId: z.string(), policyStatus: z.string(), sources: z.array(Source), cases: z.array(MemoCase).min(1) }),

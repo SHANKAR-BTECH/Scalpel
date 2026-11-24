@@ -16,8 +16,8 @@ PIPE = Path(__file__).resolve().parents[1]
 OUT = PIPE / "out"
 POLICIES = ["0", "A", "B", "C"]
 POLICY_NAMES = {"0": "0 Do nothing", "A": "A Axe (whole freeze)", "B": "B Ruler (exact traced)", "C": "C Scalpel"}
-QUEUES = ["fcfs", "biggest", "signrule", "scalpel"]
-QUEUE_NAMES = {"fcfs": "First come, first served", "biggest": "Biggest amount first",
+QUEUES = ["fcfs", "biggest", "biggestcase", "signrule", "scalpel"]
+QUEUE_NAMES = {"fcfs": "First come, first served", "biggest": "Biggest amount first", "biggestcase": "Biggest case first",
                "signrule": "Warning-sign rule (2+ signs first)", "scalpel": "Scalpel (money likely lost per hour)"}
 KS = [5, 10, 20]
 DRAINS = [1.0, 2.0, 5.0, 10.0]  # 1x = shop money leaves as fast as mule money (some shops sweep hourly)
@@ -190,6 +190,30 @@ def summarise(v1: dict, v2: list[dict], v2noisy: list[dict]) -> dict:
     }
 
 
+def summarise_v3(v3: list[dict], v3noisy: list[dict]) -> dict | None:
+    """The pre-registered v3 test (configs/v3_split.py): reported whatever it shows."""
+    if not v3noisy:
+        return None
+    from scalpel_sim.configs.v3_split import HEADLINE, PASS_MARK_POINTS, verdict as v3_verdict
+    head = f"{HEADLINE['drain']:g}x/K{HEADLINE['k']}"
+    table = {}
+    for label, ws in (("high", v3noisy), ("low", v3)):
+        if not ws:
+            continue
+        table[label] = {str(k): {n: list(pooled_pct(ws, "logistic", f"{HEADLINE['drain']:g}x/K{k}", n)) for n in QUEUES} for k in KS}
+    h = {n: pooled_pct(v3noisy, "logistic", head, n)[0] for n in QUEUES}
+    v = v3_verdict(h["scalpel"], h["biggest"], h["biggestcase"])
+    margin = h["scalpel"] - max(h["biggest"], h["biggestcase"])
+    sentence = (f"Split-payment world (locked in advance; high phone-signal noise, K={HEADLINE['k']}, 3 seeds): the mule-score model's order got "
+                f"{h['scalpel']:.1f}% of the best possible, against {h['biggest']:.1f}% for biggest amount first and {h['biggestcase']:.1f}% for biggest case first. "
+                f"That is {margin:+.1f} points against the better simple rule; the pass mark was +{PASS_MARK_POINTS:g}, so the model's order has "
+                + ("earned its place in this world." if v == "earned" else "not earned its place in this world."))
+    aucs = [w["models"]["logistic"]["auc"] for w in v3noisy if w["models"]["logistic"]["auc"] is not None]
+    return {"verdict": v, "marginPoints": margin, "passMarkPoints": PASS_MARK_POINTS, "headline": h, "sentence": sentence,
+            "table": table, "worlds": [w["world"] for w in v3noisy + v3], "aucHigh": sum(aucs) / len(aucs) if aucs else None,
+            "tracedAccounts": [len(read_json(OUT / w["world"] / "decisions" / "queues-logistic.json")["held"]) for w in v3noisy]}
+
+
 def _pool_holds(ws: list[dict], p: str) -> dict:
     tot = lambda k: sum(w["holds"][p][k] for w in ws)
     vm = tot("victimMoney")
@@ -291,6 +315,18 @@ def render(s: dict) -> str:
         L.append(f"| {wn} | {x['account']} | {x['role']} | {x['muleScore']:.2f} | {rupees(x['traced'])} | {'; '.join(x['reasons'])} |")
     L.append("")
 
+    v3 = s.get("v3")
+    if v3:
+        L += ["## 6b. The harder split-payment world (pre-registered)", "",
+              "Settings, the stronger simple rule (biggest case first) and the pass mark (+2 points over both simple rules) were locked in "
+              "`configs/v3_split.lock` before any v3 world was graded. The mule-score model was not retrained.", "",
+              f"**{v3['sentence']}**", "", "| Order | K=5 high noise | K=10 high noise | K=20 high noise | K=10 low noise |", "|---|---|---|---|---|"]
+        for n in QUEUES:
+            cells = [f"{v3['table']['high'][str(k)][n][0]:.1f}% ({v3['table']['high'][str(k)][n][1]:.0f}–{v3['table']['high'][str(k)][n][2]:.0f})" for k in KS]
+            low = v3["table"].get("low", {}).get(str(HEAD_K), {}).get(n)
+            L.append(f"| {QUEUE_NAMES[n]} | {' | '.join(cells)} | {f'{low[0]:.1f}%' if low else '-'} |")
+        L.append("")
+
     L += ["## 7. Assumptions (change these and the numbers change)", "",
           "- The worlds are invented. v2 changes criminal habits on purpose: older rented mule accounts, slower mules, twice as many innocent shops, more digital-arrest scams.",
           "- Victims complain late or never (40–70% report, up to 72 hours late). Only complaints made before the decision moment are visible.",
@@ -313,6 +349,8 @@ def main(run_engine: bool = True) -> None:
     v2 = [g for n, g in sorted(graded.items()) if n.startswith("v2-s")]
     v2n = [g for n, g in sorted(graded.items()) if n.startswith("v2noisy-s")]
     s = summarise(v1, v2, v2n)
+    s["v3"] = summarise_v3([g for n, g in sorted(graded.items()) if n.startswith("v3-s")],
+                           [g for n, g in sorted(graded.items()) if n.startswith("v3noisy-s")])
     (PIPE / "results.json").write_text(json.dumps(s, indent=1, sort_keys=True, default=float) + "\n", encoding="utf-8")
     (PIPE / "RESULTS.md").write_text(render(s), encoding="utf-8")
     print(s["firstLine"])

@@ -218,7 +218,7 @@ def build_demo(pipe: Path = PIPE) -> dict:
         "headlineV2": v2_head,
         "replay": {"k": K, "hours": HOURS, "timeline": timeline_30d(world, truth), "lanes": lanes},
         "order": {"source": "5 unseen v2 worlds (seeds 201-205), mule-score model: logistic regression",
-                  "byK": order_curves(worlds) if worlds else {}, "caption": [results["firstLine"]], "v3": None},
+                  "byK": order_curves(worlds) if worlds else {}, "caption": [results["firstLine"]], "v3": _v3(results.get("v3"))},
         "worst": [{"world": w, "account": x["account"], "reallyMule": x["role"] == "mule", "muleScore": x["muleScore"],
                    "tracedPaise": x["traced"], "reasons": x["reasons"]} for w, x in worst],
         "memo": {"policyId": memo["policyId"], "policyStatus": memo["policyStatus"], "sources": memo["sources"],
@@ -226,6 +226,15 @@ def build_demo(pipe: Path = PIPE) -> dict:
         "provenance": {"commit": _git_commit(), "demoSha256": "", "policyId": memo["policyId"],
                        "generatedAt": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")},
     }
+
+
+def _v3(v3: dict | None) -> dict | None:
+    if not v3:
+        return None
+    return {"verdict": v3["verdict"], "sentence": v3["sentence"], "marginPoints": round(v3["marginPoints"], 2),
+            "passMarkPoints": v3["passMarkPoints"], "headline": {k: round(v, 2) for k, v in v3["headline"].items()},
+            "high": {k: {n: [round(x, 2) for x in t] for n, t in row.items()} for k, row in v3["table"]["high"].items()},
+            "lock": "pipeline/configs/v3_split.lock"}
 
 
 def export_demo(out: Path = OUT) -> Path:

@@ -6,9 +6,9 @@
 import { writeFileSync, mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { HoldPolicy } from "./schema";
-import { firstSeen, loadWorldDir, readOptional, runHolds, traceWorld } from "./run";
+import { firstSeen, loadWorldDir, readOptional, runHolds, taintByAccount, traceWorld, victimCases } from "./run";
 import { runScalpel } from "./scalpel";
-import { buildQueues } from "./queue";
+import { buildQueues, caseTotals } from "./queue";
 import { buildMemo } from "./memo";
 import { policy as scalpelPolicy } from "./scalpel";
 import { parseAssessments, parseSignals } from "./schema";
@@ -36,7 +36,8 @@ if (queuesOut) {
   const world = loadWorldDir(dir);
   const t = traceWorld(world);
   const seen = firstSeen(world);
-  const rows = Object.entries(t).filter(([, v]) => v.traced > 0).map(([account, v]) => ({ account, traced: Math.min(v.traced, v.balance), firstSeen: seen[account] ?? world.cutoff }));
+  const cases = caseTotals(taintByAccount(world), victimCases(world));
+  const rows = Object.entries(t).filter(([, v]) => v.traced > 0).map(([account, v]) => ({ account, traced: Math.min(v.traced, v.balance), firstSeen: seen[account] ?? world.cutoff, caseTotal: cases[account] }));
   const assess = parseAssessments(readOptional(dir, arg("assessments") ?? "assessments.json") ?? { model: "none", accounts: {} });
   const signals = parseSignals(readOptional(dir, "signals.json") ?? { asOf: world.cutoff, signals: {} });
   const scores = Object.fromEntries(Object.entries(assess.accounts).map(([a, v]) => [a, v.muleScore]));

@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { rupees } from "@scalpel/engine";
 import { parseWorld, type World } from "../src/schema";
 import { runScalpel } from "../src/scalpel";
-import { buildQueues, hourOf } from "../src/queue";
+import { buildQueues, caseTotals, hourOf } from "../src/queue";
 
 const T0 = Date.UTC(2026, 11, 20, 4, 32);
 const story: World = parseWorld({
@@ -78,6 +78,20 @@ describe("officer's to-do order", () => {
   it("the warning-sign rule puts accounts with 2+ signs first", () => {
     const q = buildQueues(rows, scores, { MULE: ["DWELL_LT_15M", "SIM_SWAP_LT_72H"], SHOP: [] });
     expect(q.signrule[0]).toBe("MULE");
+  });
+  it("biggest case first: a small piece of a big case goes before a bigger piece of a small case", () => {
+    const totals = caseTotals(
+      { P1: { v1: rupees(9_000) }, P2: { v1: rupees(8_000) }, P3: { v1: rupees(9_500) }, LONE: { v9: rupees(20_000) } },
+      { v1: "CASE-A", v9: "CASE-B" });
+    expect(totals).toEqual({ P1: rupees(26_500), P2: rupees(26_500), P3: rupees(26_500), LONE: rupees(20_000) });
+    const q = buildQueues(
+      Object.entries({ P1: 9_000, P2: 8_000, P3: 9_500, LONE: 20_000 }).map(([account, r]) => ({ account, traced: rupees(r), firstSeen: 0, caseTotal: totals[account] })),
+      {}, {});
+    expect(q.biggest[0]).toBe("LONE");
+    expect(q.biggestcase).toEqual(["P3", "P1", "P2", "LONE"]);
+  });
+  it("an account goes with the case that put the most money in it", () => {
+    expect(caseTotals({ X: { a: 100, b: 300 }, Y: { a: 1_000 } }, { a: "A", b: "B" })).toEqual({ X: 300, Y: 1_100 });
   });
   it("with unlimited capacity every account is acted on in hour 0", () => {
     expect(hourOf(["a", "b", "c"], 1000)).toEqual({ a: 0, b: 0, c: 0 });

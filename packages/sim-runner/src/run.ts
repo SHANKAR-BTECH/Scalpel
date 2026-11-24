@@ -4,7 +4,7 @@
  */
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import { trace } from "@scalpel/engine";
+import { linkCampaigns, trace } from "@scalpel/engine";
 import { parseWorld, type Decisions, type DecisionRow, type HoldPolicy, type World } from "./schema";
 
 /** The only files a world folder may hold. Anything else (such as the hidden answers) is refused. */
@@ -29,6 +29,28 @@ export function traceWorld(world: World): Record<string, { balance: number; trac
     asOf: world.cutoff,
   });
   return Object.fromEntries(Object.entries(r.accounts).map(([id, a]) => [id, { balance: a.balance, traced: a.tainted }]));
+}
+
+/** Victim -> case id, linking complaints that paid the same first account (engine's linkCampaigns). */
+export function victimCases(world: World): Record<string, string> {
+  const txn = new Map(world.txns.map((t) => [t.id, t]));
+  const complaints = world.complaints.filter((c) => txn.has(c.txnId))
+    .map((c) => ({ id: c.id, at: c.reportedAt, amount: txn.get(c.txnId)!.amount, firstReceiver: txn.get(c.txnId)!.to, victim: c.victim }));
+  const byId = new Map(complaints.map((c) => [c.id, c.victim]));
+  const out: Record<string, string> = {};
+  for (const k of linkCampaigns(complaints)) for (const id of k.complaintIds) out[byId.get(id)!] = k.id;
+  return out;
+}
+
+/** Traced money by victim, per account (reported complaints only). */
+export function taintByAccount(world: World): Record<string, Record<string, number>> {
+  const victimTxns = Object.fromEntries(world.complaints.map((c) => [c.txnId, c.victim]));
+  const r = trace({
+    opening: Object.fromEntries(world.accounts.map((a) => [a.id, a.opening])),
+    txns: world.txns.map((t) => ({ id: t.id, at: t.at, from: t.from, to: t.to, amount: t.amount })),
+    victimTxns, asOf: world.cutoff,
+  });
+  return Object.fromEntries(Object.entries(r.accounts).filter(([, a]) => a.tainted > 0).map(([id, a]) => [id, { ...a.taint }]));
 }
 
 /** When stolen money was first found arriving in each account (from REPORTED complaints). */
