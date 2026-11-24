@@ -100,7 +100,7 @@ export function evaluateGate(original: Action, ctx: GateContext, policy: PolicyS
     const isMoney = action?.kind === "EXACT_HOLD" || action?.kind === "WHOLE_FREEZE";
     const held = action?.kind === "WHOLE_FREEZE" ? ctx.account?.balance ?? 0 : action?.kind === "EXACT_HOLD" ? action.amount : 0;
     const fast = isMoney && held < g.fast_restoration_below;
-    if (fast) ok("R4", true, `Under ${formatINR(g.fast_restoration_below)}: fast restoration path, no court needed`);
+    if (fast) ok("R4", true, `Under ${formatINR(g.fast_restoration_below)}: fast restoration path, no court needed`, ["mha-sop-2026-01"]);
     const timed = !isMoney || (spec !== undefined && (spec.max_days !== null || spec.clocks.length > 0 || regime === "COURT_ORDER"));
     if (isMoney && spec) ok("R3", timed, spec.max_days ? `${spec.label}: at most ${spec.max_days} days, ${spec.clocks.length} deadlines tracked` : `${spec.label}: ${spec.clocks.length} deadlines tracked`, spec.sources);
     if (spec && spec.status !== "final") flags.push(`${spec.label} rules are ${spec.status}`);

@@ -149,7 +149,7 @@ Pure TypeScript functions with automatic tests.
 | R1 | An exact hold can never be more than the money traced to the account. |
 | R2 | Freezing a whole account is a last resort: mule score ≥ 0.85, at least 2 signals, and an officer confirms. |
 | R3 | A hold lasts at most 60 days unless a court extends it. |
-| R4 | ~~Amounts under ₹50,000 go to fast restoration.~~ Switched off: the R1 check found no ₹50,000 limit in the MHA SOP text. |
+| R4 | Amounts under ₹50,000 go to fast restoration (unverified: press reports it; R1 did not find it in the SOP text). |
 | R5 | Never block the 140 / 1600 / 1601 number series (official and banking numbers). |
 | R6 | Never block a spoofed displayed number (the real caller is someone else). |
 | R7 | A SIM or handset block needs at least 2 signals, including at least 1 telecom signal. |

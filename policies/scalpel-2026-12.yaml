@@ -1,7 +1,7 @@
 id: scalpel-2026-12
 title: "Scalpel operating policy (RBI draft + MHA SOP), Dec 2026"
 status: draft
-effective_from: "2026-09-01"
+effective_from: "2026-09-11"
 effective_to: null
 sources:
   - { id: bnss, title: "Bharatiya Nagarik Suraksha Sanhita, 2023 - s.106 (police seizure) and s.107 (Magistrate attachment)", issuer: "Parliament of India", date: "2023-12-25", ref: "Act No. 46 of 2023", url: "https://indiankanoon.org/doc/91117739/", verified: true }
@@ -22,7 +22,8 @@ sources:
 gate:
   exact_hold_max_ratio_of_traced: 1.0
   whole_account: { min_mule_score: 0.85, min_signals: 2, officer_confirmation: true }
-  fast_restoration_below: 0              # off: R1 found no "under Rs 50,000" rule in the MHA SOP text (press summaries only)
+  fast_restoration_below: 5000000        # Rs 50,000 victim refund without a court order: press reports say yes, R1 did not find it
+                                         # in the SOP text (it found no Rs 50,000 limit on the 90-day lift). Kept, cites the unverified SOP.
   protected_number_prefixes: ["140", "1600", "1601"]
   telecom_block: { min_signals: 2, min_telecom_signals: 1 }
   shield_max_action: EXACT_HOLD

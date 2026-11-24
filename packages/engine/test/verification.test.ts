@@ -86,8 +86,11 @@ describe("verified / unverified sources", () => {
     }
   });
 
-  it("no rule leans on the wrong 'under Rs 50,000' claim any more", () => {
-    expect(P.gate.fast_restoration_below).toBe(0);
+  it("Rs 50,000: no limit on the 90-day lift (R1); victim fast refund kept but shown unverified", () => {
+    const r4 = evaluateGate(cut, ctx(P), P).checks.find((c) => c.rule === "R4");
+    expect(r4).toBeUndefined(); // ₹18,59,181 is above ₹50,000
+    const small = evaluateGate({ ...cut, amount: rupees(40_000) }, { ...ctx(P), account: { id: "A1", type: "CURRENT", balance: rupees(40_000), traced: rupees(40_000) } }, P);
+    expect(small.checks.find((c) => c.rule === "R4")).toMatchObject({ ok: true, unverified: ["mha-sop-2026-01"] });
     const mha = P.regimes.MHA_POLICE!;
     for (const c of mha.clocks) expect(c.amount_below, c.id).toBeUndefined();
     expect(P.regimes.TRAI_UCC!.clocks.find((c) => c.id === "bar_review")!.sources).toEqual(["trai-tcccpr-2"]);

@@ -31,7 +31,7 @@ Fictional "Bharat Demo Bank" + "Telco-A". Solo student project (Tech Mahindra in
 - R1: exact hold ≤ traced.
 - R2: whole account only as a last resort (mule ≥0.85, ≥2 signals, officer confirmation).
 - R3: ≤60-day cap.
-- R4: switched off (R1: the MHA SOP has no ₹50k limit; its 90-day lift applies to any amount).
+- R4: <₹50k victim fast restoration, shown unverified (press reports it; R1 didn't find it in the SOP text; the SOP's 90-day lift has no ₹50k limit).
 - R5: never block 140/1600/1601 series.
 - R6: never block a spoofed displayed number.
 - R7: SIM/IMEI block needs ≥2 signals incl. ≥1 telecom.
