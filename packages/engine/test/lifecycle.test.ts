@@ -38,18 +38,20 @@ describe("multi-clock lifecycle", () => {
     expect(formatIST(view(hold, day(27), "grm_upload").dueAt!)).toBe("2027-01-21 23:59 IST");
     expect(view(hold, day(27), "release_90").state).toBe("RUNNING");
   });
-  it("police hold: lifted at 90 days unless extended, one +90 extension only (MHA SOP, R1)", () => {
+  it("police hold: bank must decide at 90 days unless extended, one +90 extension only (MHA SOP)", () => {
     let h = createHold({ id: "P", account: "A", amount: rupees(49999), regime: "MHA_POLICE", at: t0, by: "o", policy: P });
     expect(view(h, day(76), "release_90").state).toBe("ALERT");
     h = applyEvent(h, { type: "EXTENDED", at: day(80), by: "io", clockId: "release_90" }, P);
     expect(view(h, day(100), "release_90").state).toBe("RUNNING");
     expect(() => applyEvent(h, { type: "EXTENDED", at: day(101), by: "io", clockId: "release_90" }, P)).toThrow(/only 1/);
-    expect(settle(h, P, day(181)).hold.state).toBe("RELEASED");
+    expect(settle(h, P, day(181)).hold.state).toBe("ACTIVE"); // not automatic: the SOP says the bank "may" remove it
+    expect(dueActions(h, P, day(181)).map((d) => [d.clockId, d.kind])).toContainEqual(["release_90", "DECIDE"]);
   });
-  it("the 90-day clock applies to any amount: R1 found no Rs 50,000 limit in the SOP", () => {
+  it("the 90-day review applies to any amount (no Rs 50,000 limit in the SOP)", () => {
     const h = createHold({ id: "P", account: "A", amount: rupees(5_00_000), regime: "MHA_POLICE", at: t0, by: "o", policy: P });
     expect(view(h, day(76), "release_90").state).toBe("ALERT");
-    expect(settle(h, P, day(91)).hold.state).toBe("RELEASED");
+    expect(settle(h, P, day(91)).hold.state).toBe("ACTIVE");
+    expect(dueActions(h, P, day(91)).map((d) => [d.clockId, d.kind])).toContainEqual(["release_90", "DECIDE"]);
   });
   it("two holds on one account: releasing one keeps the other", () => {
     const a = createHold({ id: "B", account: "A", amount: rupees(30000), regime: "RBI_BANK", at: t0, by: "o", policy: P });

@@ -53,7 +53,7 @@ regimes:
       - { id: decide_after_reply, label: "Decide after the holder replies", starts_on: REPLY_RECEIVED, days: 10, satisfied_by: [RELEASED, REFERRED_TO_LEA, REVIEWED], on_expiry: OVERDUE, sources: [rbi-draft-mule-2026] }
       - { id: decide_no_reply, label: "Decide if the holder never replies", starts_on: HOLD_PLACED, days: 30, satisfied_by: [REPLY_RECEIVED, RELEASED, REFERRED_TO_LEA, REVIEWED], on_expiry: OVERDUE, sources: [rbi-draft-mule-2026] }
       - { id: lea_handoff, label: "Hand over to police regime after referral", starts_on: REFERRED_TO_LEA, days: 0, satisfied_by: [RELEASED], on_expiry: CONVERT, convert_to: MHA_POLICE, status: assumed, sources: [rbi-draft-mule-2026] }
-      - { id: max_cap, label: "60-day maximum", starts_on: HOLD_PLACED, days: 60, alert_before_days: 5, satisfied_by: [RELEASED, CONVERTED], on_expiry: AUTO_RELEASE, status: assumed, sources: [rbi-draft-mule-2026] }   # 60 days is from a secondary summary (R1), not the RBI text
+      - { id: max_cap, label: "60-day maximum", starts_on: HOLD_PLACED, days: 60, alert_before_days: 5, satisfied_by: [RELEASED, CONVERTED], on_expiry: AUTO_RELEASE, sources: [rbi-draft-mule-2026] }   # RBI draft Annex III para 5 "Maximum duration": 60 days (read 24 Nov)
   MHA_POLICE:
     label: "Police-requested hold (MHA SOP)"
     status: final
@@ -62,9 +62,11 @@ regimes:
     clocks:
       - { id: grm_upload, label: "Upload to the I4C grievance module", starts_on: HOLD_PLACED, days: 7, satisfied_by: [GRM_UPLOADED, RELEASED], on_expiry: OVERDUE, sources: [mha-sop-2026-01] }
       - { id: io_decision, label: "Investigating officer decides", starts_on: HOLD_PLACED, days: 15, satisfied_by: [IO_DECISION, RELEASED, COURT_ORDER_RECEIVED], on_expiry: ESCALATE, sources: [mha-sop-2026-01] }
-      # R1: the SOP's 90-day rule has no Rs 50,000 limit. A contested hold with no court order or case need is lifted after 90 days,
-      # with 15 days' notice to the SHO; the police may extend it once by up to 90 days. Counting from the hold date is our assumption.
-      - { id: release_90, label: "Lift the hold after 90 days unless police extend it", starts_on: HOLD_PLACED, days: 90, alert_before_days: 15, extendable: { times: 1, days: 90 }, satisfied_by: [RELEASED, COURT_ORDER_RECEIVED], on_expiry: AUTO_RELEASE, status: assumed, sources: [mha-sop-2026-01] }
+      # MHA SOP Para 10.1 / Annexure I item 3: for holds contested through the grievance module, the bank MAY remove the hold
+      # after 90 days (after EDD, as police direct), with 15 days' notice; police may extend once by 90 days. No amount limit.
+      # It is not automatic, so at 90 days the bank must DECIDE. The SOP counts from the grievance (Para 10.1) or the hold
+      # (Annexure I); we use the hold date, so this stays assumed.
+      - { id: release_90, label: "Review at 90 days: bank may lift the hold unless police extend it", starts_on: HOLD_PLACED, days: 90, alert_before_days: 15, extendable: { times: 1, days: 90 }, satisfied_by: [RELEASED, COURT_ORDER_RECEIVED, REVIEWED], on_expiry: DECIDE, status: assumed, sources: [mha-sop-2026-01] }
   DIGITAL_SUSPENSION:
     label: "Digital-banking suspension"
     status: final
