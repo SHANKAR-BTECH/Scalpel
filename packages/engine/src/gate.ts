@@ -35,6 +35,8 @@ export interface GateContext {
   officerConfirmed: boolean;
   evidenceRecordId?: string;
   msisdn?: { number: string; spoofSuspected: boolean };
+  /** What each victim whose money is traced into this account lost in all (trace().victimPaid). R4 is decided per victim. */
+  victimLosses?: Record<string, Paise>;
 }
 
 export type RuleId = "R0" | "R1" | "R2" | "R3" | "R4" | "R5" | "R6" | "R7" | "R8" | "R9";
@@ -109,8 +111,11 @@ export function evaluateGate(original: Action, ctx: GateContext, policy: PolicyS
     const spec = regime ? policy.regimes[regime] : undefined;
     const isMoney = action?.kind === "EXACT_HOLD" || action?.kind === "WHOLE_FREEZE";
     const held = action?.kind === "WHOLE_FREEZE" ? ctx.account?.balance ?? 0 : action?.kind === "EXACT_HOLD" ? action.amount : 0;
-    const fast = isMoney && held < g.fast_restoration_below;
-    if (fast) ok("R4", true, `Hold under ${formatINR(g.fast_restoration_below)}: victims may be repaid through the fast refund route without a court order (victim refund, not a release for the holder)`, ["mha-sop-2026-01"]);
+    // R4 is about each victim's loss, not the hold: only a victim who lost under the limit can use the fast refund route.
+    const losses = Object.values(ctx.victimLosses ?? {});
+    const small = losses.filter((l) => l < g.fast_restoration_below).length;
+    const fast = isMoney && small > 0;
+    if (fast) ok("R4", true, `${small} of ${losses.length} victims lost under ${formatINR(g.fast_restoration_below)}: they may be repaid through the fast refund route without a court order (victim refund, not a release for the holder)`, ["mha-sop-2026-01"]);
     const timed = !isMoney || (spec !== undefined && (spec.max_days !== null || spec.clocks.length > 0 || regime === "COURT_ORDER"));
     if (isMoney && spec) ok("R3", timed, spec.max_days ? `${spec.label}: at most ${spec.max_days} days, ${spec.clocks.length} deadlines tracked` : `${spec.label}: ${spec.clocks.length} deadlines tracked`, spec.sources);
     if (spec && spec.status !== "final") flags.push(`${spec.label} rules are ${spec.status}`);

@@ -40,6 +40,15 @@ describe("time (IST)", () => {
     const fri = parseIST("2026-12-11T10:00");
     expect(formatIST(deadline(fri, 1, "bank_working"))).toBe("2026-12-14 23:59 IST");
   });
+  it("bank working days also skip the 3 national holidays (Republic Day, Independence Day, Gandhi Jayanti)", () => {
+    expect(isBankHoliday("2027-01-26")).toBe(true);
+    expect(isBankHoliday("2026-08-15")).toBe(true);
+    expect(isBankHoliday("2026-10-02")).toBe(true);
+    const mon = parseIST("2027-01-25T10:00"); // Tue 26 Jan is Republic Day
+    expect(formatIST(deadline(mon, 1, "bank_working"))).toBe("2027-01-27 23:59 IST");
+    expect(formatIST(deadline(mon, 1, "calendar"))).toBe("2027-01-26 23:59 IST"); // calendar days don't skip holidays
+    expect(isBankHoliday("2027-01-26", new Set())).toBe(false); // a caller can pass its own list
+  });
   it("daysBetween counts IST days", () => {
     expect(daysBetween(parseIST("2026-12-01T23:50"), parseIST("2026-12-02T00:10"))).toBe(1);
   });

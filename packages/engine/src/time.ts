@@ -32,8 +32,19 @@ export const formatIST = (t: Instant): string => new Date(t + IST_OFFSET_MS).toI
 
 export type DayUnit = "calendar" | "bank_working";
 
+/**
+ * The three national holidays every bank in India closes on (Republic Day, Independence Day, Gandhi Jayanti).
+ * State holidays under the Negotiable Instruments Act differ by state and are NOT loaded: pass them in when known.
+ */
+export function nationalBankHolidays(fromYear: number, toYear: number): ReadonlySet<ISTDate> {
+  const out = new Set<ISTDate>();
+  for (let y = fromYear; y <= toYear; y++) for (const md of ["01-26", "08-15", "10-02"]) out.add(`${y}-${md}`);
+  return out;
+}
+export const NATIONAL_BANK_HOLIDAYS = nationalBankHolidays(2025, 2030);
+
 /** Indian bank holidays: Sundays, 2nd and 4th Saturdays, plus listed public holidays. */
-export function isBankHoliday(d: ISTDate, holidays: ReadonlySet<ISTDate> = new Set()): boolean {
+export function isBankHoliday(d: ISTDate, holidays: ReadonlySet<ISTDate> = NATIONAL_BANK_HOLIDAYS): boolean {
   if (holidays.has(d)) return true;
   const dt = new Date(`${d}T00:00:00Z`);
   const dow = dt.getUTCDay();

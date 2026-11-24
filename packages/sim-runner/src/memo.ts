@@ -66,6 +66,7 @@ export function buildMemo(world: World, dir: string, accounts: string[], now: In
       account: { id: account, type: (types[account] ?? "SAVINGS") as never, balance: t.balance, traced: t.traced },
       assessment: { role: a.role, muleScore: a.muleScore, signals: sig },
       officerConfirmed: confirmed, evidenceRecordId: `EV-${account}`,
+      victimLosses: Object.fromEntries(Object.keys(full.accounts[account]?.taint ?? {}).map((v) => [v, full.victimPaid[v] ?? 0])),
     });
     const candidates: Action[] = [{ kind: "EXACT_HOLD", account, amount: exact }, { kind: "WHOLE_FREEZE", account }];
     const plain = planAccount(candidates, ctx(false), P).best;

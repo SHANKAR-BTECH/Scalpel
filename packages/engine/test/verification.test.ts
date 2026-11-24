@@ -86,11 +86,17 @@ describe("verified / unverified sources", () => {
     }
   });
 
-  it("Rs 50,000: no limit on the 90-day lift (R1); victim fast refund kept but shown unverified", () => {
-    const r4 = evaluateGate(cut, ctx(P), P).checks.find((c) => c.rule === "R4");
-    expect(r4).toBeUndefined(); // ₹18,59,181 is above ₹50,000
-    const small = evaluateGate({ ...cut, amount: rupees(40_000) }, { ...ctx(P), account: { id: "A1", type: "CURRENT", balance: rupees(40_000), traced: rupees(40_000) } }, P);
+  it("Rs 50,000: no limit on the 90-day lift (R1); victim fast refund decided per victim's loss and shown unverified", () => {
+    // One victim who lost ₹18,17,882: no fast refund, however small the hold.
+    const big = evaluateGate({ ...cut, amount: rupees(40_000) }, { ...ctx(P), victimLosses: { V: rupees(18_17_882) }, account: { id: "A1", type: "CURRENT", balance: rupees(40_000), traced: rupees(40_000) } }, P);
+    expect(big.checks.find((c) => c.rule === "R4")).toBeUndefined();
+    expect(big.fastRestoration).toBe(false);
+    // A big hold that holds money of a victim who lost ₹30,000: that victim may use the fast route.
+    const small = evaluateGate(cut, { ...ctx(P), victimLosses: { V: rupees(18_17_882), W: rupees(30_000) } }, P);
     expect(small.checks.find((c) => c.rule === "R4")).toMatchObject({ ok: true, unverified: ["mha-sop-2026-01"] });
+    expect(small.checks.find((c) => c.rule === "R4")!.note).toMatch(/^1 of 2 victims/);
+    // No victim figures given: R4 is not decided at all.
+    expect(evaluateGate(cut, ctx(P), P).checks.find((c) => c.rule === "R4")).toBeUndefined();
     const mha = P.regimes.MHA_POLICE!;
     for (const c of mha.clocks) expect(c.amount_below, c.id).toBeUndefined();
     expect(P.regimes.TRAI_UCC!.clocks.find((c) => c.id === "bar_review")!.sources).toEqual(["trai-tcccpr-2"]);
