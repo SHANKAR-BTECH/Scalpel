@@ -9,7 +9,7 @@ const { policies, overlays } = loadPolicies(join(__dirname, "../../../policies")
 describe("policy files", () => {
   it("all load and validate", () => {
     expect(policies.map((p) => p.id).sort()).toEqual(["legacy-practice", "scalpel-2026-12"]);
-    expect(overlays.length).toBe(4);
+    expect(overlays.length).toBe(5);
   });
   it("picks the version in force on the event date", () => {
     expect(policyAt(policies, parseIST("2026-12-20T10:00")).id).toBe("scalpel-2026-12");

@@ -73,7 +73,7 @@ describe("verified / unverified sources", () => {
 
   it("R1 result: exactly these sources are verified; partly-wrong ones stay unverified until Shankar checks", () => {
     const unverified = P.sources.filter((s) => !s.verified).map((s) => s.id).sort();
-    expect(unverified).toEqual(["mha-sop-2026-01", "trai-tcccpr-2", "trai-tcccpr-3"]);
+    expect(unverified).toEqual(["barlow-clowes", "mha-sop-2026-01", "re-hallett", "trai-tcccpr-2", "trai-tcccpr-3"]);
     for (const s of P.sources.filter((x) => x.verified)) expect(s.date, s.id).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(P.sources.map((s) => s.id).join(" ")).not.toMatch(/15\.12/);
   });

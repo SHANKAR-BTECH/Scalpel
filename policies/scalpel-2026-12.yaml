@@ -19,6 +19,8 @@ sources:
   - { id: malabar-gold, title: "Malabar Gold and Diamond Ltd v. Union of India", issuer: "Delhi High Court", date: "2026-01-16", ref: "W.P.(C) 4198/2025; 2026 SCC OnLine Del 297", url: "https://delhihighcourt.nic.in/app/showlogo/1769248155_eb87a6191c1f9386_596_41982025.pdf/2026", verified: true }
   - { id: jar-gold, title: "State of Karnataka v. Jar Gold Retail Pvt. Ltd.", issuer: "Karnataka High Court", date: "2026-08-10", ref: "Crl.P. No. 5929 of 2026", url: "https://indiankanoon.org/doc/14622554/", verified: true }
   - { id: himanshu-gupta, title: "Himanshu Gupta v. State (lien cut to the traced Rs 82,800)", issuer: "Madras High Court", date: "2026-07-07", ref: "W.P. Crl. No. 1443 of 2025", url: "https://indiankanoon.org/doc/127387465/", verified: true }
+  - { id: re-hallett, title: "Re Hallett's Estate (1880) 13 Ch D 696 - a wrongdoer is taken to spend his own money first", issuer: "Court of Appeal (England & Wales)", ref: "(1880) 13 Ch D 696", verified: false }
+  - { id: barlow-clowes, title: "Barlow Clowes International v Vaughan [1992] 4 All ER 22 - pro-rata sharing among innocent contributors to a mixed fund", issuer: "Court of Appeal (England & Wales)", ref: "[1992] 4 All ER 22", verified: false }
 gate:
   exact_hold_max_ratio_of_traced: 1.0
   whole_account: { min_mule_score: 0.85, min_signals: 2, officer_confirmation: true }
