@@ -55,6 +55,8 @@ export const RegimeSpec = z.object({
   max_days: z.number().int().positive().nullable(),
   min_amount: z.number().int().nonnegative().default(0),
   exempt_account_types: z.array(z.string()).default([]),
+  /** The rule only binds from this date (e.g. a draft that applies later). Before it, a hold under this regime has a contested basis. */
+  in_force_from: isoDate.optional(),
   clocks: z.array(Clock),
   sources: z.array(z.string()).default([]),
 });
@@ -151,4 +153,9 @@ export function strictestJurisdiction(overlays: Overlay[], states: StateCode[], 
   const strictest = views.reduce((a, b) => (order[b.power] < order[a.power] ? b : a));
   const conflict = new Set(views.map((v) => v.power)).size > 1;
   return { strictest, views, conflict };
+}
+
+/** Is this regime's rule binding at `at`? (A regime with no in_force_from date is taken as in force.) */
+export function regimeInForce(spec: RegimeSpec | undefined, at: Instant): boolean {
+  return !spec?.in_force_from || istStart(spec.in_force_from) <= at;
 }

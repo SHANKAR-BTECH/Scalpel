@@ -68,9 +68,12 @@ describe("golden cases", () => {
     expect(r.regime).toBe("RBI_BANK");
     expect(r.action).toEqual({ kind: "EXACT_HOLD", account: "M1", amount: rupees(30_000) });
     expect(r.badges).toEqual({ allowed: true, sized: true, timed: true });
+    // 20 Dec 2026: the RBI draft only applies from 1 Apr 2027, so the bank's own hold is on a contested basis (amber, risk Q10).
+    // On time? is amber too: the police hand-over clock is our own reading ("assumed").
+    expect(r.badgeStates).toEqual({ allowed: "caution", sized: "pass", timed: "caution" });
     expect(r.flags).toContain("Bank-initiated fallback hold");
     expect(r.quashRisksBefore.map((q) => q.id)).toEqual(expect.arrayContaining(["Q1", "Q2", "Q5"]));
-    expect(r.quashRisksAfter).toEqual([]);
+    expect(r.quashRisksAfter.map((q) => q.id)).toEqual(["Q10"]);
   });
 
   it("2. Karnataka: police may freeze; asking the full ₹60,000 complaint amount is cut to the ₹30,000 traced", () => {

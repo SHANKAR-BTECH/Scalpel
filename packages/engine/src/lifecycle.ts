@@ -14,7 +14,8 @@ export interface Hold {
   events: HoldEventRec[];
 }
 
-export type ClockState = "NOT_STARTED" | "RUNNING" | "ALERT" | "SATISFIED" | "EXPIRED" | "NOT_APPLICABLE";
+/** SATISFIED_LATE: the closing event happened, but after the deadline. The breach stays on the record. */
+export type ClockState = "NOT_STARTED" | "RUNNING" | "ALERT" | "SATISFIED" | "SATISFIED_LATE" | "EXPIRED" | "NOT_APPLICABLE";
 export interface ClockView { clock: Clock; regime: Regime; state: ClockState; startedAt: Instant | null; dueAt: Instant | null; alertAt: Instant | null; extensionsUsed: number }
 export interface DueAction { holdId: string; clockId: string; kind: Clock["on_expiry"] | "ALERT"; dueAt: Instant; startedAt: Instant; convertTo?: Regime; label: string }
 
@@ -54,8 +55,8 @@ export function clockViews(h: Hold, policy: PolicySet, now: Instant): ClockView[
     const days = c.days + ext * (c.extendable?.days ?? 0);
     const dueAt = deadline(start.at, days, c.unit);
     const alertAt = c.alert_before_days > 0 ? istStart(addDays(istDate(dueAt), -c.alert_before_days)) : null;
-    const sat = seg.some((e) => e.at >= start.at && c.satisfied_by.includes(e.type) && e !== start);
-    const state: ClockState = sat ? "SATISFIED" : now > dueAt ? "EXPIRED" : alertAt !== null && now >= alertAt ? "ALERT" : "RUNNING";
+    const sat = seg.find((e) => e.at >= start.at && c.satisfied_by.includes(e.type) && e !== start);
+    const state: ClockState = sat ? (sat.at > dueAt ? "SATISFIED_LATE" : "SATISFIED") : now > dueAt ? "EXPIRED" : alertAt !== null && now >= alertAt ? "ALERT" : "RUNNING";
     return { ...base, state, startedAt: start.at, dueAt, alertAt, extensionsUsed: ext };
   });
 }

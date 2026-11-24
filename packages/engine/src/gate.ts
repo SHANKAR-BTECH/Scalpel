@@ -6,7 +6,7 @@
 import type { Paise } from "./money";
 import { formatINR } from "./money";
 import type { Instant } from "./time";
-import { unverifiedSources, type PolicySet, type Regime } from "./policy";
+import { regimeInForce, unverifiedSources, type PolicySet, type Regime } from "./policy";
 import type { RequisitionResult } from "./requisition";
 
 export const BANK_SIGNALS = ["ACCOUNT_AGE_LT_30D", "DWELL_LT_15M", "GE3_CASE_LINKED_SENDERS", "KYC_CHANGED_LT_30D"] as const;
@@ -41,13 +41,21 @@ export type RuleId = "R0" | "R1" | "R2" | "R3" | "R4" | "R5" | "R6" | "R7" | "R8
 export interface Check { rule: RuleId; ok: boolean; note: string; sources: string[]; /** cited sources not yet verified: show "unverified" */ unverified: string[] }
 export interface QuashRisk { id: string; ground: string }
 
+/** pass = green; caution = amber (allowed today but on a contested or not-yet-verified basis); fail = red. */
+export type BadgeState = "pass" | "caution" | "fail";
+export type BadgeKey = "allowed" | "sized" | "timed";
+
 export interface GateResult {
   decision: "ALLOW" | "MODIFY" | "ROUTE" | "DENY";
   original: Action;
   action: Action | null;
   regime: Regime | null;
   checks: Check[];
+  /** true unless the badge FAILS (amber still counts as true). Kept for callers that only need yes/no. */
   badges: { allowed: boolean; sized: boolean; timed: boolean };
+  /** Three-state badges, each with the plain reasons behind any amber or red. */
+  badgeStates: Record<BadgeKey, BadgeState>;
+  badgeReasons: Record<BadgeKey, string[]>;
   flags: string[];
   quashRisksBefore: QuashRisk[];
   quashRisksAfter: QuashRisk[];
@@ -82,6 +90,8 @@ export function quashRisks(action: Action | null, ctx: GateContext, regime: Regi
   }
   if (ctx.assessment.role === "shield" && action.kind === "WHOLE_FREEZE") out.push({ id: "Q8", ground: "Likely innocent recipient fully frozen" });
   if (action.kind === "WHOLE_FREEZE" && a.type === "CURRENT") out.push({ id: "Q9", ground: "Business account fully frozen: livelihood harm" });
+  if (ctx.requester === "POLICE" && regime && regime !== "MHA_POLICE" && regime !== "COURT_ORDER" && !regimeInForce(spec, ctx.at))
+    out.push({ id: "Q10", ground: "A police request turned into a bank hold under rules not yet in force" });
   return out;
 }
 
@@ -100,18 +110,32 @@ export function evaluateGate(original: Action, ctx: GateContext, policy: PolicyS
     const isMoney = action?.kind === "EXACT_HOLD" || action?.kind === "WHOLE_FREEZE";
     const held = action?.kind === "WHOLE_FREEZE" ? ctx.account?.balance ?? 0 : action?.kind === "EXACT_HOLD" ? action.amount : 0;
     const fast = isMoney && held < g.fast_restoration_below;
-    if (fast) ok("R4", true, `Under ${formatINR(g.fast_restoration_below)}: fast restoration path, no court needed`, ["mha-sop-2026-01"]);
+    if (fast) ok("R4", true, `Hold under ${formatINR(g.fast_restoration_below)}: victims may be repaid through the fast refund route without a court order (victim refund, not a release for the holder)`, ["mha-sop-2026-01"]);
     const timed = !isMoney || (spec !== undefined && (spec.max_days !== null || spec.clocks.length > 0 || regime === "COURT_ORDER"));
     if (isMoney && spec) ok("R3", timed, spec.max_days ? `${spec.label}: at most ${spec.max_days} days, ${spec.clocks.length} deadlines tracked` : `${spec.label}: ${spec.clocks.length} deadlines tracked`, spec.sources);
     if (spec && spec.status !== "final") flags.push(`${spec.label} rules are ${spec.status}`);
     if (checks.some((c) => c.unverified.length > 0)) flags.push("Some cited sources are unverified");
+    const reasons: Record<BadgeKey, string[]> = { allowed: [], sized: [], timed: [] };
+    const st: Record<BadgeKey, BadgeState> = { allowed: "pass", sized: "pass", timed: "pass" };
+    const fail = (k: BadgeKey, why: string) => { st[k] = "fail"; reasons[k].push(why); };
+    const caution = (k: BadgeKey, why: string) => { if (st[k] !== "fail") st[k] = "caution"; reasons[k].push(why); };
+    // Allowed?
+    if (decision === "ROUTE" || decision === "DENY") fail("allowed", decision === "ROUTE" ? "Not allowed as asked: sent back to the officer or the Magistrate" : "Not allowed");
+    else if (spec && !regimeInForce(spec, ctx.at)) caution("allowed", `${spec.label} only applies from ${spec.in_force_from}; until then this hold rests on a contested basis`);
+    // Right size?
+    if (ctx.account && isMoney) {
+      if (held > ctx.account.traced) fail("sized", `Holds ${formatINR(held - ctx.account.traced)} more than the traced victim money`);
+    }
+    // On time?
+    if (isMoney && !timed) fail("timed", "No time limit and no deadlines for this hold");
+    if (isMoney && spec && st.timed !== "fail") {
+      const shaky = spec.clocks.filter((c) => c.status === "assumed" || (c.sources.length > 0 && unverifiedSources(policy, c.sources).length === c.sources.length));
+      if (shaky.length) caution("timed", `${shaky.length} of ${spec.clocks.length} deadlines rest on a source still being checked or on our own reading`);
+    }
     return {
       decision, original, action, regime: action ? regime : null, checks, flags,
-      badges: {
-        allowed: decision === "ALLOW" || decision === "MODIFY",
-        sized: !ctx.account || held <= ctx.account.traced,
-        timed,
-      },
+      badges: { allowed: st.allowed !== "fail", sized: st.sized !== "fail", timed: st.timed !== "fail" },
+      badgeStates: st, badgeReasons: reasons,
       quashRisksBefore: quashRisks(original, ctx, regimeFor(ctx.requester), policy),
       quashRisksAfter: decision === "ROUTE" || decision === "DENY" ? [] : quashRisks(action, ctx, regime, policy),
       fastRestoration: fast,
@@ -202,6 +226,8 @@ export function evaluateGate(original: Action, ctx: GateContext, policy: PolicyS
       ok("R1", false, `Asked ${formatINR(action.amount)}; traced victim money is ${formatINR(cap)}. Hold reduced.`, ["himanshu-gupta"]);
       action = { ...action, amount: cap }; modify();
     } else ok("R1", true, `Hold ${formatINR(action.amount)} ≤ traced ${formatINR(cap)}`);
+    // A lien may exceed today's balance (Himanshu Gupta: Rs 82,800 lien on a Rs 31,221 balance); it then also catches later credits. Say so.
+    if (action.amount > acct.balance) flags.push(`Lien of ${formatINR(action.amount)} is more than today's ${formatINR(acct.balance)} balance: it will also catch later credits up to that amount`);
   }
   return done();
 }

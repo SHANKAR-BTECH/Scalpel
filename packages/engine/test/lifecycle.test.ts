@@ -21,6 +21,12 @@ describe("multi-clock lifecycle", () => {
     expect(view(h2, day(2), "notice").state).toBe("SATISFIED");
     expect(formatIST(view(h2, day(2), "explanation").dueAt!)).toBe("2027-01-10 23:59 IST");
   });
+  it("a deadline met late stays on the record as SATISFIED_LATE, not SATISFIED", () => {
+    const h = createHold({ id: "HL", account: "A", amount: rupees(30000), regime: "RBI_BANK", at: t0, by: "officer", policy: P });
+    const late = applyEvent(h, { type: "NOTICE_SENT", at: day(4), by: "system" }, P);
+    expect(view(late, day(5), "notice").state).toBe("SATISFIED_LATE");
+    expect(dueActions(late, P, day(5)).map((d) => d.clockId)).not.toContain("notice");
+  });
   it("RBI hold auto-releases at the 60-day cap with an alert 5 days before", () => {
     const h = applyEvent(createHold({ id: "H", account: "A", amount: rupees(30000), regime: "RBI_BANK", at: t0, by: "o", policy: P }), { type: "NOTICE_SENT", at: t0, by: "s" }, P);
     expect(view(h, day(56), "max_cap").state).toBe("ALERT");
