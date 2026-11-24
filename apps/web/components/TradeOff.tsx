@@ -17,10 +17,10 @@ export function TradeOff({ axe, exact }: { axe: H; exact: H }) {
   return (
     <div className="grid gap-4 md:grid-cols-2" data-testid="tradeoff">
       {cols.map((c, i) => (
-        <div key={c.key} className="card p-5">
+        <div key={c.key} className="card lift p-5">
           <p className="font-semibold">{c.title}</p>
           <p className="text-[13px] muted mt-3">Victim money it reaches</p>
-          <p className="num text-[30px] font-semibold leading-tight" style={{ color: c.color }}>{pct(reached(c.h))}</p>
+          <p className="mono text-[28px] font-medium leading-tight" style={{ color: c.color }}>{pct(reached(c.h))}</p>
           <m.div className="mt-2 h-2.5 rounded-full overflow-hidden" style={{ background: "var(--line)" }} initial="off" whileInView="on" viewport={{ once: true }}>
             <m.div className="h-full rounded-full" style={{ background: c.color, width: `${reached(c.h) * 100}%`, transformOrigin: "left" }}
               variants={{ off: { scaleX: 0 }, on: { scaleX: 1 } }} transition={{ duration: 0.9, ease: EASE_OUT, delay: 0.15 + 0.1 * i }} />

@@ -7,7 +7,7 @@ import type { DemoData } from "@/lib/demo-schema";
 export function Timeline30d({ days }: { days: DemoData["replay"]["timeline"] }) {
   const complaints = days.reduce((s, d) => s + d.complaints, 0);
   return (
-    <figure className="card p-5">
+    <figure>
       <figcaption className="font-semibold text-[16px]">The 30 days before the bank decides</figcaption>
       <p className="text-xs muted">Bars: victim money paid each day. {complaints} complaints arrived; the bank decides at the end of day 30. <span className="tag">known only afterwards</span></p>
       <div className="h-40 mt-2">

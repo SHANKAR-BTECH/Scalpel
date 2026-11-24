@@ -3,8 +3,8 @@ import { ORDER_LABEL, pct } from "@/lib/order";
 import { OrderChart } from "@/components/OrderChart";
 import { WorstTable } from "@/components/WorstTable";
 import { Provenance } from "@/components/Provenance";
-import { Explain, FullData, PageHead } from "@/components/ui/Explain";
-import { Reveal } from "@/components/ui/Reveal";
+import { FullData, PageHead } from "@/components/ui/Explain";
+import { QueueSettings } from "@/components/QueueSettings";
 
 export const metadata = { title: "Who first? · Scalpel" };
 
@@ -15,19 +15,16 @@ export default function OrderPage() {
   const v3 = o.v3;
   return (
     <>
-      <PageHead eyebrow="Who first?" title="Which account should the officer act on first?"
-        lede="Every order below holds exactly the same amounts. The only difference is which account the officer acts on first, at 10 accounts an hour unless you switch K. The mule-score model sorts the list and gives reasons; it never sets the amount." />
-      <Explain
-        takeaway={<>The mule-score model&apos;s order is about as good as the simple rule to beat, <b>biggest amount first</b>, but not better. In the test we locked in advance it missed the pass mark, so we report it as <b>not earned</b>.</>}
-        howToRead={<>Higher is better: each line shows how much of the best possible rescue an order reaches as the officer works down the list. Switch K to change how many accounts an officer can handle per hour. The stamped box below is the locked test.</>}
-      />
-
-      <Reveal as="section" className="mt-10">
-        <div className="card p-6 sm:p-7" data-testid="v3" style={{ borderTop: "4px solid var(--warn)" }}>
+      <PageHead title="Who first?"
+        purpose={<>When there are more requests than an officer can handle, the order matters: scam money keeps leaving every hour. Choose how your inbox is sorted. The hold amount never changes, only which account is handled first.</>}
+        how={<>The evidence below explains the recommendation, including the test our AI model did not pass.</>} />
+      <QueueSettings />
+      <section className="mt-10">
+        <div className="card p-6 sm:p-7" data-testid="v3">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="eyebrow">The harder test · locked in advance</p>
-              <h2 className="display text-[26px] sm:text-[30px] mt-2 max-w-2xl">Split payments: the model did not earn its place.</h2>
+              <p className="text-[13px] muted">Evidence 1 · the harder test, locked in advance</p>
+              <h2 className="title text-[24px] sm:text-[28px] mt-1 max-w-2xl">Split payments: the model did not earn its place.</h2>
             </div>
             {v3 && <span className="stamp mt-2">{v3.verdict}</span>}
           </div>
@@ -59,11 +56,11 @@ export default function OrderPage() {
             </>
           ) : <p className="mt-2 text-sm">Not run yet.</p>}
         </div>
-      </Reveal>
+      </section>
 
-      <Reveal as="section" className="mt-14">
-        <p className="eyebrow">The first test · 5 unseen worlds</p>
-        <h2 className="display text-[26px] sm:text-[30px] mt-2 max-w-3xl">Money secured as the officer works down the list.</h2>
+      <section className="mt-12">
+        <p className="text-[13px] muted">Evidence 2 · the first test, 5 unseen worlds</p>
+        <h2 className="title text-[24px] sm:text-[28px] mt-1 max-w-3xl">Money secured as the officer works down the list.</h2>
         <p className="mt-3 max-w-3xl text-[15px] font-medium leading-relaxed" data-testid="caption">{o.caption[0]}</p>
         <p className="text-xs muted mt-1">{o.source}.</p>
         <p className="mt-3 max-w-3xl text-[15px] leading-relaxed" data-testid="ceiling-v2">
@@ -72,7 +69,7 @@ export default function OrderPage() {
           The model&apos;s real jobs are the 3 plain reasons and the whole-freeze condition (R2).
         </p>
         <div className="mt-6"><OrderChart byK={o.byK} /></div>
-      </Reveal>
+      </section>
 
       <FullData title="Where the mule-score model gets it wrong: its 5 costliest mistakes" open>
         <WorstTable rows={demo.worst} />

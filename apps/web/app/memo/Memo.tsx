@@ -8,46 +8,90 @@ import { ClockTable } from "@/components/ClockTable";
 import { Segmented } from "@/components/ui/Segmented";
 import { Button } from "@/components/ui/Button";
 import { ROLES } from "@/components/Roles";
+import { CaseActions } from "@/components/CaseActions";
+import { useDesk } from "@/lib/desk";
+import { AnimatePresence } from "motion/react";
+import * as motion from "motion/react-m";
+import { SPRING } from "@/components/ui/motion";
 
 type Role = "officer" | "supervisor";
 type Approval = { proposed: boolean; approved: boolean };
 
-const TITLES: Record<string, string> = { D00191: "A business current account", D09001: "The story mule account" };
+const TITLES: Record<string, string> = { D00191: "Shop's current account", D09001: "Savings account (3 victims)" };
 const TINY = 100; // paise: hops carrying under Rs 1 of traced money are summed, not listed
 
 export function Memo({ memo }: { memo: DemoData["memo"] }) {
+  const desk = useDesk();
+  const { role } = desk;
   const [account, setAccount] = useState(memo.cases[0]!.account);
-  const [role, setRole] = useState<Role>("officer");
-  const [approval, setApproval] = useState<Record<string, Approval>>({});
+  const [notice, setNotice] = useState(false);
   useEffect(() => {
     const a = new URLSearchParams(window.location.search).get("a");
     if (a && memo.cases.some((c) => c.account === a)) setAccount(a);
   }, [memo.cases]);
+  const pick = (a: string) => { setAccount(a); try { history.replaceState(null, "", `?a=${a}`); } catch { /* ignore */ } };
   const m = memo.cases.find((c) => c.account === account)!;
-  const ap = approval[account] ?? { proposed: false, approved: false };
-  const set = (x: Partial<Approval>) => setApproval((s) => ({ ...s, [account]: { ...ap, ...x } }));
+  const st = desk.get(account);
+  const ap: Approval = { proposed: st.whole !== "none", approved: st.whole === "approved" };
+  const set = (x: Partial<Approval>) => {
+    if (x.approved) desk.act(account, { whole: "approved" }, "approved the whole-account freeze");
+    else if (x.proposed) desk.act(account, { whole: "proposed" }, "proposed a whole-account freeze");
+  };
 
   return (
     <>
-      <div className="no-print card p-4 mt-6 flex flex-wrap gap-4 items-center justify-between">
-        <div className="flex flex-col gap-1.5">
-          <span className="eyebrow">Pick an account</span>
-          <Segmented label="Account" value={account} onChange={setAccount}
-            options={memo.cases.map((c) => ({ value: c.account, label: TITLES[c.account] ?? c.account }))} />
+      <div className="no-print mt-6 grid gap-4">
+        <div className="card p-4 sm:p-5 grid gap-4">
+          <div className="flex flex-wrap gap-3 items-center justify-between">
+            <Segmented label="Account" value={account} onChange={pick}
+              options={memo.cases.map((c) => ({ value: c.account, label: TITLES[c.account] ?? c.account }))} />
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={() => setNotice(true)} data-testid="preview-notice">Preview notice to holder</Button>
+              <Button variant="primary" onClick={() => window.print()}>
+                <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"><path d="M4 6V1.8h8V6M4 12H2.5V6.5h11V12H12M4.5 9.5h7v5h-7z" /></svg>
+                Print memo
+              </Button>
+            </div>
+          </div>
+          <CaseActions c={m} showMemoLink={false} />
         </div>
-        <div className="flex flex-col gap-1.5">
-          <span className="eyebrow">Acting as <span className="normal-case tracking-normal font-normal">(demo roles, not real login)</span></span>
-          <Segmented label="Acting as" value={role} onChange={setRole} size="sm"
-            options={[{ value: "officer", label: "Officer", testid: "role-officer" }, { value: "supervisor", label: "Supervisor", testid: "role-supervisor" }]} />
-        </div>
-        <Button variant="primary" onClick={() => window.print()}>
-          <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"><path d="M4 6V1.8h8V6M4 12H2.5V6.5h11V12H12M4.5 9.5h7v5h-7z" /></svg>
-          Print memo
-        </Button>
+        <RoleNow role={role} />
       </div>
-      <RoleNow role={role} />
+      <NoticeDialog open={notice} onClose={() => setNotice(false)} m={m} sent={st.notice} />
       <MemoBody m={m} memo={memo} role={role} ap={ap} set={set} />
     </>
+  );
+}
+
+/** The letter the account holder receives: plain words, the amount, and how to contest. A preview only; nothing is sent anywhere. */
+function NoticeDialog({ open, onClose, m, sent }: { open: boolean; onClose: () => void; m: MemoCase; sent: boolean }) {
+  useEffect(() => {
+    if (!open) return;
+    const k = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", k);
+    return () => window.removeEventListener("keydown", k);
+  }, [open, onClose]);
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div className="no-print fixed inset-0 z-[60] grid place-items-center p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          style={{ background: "rgba(10, 12, 18, 0.35)" }} onClick={onClose}>
+          <motion.div role="dialog" aria-modal="true" aria-label="Notice to the account holder" data-testid="notice-dialog"
+            className="glass rounded-2xl w-full max-w-lg p-6" initial={{ opacity: 0, y: 16, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, scale: 0.98 }}
+            transition={SPRING} onClick={(e) => e.stopPropagation()}>
+            <p className="text-[13px] muted">Notice to the holder of account <span className="mono">{maskAccount(m.account)}</span> · {sent ? "sent" : "not sent yet"}</p>
+            <h2 className="title text-[22px] mt-1">Part of your account is on hold</h2>
+            <div className="mt-3 text-[15px] leading-relaxed grid gap-2">
+              <p>Following a police request linked to cybercrime complaint <span className="mono">{m.ncrpAck}</span>, we have held <b className="mono">{formatRupees(m.heldPaise)}</b> in your account.</p>
+              <p>The rest of your balance, <b className="mono">{formatRupees(m.balancePaise - m.heldPaise)}</b>, is free to use as normal.</p>
+              <p>If you believe this is wrong, visit your branch with an explanation. We will file it for the investigating officer, who must decide or record reasons. You may also approach the District Grievance Officer or a court.</p>
+            </div>
+            <p className="text-[12.5px] muted mt-3">Demo wording. Nothing is sent from this site.</p>
+            <div className="mt-5 flex justify-end"><Button variant="primary" onClick={onClose}>Close</Button></div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
@@ -60,12 +104,12 @@ function MemoBody({ m, memo, role, ap, set }: { m: MemoCase; memo: DemoData["mem
   const tiny = m.hops.filter((h) => h.taintPaise < TINY);
   const whole = ap.approved;
   return (
-    <article className="memo card p-5 sm:p-8 mt-5 relative" data-testid="memo" style={{ borderTop: "4px solid var(--accent)" }}>
+    <article className="memo card p-5 sm:p-8 mt-5 relative" data-testid="memo" >
       <p className="watermark" aria-hidden>SIMULATION – NOT AN OFFICIAL ORDER</p>
       <header className="flex flex-wrap justify-between gap-2 border-b pb-2" style={{ borderColor: "var(--line)" }}>
         <div>
-          <p className="eyebrow no-print">Police-requested lien record</p>
-          <h2 className="serif text-[22px] font-semibold">Hold memo · Bharat Demo Bank</h2>
+          <p className="label no-print">Police-requested lien record</p>
+          <h2 className="title text-[22px]">Hold memo · Bharat Demo Bank</h2>
           <p className="text-sm muted">{m.regimeLabel} · request {m.requisitionBasis.replace("_", " s.")} · {m.requisitionStatus.toLowerCase()} · rules {memo.policyId} ({memo.policyStatus})</p>
         </div>
         <div className="text-sm text-right">
@@ -75,7 +119,7 @@ function MemoBody({ m, memo, role, ap, set }: { m: MemoCase; memo: DemoData["mem
       </header>
 
       <section className="mt-3">
-        <p className="text-xl font-semibold" data-testid="hold-line" style={{ color: whole ? "var(--freeze)" : "var(--accent-ink)" }}>
+        <p className="text-xl font-semibold" data-testid="hold-line" style={{ color: whole ? "var(--freeze)" : "var(--hold)" }}>
           {whole ? <>Whole account frozen: {formatRupees(m.balancePaise)}</> : <>Hold {formatRupees(m.heldPaise)} of {formatRupees(m.balancePaise)}. The other {formatRupees(free)} stays usable.</>}
         </p>
         <p className="text-sm muted">Traced from the complaints: {formatRupees(m.tracedPaise)}. A whole freeze would have locked {formatRupees(m.balancePaise)}.</p>
@@ -179,16 +223,16 @@ function RoleNow({ role }: { role: Role }) {
   return (
     <section className="no-print mt-4 rounded-2xl p-5 grid gap-4 md:grid-cols-[1fr_1fr_1fr]" style={{ background: "var(--accent-tint)", border: "1px solid var(--accent-line)" }} data-testid="role-now">
       <div>
-        <p className="eyebrow" style={{ color: "var(--accent-ink)" }}>You are acting as</p>
+        <p className="label" style={{ color: "var(--accent-ink)" }}>You are acting as</p>
         <p className="font-semibold text-[20px] mt-1">{r.title}</p>
         <p className="text-[14.5px] muted mt-1">{r.who} Two people are enough to run every hold: one officer and one supervisor.</p>
       </div>
       <div>
-        <p className="eyebrow" style={{ color: "var(--good)" }}>You can</p>
+        <p className="label" style={{ color: "var(--good)" }}>You can</p>
         <ul className="mt-1.5 text-[15px] space-y-1 list-disc ml-5">{r.can.map((x) => <li key={x}>{x}</li>)}</ul>
       </div>
       <div>
-        <p className="eyebrow" style={{ color: "var(--bad)" }}>You cannot</p>
+        <p className="label" style={{ color: "var(--bad)" }}>You cannot</p>
         <ul className="mt-1.5 text-[15px] space-y-1 list-disc ml-5">{r.cannot.map((x) => <li key={x}>{x}</li>)}</ul>
       </div>
     </section>

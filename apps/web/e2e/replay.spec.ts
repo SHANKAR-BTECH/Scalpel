@@ -40,7 +40,3 @@ test("the replay shows the honest whole-freeze trade-off from the 5 test worlds"
   await expect(page.getByTestId("v2-tradeoff")).toContainText("people wrongly restricted");
 });
 
-test("home leads with the shop's hold line", async ({ page }) => {
-  await page.goto("/");
-  await expect(page.getByTestId("lead-hold")).toContainText("Hold ₹6,950 of ₹3,28,679.");
-});

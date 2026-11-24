@@ -7,14 +7,14 @@ import { MathDrawer } from "./MathDrawer";
 import { SPRING } from "./ui/motion";
 
 type LaneKey = keyof typeof LANE_LABEL;
-const LANE_COLOR: Record<LaneKey, string> = { none: "var(--s-neutral)", axe: "var(--freeze)", biggest: "var(--s3)", scalpel: "var(--accent)" };
+export const LANE_COLOR: Record<LaneKey, string> = { none: "var(--s-neutral)", axe: "var(--freeze)", biggest: "var(--s3)", scalpel: "var(--accent)" };
 
-export function ReplayLane({ id, lane, hour, total }: { id: LaneKey; lane: Lane; hour: number; total: number }) {
+export function ReplayLane({ id, lane, hour, total, picked }: { id: LaneKey; lane: Lane; hour: number; total: number; picked?: boolean }) {
   const v = valuesAt(lane, hour);
   const b = lane.buckets;
   const share = total > 0 ? v.secured / total : 0;
   return (
-    <section className="card p-5 flex flex-col" data-testid={`lane-${id}`} style={id === "scalpel" ? { borderColor: "var(--accent-line)" } : undefined}>
+    <section className="card lift p-5 flex flex-col" data-testid={`lane-${id}`} style={picked ? { borderColor: "var(--accent-line)", boxShadow: "0 0 0 3px var(--accent-tint), var(--shadow)" } : undefined}>
       <div className="flex items-center gap-2">
         <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ background: LANE_COLOR[id] }} aria-hidden />
         <h3 className="font-semibold">{LANE_LABEL[id]}</h3>
@@ -22,7 +22,7 @@ export function ReplayLane({ id, lane, hour, total }: { id: LaneKey; lane: Lane;
       <p className="text-[13px] muted mt-1 min-h-10">{LANE_NOTE[id]}</p>
       <div className="mt-3">
         <p className="text-[12.5px] muted">Victim money secured</p>
-        <p className="num text-[24px] font-semibold leading-tight" data-testid="secured">{formatRupees(v.secured)}</p>
+        <p className="mono text-[22px] font-medium leading-tight" data-testid="secured">{formatRupees(v.secured)}</p>
         <div className="mt-2 h-2 rounded-full overflow-hidden" style={{ background: "var(--line)" }} aria-hidden>
           <m.div className="h-full rounded-full" style={{ background: LANE_COLOR[id] }} animate={{ width: `${share * 100}%` }} initial={false} transition={SPRING} />
         </div>

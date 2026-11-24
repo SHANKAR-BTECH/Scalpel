@@ -22,9 +22,9 @@ export function RoleCard({ role, active }: { role: RoleKey; active?: boolean }) 
     <div className="card p-6 h-full" style={active ? { borderColor: "var(--accent-line)", boxShadow: "0 0 0 3px var(--accent-tint), var(--shadow)" } : undefined} data-testid={`role-card-${role}`}>
       <p className="font-semibold text-[18px]">{r.title}</p>
       <p className="text-[14.5px] muted mt-1">{r.who}</p>
-      <p className="eyebrow mt-4" style={{ color: "var(--good)" }}>Can</p>
+      <p className="label mt-4" style={{ color: "var(--good)" }}>Can</p>
       <ul className="mt-1.5 space-y-1.5 text-[15px]">{r.can.map((x) => <li key={x} className="flex gap-2"><Mark ok />{x}</li>)}</ul>
-      <p className="eyebrow mt-4" style={{ color: "var(--bad)" }}>Cannot</p>
+      <p className="label mt-4" style={{ color: "var(--bad)" }}>Cannot</p>
       <ul className="mt-1.5 space-y-1.5 text-[15px]">{r.cannot.map((x) => <li key={x} className="flex gap-2"><Mark />{x}</li>)}</ul>
     </div>
   );

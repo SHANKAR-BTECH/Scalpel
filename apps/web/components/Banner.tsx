@@ -2,7 +2,7 @@ export const BANNER_TEXT = "Simulation with fictional data. Not legal advice.";
 
 export function Banner() {
   return (
-    <div role="note" className="w-full text-center text-[12.5px] font-medium py-1.5 tracking-wide" style={{ background: "var(--warn-tint)", color: "var(--warn)", borderBottom: "1px solid var(--line)" }}>
+    <div role="note" className="relative z-50 w-full text-center text-[12.5px] font-medium h-9 leading-9" style={{ background: "var(--rail)", color: "var(--rail-muted)" }}>
       {BANNER_TEXT}
     </div>
   );
