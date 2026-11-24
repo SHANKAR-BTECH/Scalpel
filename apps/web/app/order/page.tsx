@@ -58,10 +58,8 @@ export default function OrderPage() {
         </div>
       </section>
 
-      <section className="mt-12">
-        <p className="text-[13px] muted">Evidence 2 · the first test, 5 unseen worlds</p>
-        <h2 className="title text-[24px] sm:text-[28px] mt-1 max-w-3xl">Money secured as the officer works down the list.</h2>
-        <p className="mt-3 max-w-3xl text-[15px] font-medium leading-relaxed" data-testid="caption">{o.caption[0]}</p>
+      <FullData title="Evidence 2 · the first test on 5 unseen worlds: money secured as the officer works down the list" testid="evidence-2">
+        <p className="mt-1 max-w-3xl text-[15px] font-medium leading-relaxed" data-testid="caption">{o.caption[0]}</p>
         <p className="text-xs muted mt-1">{o.source}.</p>
         <p className="mt-3 max-w-3xl text-[15px] leading-relaxed" data-testid="ceiling-v2">
           Why the model can&apos;t pull ahead here: even <b>perfect knowledge</b> of who is a mule, fed into the same formula, reaches only {pct(o.ceilingV2.ceiling)} against
@@ -69,7 +67,7 @@ export default function OrderPage() {
           The model&apos;s real jobs are the 3 plain reasons and the whole-freeze condition (R2).
         </p>
         <div className="mt-6"><OrderChart byK={o.byK} /></div>
-      </section>
+      </FullData>
 
       <FullData title="Where the mule-score model gets it wrong: its 5 costliest mistakes" open>
         <WorstTable rows={demo.worst} />

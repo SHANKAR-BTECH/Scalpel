@@ -32,7 +32,7 @@ export function Inbox() {
         preview: "I got your notice. I run a shop and need this account to pay suppliers…", at: shop.asOf + 3_600_000 });
     }
     for (const c of cases) {
-      out.push({ id: c.account, kind: "request", c, from: "Cyber Crime Police Station (demo)", subject: `Hold request · ${TITLE[c.account] ?? c.type.toLowerCase()}`,
+      out.push({ id: c.account, kind: "request", c, from: "Cyber Crime Police (demo)", subject: `Hold request · ${TITLE[c.account] ?? c.type.toLowerCase()}`,
         preview: `NCRP ${c.ncrpAck} · ${c.requisitionBasis.replace("_", " s.")} · traced ${formatRupees(c.tracedPaise)}`, at: c.asOf });
     }
     out.push({ id: "guide", kind: "guide", from: "Scalpel", subject: "How this desk works", preview: "The problem, what you do here, and who may do what.", at: 0 });
@@ -199,7 +199,7 @@ export function CaseView({ c }: { c: MemoCase }) {
               const col = st === "pass" ? "var(--good)" : st === "caution" ? "var(--warn)" : "var(--bad)";
               const tint = st === "pass" ? "var(--good-tint)" : st === "caution" ? "var(--warn-tint)" : "var(--freeze-tint)";
               return (
-                <li key={k} className="rounded-xl px-4 py-3" style={{ background: tint }}>
+                <li key={k} className="card-flat lift px-4 py-3" style={{ borderLeft: `3px solid ${col}`, background: `linear-gradient(90deg, ${tint}, var(--card) 70%)` }}>
                   <p className="font-semibold">{{ allowed: "Allowed?", sized: "Right size?", timed: "On time?" }[k]}</p>
                   <p className="text-[13.5px] font-semibold mt-0.5" style={{ color: col }}>{STATE_WORD[st]}</p>
                   {c.badgeReasons[k][0] && <p className="text-[12.5px] muted mt-1 leading-snug">{c.badgeReasons[k][0]}</p>}

@@ -12,6 +12,7 @@ test("who-first shows the exported caption and the locked v3 result as it came o
 
 test("K switch and table view work", async ({ page }) => {
   await page.goto("/order");
+  await page.getByTestId("evidence-2").locator("summary").click();
   await page.getByTestId("k-5").click();
   await expect(page.getByTestId("k-5")).toHaveAttribute("aria-pressed", "true");
   await page.getByTestId("table-toggle").click();

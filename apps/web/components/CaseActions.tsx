@@ -56,7 +56,7 @@ export function CaseActions({ c, showMemoLink = true }: { c: MemoCase; showMemoL
     if (s.exact === "approved" && !s.notice) buttons.push({ label: "Send notice to account holder", variant: "primary", testid: "act-notice", onClick: () => act(c.account, { notice: true }, "sent the notice to the account holder") });
     if (c.suggestedWholeFreeze && s.whole === "none" && s.exact !== "none")
       buttons.push({ label: "Propose whole freeze (last resort)", variant: "danger", testid: "act-propose-whole", onClick: () => act(c.account, { whole: "proposed" }, "proposed a whole-account freeze") });
-    if (s.exact === "proposed" || s.whole === "proposed") note = "Waiting for a supervisor. Switch to Supervisor in the side panel to approve.";
+    if (s.exact === "proposed" || s.whole === "proposed") note = "Waiting for a supervisor. Switch 'Working as' to Supervisor to approve.";
     else if (!buttons.length) note = "Nothing left for the officer on this case.";
   } else {
     if (s.exact === "proposed") {
