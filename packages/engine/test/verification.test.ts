@@ -27,19 +27,21 @@ const ctx = (policy: PolicySet): GateContext => ({
   account: { id: "A1", type: "CURRENT", balance: rupees(1859000), traced: rupees(82800) },
   assessment: { role: "shield", muleScore: 0.2, signals: [] }, officerConfirmed: false, evidenceRecordId: "EV-1",
 });
-const withVerified = (id: string): PolicySet => ({ ...P, sources: P.sources.map((s) => (s.id === id ? { ...s, verified: true } : s)) });
+// U = the same policy with every source unverified (how it was before R1), so the label logic is tested on its own.
+const U: PolicySet = { ...P, sources: P.sources.map((s) => ({ ...s, verified: false })) };
+const withVerified = (id: string): PolicySet => ({ ...U, sources: U.sources.map((s) => (s.id === id ? { ...s, verified: true } : s)) });
 const cut = { kind: "EXACT_HOLD" as const, account: "A1", amount: rupees(1859000) };
 
 describe("verified / unverified sources", () => {
   it("unverifiedSources lists the ids not yet checked (unknown ids count as unverified)", () => {
-    expect(unverifiedSources(P, ["himanshu-gupta", "bnss"])).toEqual(["himanshu-gupta", "bnss"]);
+    expect(unverifiedSources(U, ["himanshu-gupta", "bnss"])).toEqual(["himanshu-gupta", "bnss"]);
     expect(unverifiedSources(withVerified("bnss"), ["himanshu-gupta", "bnss"])).toEqual(["himanshu-gupta"]);
     expect(unverifiedSources(P, ["no-such-source"])).toEqual(["no-such-source"]);
     expect(unverifiedSources(P, [])).toEqual([]);
   });
 
   it("a Gate check citing Himanshu Gupta says it is unverified, and the decision carries a flag", () => {
-    const r = evaluateGate(cut, ctx(P), P);
+    const r = evaluateGate(cut, ctx(U), U);
     const r1 = r.checks.find((c) => c.rule === "R1")!;
     expect(r1.sources).toContain("himanshu-gupta");
     expect(r1.unverified).toEqual(["himanshu-gupta"]);
@@ -57,7 +59,10 @@ describe("verified / unverified sources", () => {
     for (const c of r.checks) expect(c.unverified).toEqual(c.sources.filter((s) => !P.sources.find((x) => x.id === s)?.verified));
     const q = checkRequisition({ ...req, asksWholeAccount: true }, P, overlays);
     const exact = q.findings.find((f) => f.checkId === "exact_amount")!;
-    expect(exact.unverified).toEqual(["allahabad-protocol", "himanshu-gupta"]);
+    expect(exact.sources).toEqual(["allahabad-protocol", "himanshu-gupta"]);
+    expect(exact.unverified).toEqual([]); // both confirmed by R1
+    const qU = checkRequisition({ ...req, asksWholeAccount: true }, U, overlays);
+    expect(qU.findings.find((f) => f.checkId === "exact_amount")!.unverified).toEqual(["allahabad-protocol", "himanshu-gupta"]);
   });
 
   it("the three copies of the source list (sources.yaml and both policies) are identical", () => {
@@ -66,10 +71,25 @@ describe("verified / unverified sources", () => {
     for (const p of policies) expect(norm(p.sources)).toBe(norm(shared));
   });
 
-  it("reminder: these High Court rulings still have placeholder dates until R1 confirms them", () => {
-    const placeholder = overlays.filter((o) => o.effective_from === "2025-01-01").map((o) => o.id).sort();
-    // When R1 gives the real ruling dates, update the overlay files and shrink this list.
-    expect(placeholder).toEqual(["hc-bombay", "hc-delhi", "hc-karnataka", "hc-kerala"]);
-    for (const o of overlays) expect(unverifiedSources(P, o.sources).length).toBeGreaterThan(0);
+  it("R1 result: exactly these sources are verified; partly-wrong ones stay unverified until Shankar checks", () => {
+    const unverified = P.sources.filter((s) => !s.verified).map((s) => s.id).sort();
+    expect(unverified).toEqual(["kartik-chatur", "mha-sop-2026-01", "trai-tcccpr-2", "trai-tcccpr-3"]);
+    for (const s of P.sources.filter((x) => x.verified)) expect(s.date, s.id).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(P.sources.map((s) => s.id).join(" ")).not.toMatch(/15\.12/);
+  });
+
+  it("each High Court overlay starts on the date of the ruling it follows (no placeholder dates left)", () => {
+    for (const o of overlays) {
+      expect(o.effective_from, o.id).not.toBe("2025-01-01");
+      const dates = o.sources.map((id) => P.sources.find((s) => s.id === id)?.date);
+      expect(dates, o.id).toContain(o.effective_from);
+    }
+  });
+
+  it("no rule leans on the wrong 'under Rs 50,000' claim any more", () => {
+    expect(P.gate.fast_restoration_below).toBe(0);
+    const mha = P.regimes.MHA_POLICE!;
+    for (const c of mha.clocks) expect(c.amount_below, c.id).toBeUndefined();
+    expect(P.regimes.TRAI_UCC!.clocks.find((c) => c.id === "bar_review")!.sources).toEqual(["trai-tcccpr-2"]);
   });
 });

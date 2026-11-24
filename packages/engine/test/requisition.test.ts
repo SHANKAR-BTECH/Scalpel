@@ -43,4 +43,10 @@ describe("requisition checker", () => {
     expect(checkRequisition({ ...good, magistrateIntimatedAt: t0 + 30 * 3600e3 }, policy, overlays).status).toBe("DEFECTIVE");
     expect(checkRequisition({ ...good, issuer: { ...good.issuer, rank: "Head Constable" } }, policy, overlays).status).toBe("DEFECTIVE");
   });
+  it("NCRP acknowledgement must be 14 digits (R2)", () => {
+    const fmt = (ack: string) => checkRequisition({ ...good, firNo: undefined, ncrpAck: ack }, policy, overlays).findings.find((f) => f.checkId === "case_reference")!.ok;
+    expect(fmt("31612260012345")).toBe(true);
+    expect(fmt("3161226001234")).toBe(false);
+    expect(fmt("316122600123456")).toBe(false);
+  });
 });

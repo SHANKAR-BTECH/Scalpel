@@ -31,7 +31,7 @@ Fictional "Bharat Demo Bank" + "Telco-A". Solo student project (Tech Mahindra in
 - R1: exact hold ≤ traced.
 - R2: whole account only as a last resort (mule ≥0.85, ≥2 signals, officer confirmation).
 - R3: ≤60-day cap.
-- R4: <₹50k fast restoration.
+- R4: switched off (R1: the MHA SOP has no ₹50k limit; its 90-day lift applies to any amount).
 - R5: never block 140/1600/1601 series.
 - R6: never block a spoofed displayed number.
 - R7: SIM/IMEI block needs ≥2 signals incl. ≥1 telecom.
@@ -68,7 +68,7 @@ Also: a quash-risk checklist, with citations.
 - Engine core (23 Nov): money, time, jurisdiction, policy (+YAML), trace, requisition, gate, score, lifecycle, audit, campaign.
 - Phase 1 (23 Nov, branch `phase-1-engine`): CI workflow; `restoration` and `fairness` modules; golden cases (`test/golden.test.ts`); every Gate check and request finding lists `unverified` sources. 79 tests green, tsc clean.
 - Fix found by golden tests: police-only quash risks (Q5–Q7) now apply only under the MHA_POLICE regime, not after a bank-initiated RBI hold.
-- Pending: fold in research R1–R3 when the answers arrive (YAML edits + extra golden cases).
+- R1–R3 folded in (24 Nov, branch `phase-1-task5-research`): 11 of 15 sources verified; MHA SOP, TRAI and Kartik Chatur corrected but unverified until Shankar reads them; 15.12x dropped (not found); HC overlay dates are the real ruling dates; NCRP number = 14 digits; real-case golden tests 7–9.
 - Phase 2 (23 Nov, branch `phase-2-sim-ai`, plan `docs/superpowers/plans/2026-11-23-phase-2-sim-ai.md`): fake worlds (v1 practice, five v2 test worlds locked before training, noisy v2 variants), `packages/sim-runner` (runs the engine on a world: holds 0/A/B/C + officer's to-do orders), AI = logistic regression (primary) + LightGBM with calibrated mule score and 3 plain reasons, grader + `pipeline/RESULTS.md`, demo world in `pipeline/demo/` (contains the phase 1 story). One command: `cd pipeline && .venv/bin/python -m scalpel_sim.all`. Tests: engine 84, sim-runner 18, pipeline 76.
 - Phase 2 result (simulated, under stated assumptions, after the final-review fixes): Scalpel's order beats the warning-sign rule (97.8% vs 87.0% of best possible rescue, v2 pooled, K=10) at drain ratios 1/2/5/10× and both noise levels; it is NEVER ahead of "biggest amount first" (worse in 8 of 24 settings, e.g. K=5: 92.5% vs 94.8%). Two-number headline always shown together: Freeze Ratio + victim money missed. Axe ratio on v2 is our simulated 15.22× (held ÷ real victim money; not comparable to the industry 15.12×, which stays "unverified" and is not used). v1 and v2 are both "too easy" for logistic (v2 AUC 1.00; LightGBM 0.88), so AI numbers are an upper bound. Each hour of delay on a mule: ₹11,644 of real victim money leaves; exact hold's securable amount drops ₹894. 2 of 136 suggested whole freezes on v2 were on innocent accounts.
 - Python: `pipeline/.venv` via uv (Python 3.12). Only `scalpel_grade` and `scalpel_sim` (world builder) touch truth; the runner refuses world folders with extra files.

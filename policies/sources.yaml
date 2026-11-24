@@ -1,15 +1,18 @@
-# Shared source list (all unverified until research prompt R1 comes back).
-- { id: bnss, title: "Bharatiya Nagarik Suraksha Sanhita, 2023 (ss.106, 107)", issuer: "Parliament of India", verified: false }
-- { id: bsa-63, title: "Bharatiya Sakshya Adhiniyam, 2023 s.63(4)(c) certificate", issuer: "Parliament of India", verified: false }
-- { id: rbi-draft-mule-2026, title: "RBI draft directions on holds in suspected mule accounts", issuer: "Reserve Bank of India", date: "2026-09-01", verified: false }
-- { id: mha-sop-2026-01, title: "MHA SOP on freezing/de-freezing of accounts in cyber fraud", issuer: "Ministry of Home Affairs / I4C", date: "2026-01-02", verified: false }
-- { id: npci-oc-235, title: "NPCI OC 235 - UPI fraud chargeback timelines", issuer: "NPCI", verified: false }
-- { id: trai-tcccpr-3, title: "TCCCPR (Third Amendment)", issuer: "TRAI", verified: false }
-- { id: dot-fri, title: "Financial Fraud Risk Indicator and MNRL", issuer: "Department of Telecommunications", verified: false }
-- { id: allahabad-protocol, title: "Allahabad HC 5-point protocol for freeze requisitions", issuer: "Allahabad High Court", verified: false }
-- { id: navneet-traders, title: "Navneet Traders (freeze requisition)", issuer: "High Court", verified: false }
-- { id: kartik-chatur, title: "Kartik Yogeshwar Chatur v State of Maharashtra", issuer: "Bombay High Court", verified: false }
-- { id: headstar, title: "Headstar (s.106 debit freeze)", issuer: "Kerala High Court", verified: false }
-- { id: malabar-gold, title: "Malabar Gold (s.106 debit freeze)", issuer: "Delhi High Court", verified: false }
-- { id: jar-gold, title: "JAR Gold (s.106 freeze)", issuer: "Karnataka High Court", verified: false }
-- { id: himanshu-gupta, title: "Himanshu Gupta (lien cut to traced amount)", issuer: "Madras High Court", date: "2026-07-01", verified: false }
+# Shared source list. verified: true = CONFIRMED by the R1 citation audit (24 Nov 2026).
+# PARTLY WRONG items were corrected but stay unverified until Shankar reads the original.
+# The unsourced 15.12x figure was NOT FOUND by R1 and is not a source.
+- { id: bnss, title: "Bharatiya Nagarik Suraksha Sanhita, 2023 - s.106 (police seizure) and s.107 (Magistrate attachment)", issuer: "Parliament of India", date: "2023-12-25", ref: "Act No. 46 of 2023", url: "https://indiankanoon.org/doc/91117739/", verified: true }
+- { id: bsa-63, title: "Bharatiya Sakshya Adhiniyam, 2023 - s.63(4)(c) certificate for electronic records (evidence only, not a freeze power)", issuer: "Parliament of India", date: "2023-12-25", ref: "Act No. 47 of 2023", url: "https://indiankanoon.org/doc/90089205/", verified: true }
+- { id: rbi-draft-mule-2026, title: "Draft RBI (Know Your Customer) Amendment Directions, 2026 - Annex III SOP on suspected money mule accounts", issuer: "Reserve Bank of India", date: "2026-09-11", ref: "Press Release 2026-2027/1109 (draft; proposed from 1 Apr 2027)", url: "https://m.rbi.org.in/scripts/bs_viewcontent.aspx?Id=5170", verified: true }
+- { id: mha-sop-2026-01, title: "SOP for NCRP-CFCFRMS, Custody, Restoration of money and Grievance Redressal", issuer: "Ministry of Home Affairs / I4C", date: "2026-01-02", ref: "Forwarded by D.O. No. 22003/30/2024-I4C, 22 Jan 2026", url: "https://cdnbbsr.s3waas.gov.in/s3ec03936824c0191953647ec609b4f49b/uploads/2026/06/2026061955.pdf", verified: false }
+- { id: npci-oc-235, title: "Revision of TAT for Responding to Fraud and Wrong Credit Chargebacks in URCS Back Office System", issuer: "NPCI", date: "2026-07-16", ref: "NPCI/UPI/OC No. 235/2026-27", url: "https://www.npci.org.in/uploads/UPI_OC_No_235_FY_2026_27_Revision_of_Turnaround_Time_TAT_for_Responding_to_Fraud_and_Wrong_Credit_Chargebacks_in_URCS_Back_Office_System_aa420e4bcc.pdf", verified: true }
+- { id: trai-tcccpr-2, title: "Telecom Commercial Communications Customer Preference (Second Amendment) Regulations, 2025 - 15-day outgoing bar on first violation", issuer: "TRAI", date: "2025-02-12", verified: false }
+- { id: trai-tcccpr-3, title: "Telecom Commercial Communications Customer Preference (Third Amendment) Regulations, 2026", issuer: "TRAI", date: "2026-09-18", ref: "Regulation 05 of 2026", url: "https://www.trai.gov.in/sites/default/files/2026-09/Regulation_18092026.pdf", verified: false }
+- { id: dot-fri, title: "Financial Fraud Risk Indicator (FRI) and Mobile Number Revocation List (MNRL)", issuer: "Department of Telecommunications", date: "2025-05-21", ref: "PIB PRID 2130249", url: "https://www.pib.gov.in/PressReleasePage.aspx?PRID=2141616", verified: true }
+- { id: allahabad-protocol, title: "Khalsa Medical Store v. Reserve Bank of India (5-point protocol for police freeze requests)", issuer: "Allahabad High Court (Lucknow Bench)", date: "2026-01-19", ref: "Writ-C No. 12211 of 2025; 2026:AHC-LKO:3701-DB", url: "https://elegalix.allahabadhighcourt.in/elegalix/WebDownloadOriginalHCJudgmentDocument.do?translatedJudgmentID=85670", verified: true }
+- { id: navneet-traders, title: "Navneet Traders v. Axis Bank Ltd (whole freeze cut to the Rs 18,413.95 lien)", issuer: "Gujarat High Court", date: "2026-10-16", ref: "R/SCA No. 13631 of 2026", url: "https://indiankanoon.org/doc/157843896/", verified: true }
+- { id: kartik-chatur, title: "Kartik Yogeshwar Chatur v. Union of India, Ministry of Home Affairs & Ors.", issuer: "Bombay High Court (Nagpur Bench)", date: "2025-11-20", ref: "Crl. W.P. No. 321 of 2025; 2025:BHC-NAG:12610-DB", url: "https://indiankanoon.org/doc/54011511/", verified: false }
+- { id: headstar, title: "Headstar Global Pvt. Ltd. v. State of Kerala", issuer: "Kerala High Court", date: "2025-06-02", ref: "Crl. M.C. No. 3740 of 2025; 2025 SCC OnLine Ker 3546", verified: true }
+- { id: malabar-gold, title: "Malabar Gold and Diamond Ltd v. Union of India", issuer: "Delhi High Court", date: "2026-01-16", ref: "W.P.(C) 4198/2025; 2026 SCC OnLine Del 297", url: "https://delhihighcourt.nic.in/app/showlogo/1769248155_eb87a6191c1f9386_596_41982025.pdf/2026", verified: true }
+- { id: jar-gold, title: "State of Karnataka v. Jar Gold Retail Pvt. Ltd.", issuer: "Karnataka High Court", date: "2026-08-10", ref: "Crl.P. No. 5929 of 2026", url: "https://indiankanoon.org/doc/14622554/", verified: true }
+- { id: himanshu-gupta, title: "Himanshu Gupta v. State (lien cut to the traced Rs 82,800)", issuer: "Madras High Court", date: "2026-07-07", ref: "W.P. Crl. No. 1443 of 2025", url: "https://indiankanoon.org/doc/127387465/", verified: true }

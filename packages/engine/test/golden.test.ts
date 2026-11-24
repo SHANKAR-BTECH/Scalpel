@@ -111,3 +111,70 @@ describe("golden cases", () => {
     expect(exact.overall.innocentHeld).toBe(0);
   });
 });
+
+/**
+ * Real court cases (R1/R3 research, 24 Nov 2026). Money figures are the courts' own numbers.
+ * Himanshu Gupta and Navneet Traders were read on Indian Kanoon (doc/127387465, doc/157843896).
+ * Neelkanth Pharma comes only from the R3 research chart (no judgment link yet): treat it as unverified.
+ * Where an order does not state a number (e.g. Navneet's balance), the test says so and uses a stand-in.
+ */
+describe("golden cases from real court orders", () => {
+  const real = (over: Partial<Requisition>): Requisition => policeReq({ id: "REAL", linkedTxnIds: ["T1"], ...over });
+
+  it("7. Himanshu Gupta (Madras HC, 7 Jul 2026): ₹18,59,181 lien over ₹82,800 traced; court set the lien at ₹82,800", () => {
+    // Fairness: what the bank held vs what the police traced into this third-layer account.
+    const before = fairnessReport([{ account: "HG", held: rupees(18_59_181), traced: rupees(82_800), group: "SAVINGS" }]);
+    expect(before.overall.freezeRatio).toBeCloseTo(22.45, 2);
+    expect(before.overall.innocentHeld).toBe(rupees(17_76_381));
+    const after = fairnessReport([{ account: "HG", held: rupees(82_800), traced: rupees(82_800), group: "SAVINGS" }]);
+    expect(after.overall.freezeRatio).toBe(1);
+
+    // A Tamil Nadu police request for the full ₹18,59,181: the Gate cuts it to ₹82,800, the court's own figure (R1).
+    // (Real account was at a Pune branch; here branch = TN so only the size rule is tested. Case 7b covers Pune.)
+    const acct = { id: "HG", type: "SAVINGS" as const, balance: rupees(31_221.21), traced: rupees(82_800) };
+    const tn = real({ amountRequested: rupees(18_59_181), issuer: { name: "IO", rank: "Inspector", station: "Cyber PS Chennai East", state: "TN" }, account: { id: "HG", branchState: "TN" } });
+    const r = evaluateGate({ kind: "EXACT_HOLD", account: "HG", amount: rupees(18_59_181) }, ctx(tn, { account: acct, assessment: { role: "shield", muleScore: 0.3, signals: [] } }), P);
+    expect(r.action).toEqual({ kind: "EXACT_HOLD", account: "HG", amount: rupees(82_800) });
+    expect(r.checks.find((c) => c.rule === "R1")).toMatchObject({ ok: false, sources: ["himanshu-gupta"], unverified: [] });
+  });
+
+  it("7b. Himanshu Gupta, real states (Chennai police, Pune branch): after Kartik Chatur, police alone can't freeze in Bombay HC's area -> Magistrate", () => {
+    const pune = real({ amountRequested: rupees(18_59_181), issuer: { name: "IO", rank: "Inspector", station: "Cyber PS Chennai East", state: "TN" }, account: { id: "HG", branchState: "MH" } });
+    const checked = checkRequisition(pune, P, overlays);
+    expect(checked.route).toBe("MAGISTRATE_S107");
+    expect(checked.jurisdiction.conflict).toBe(true);
+    const r = evaluateGate({ kind: "EXACT_HOLD", account: "HG", amount: rupees(18_59_181) }, ctx(pune, { account: { id: "HG", type: "SAVINGS", balance: rupees(31_221.21), traced: rupees(82_800) }, assessment: { role: "shield", muleScore: 0.3, signals: [] } }), P);
+    expect(r.decision).toBe("ROUTE");
+    // If a court orders the full ₹18,59,181 anyway, Scalpel obeys but tells the court the gap.
+    const court = evaluateGate({ kind: "EXACT_HOLD", account: "HG", amount: rupees(18_59_181) }, ctx(undefined, { requester: "COURT", account: { id: "HG", type: "SAVINGS", balance: rupees(31_221.21), traced: rupees(82_800) } }), P);
+    expect(court.decision).toBe("ALLOW");
+    expect(court.flags).toContain("Order exceeds traced amount by ₹17,76,381; tell the court");
+  });
+
+  it("8. Navneet Traders (Gujarat HC, 16 Oct 2026): whole current account frozen over ₹18,413.95; court defroze it and kept only that lien", () => {
+    // The order does not give the account balance; ₹5,00,000 is a stand-in. Gujarat has no s.106 ruling in our rulebook (unsettled).
+    const acct = { id: "NT", type: "CURRENT" as const, balance: rupees(5_00_000), traced: rupees(18_413.95) };
+    const shop = { role: "shield" as const, muleScore: 0.2, signals: [] };
+    const valid = real({ asksWholeAccount: true, amountRequested: null, issuer: { name: "IO", rank: "Inspector", station: "Cyber PS", state: "RJ" }, account: { id: "NT", branchState: "GJ" } });
+    // The real letter was undated and unsigned: defective, and a shop has no mule signals, so the bank sends the memo back.
+    const unsigned = { ...valid, signed: false, signedAt: undefined };
+    const bad = evaluateGate({ kind: "WHOLE_FREEZE", account: "NT" }, ctx(unsigned, { account: acct, assessment: shop }), P);
+    expect(bad.decision).toBe("ROUTE");
+    expect(checkRequisition(unsigned, P, overlays).memo.join(" ")).toMatch(/not signed and dated/);
+    // Even a properly signed whole-freeze request is defective (no exact amount); the court's answer, an exact
+    // ₹18,413.95 lien, is what the Gate gives once the police state the amount.
+    const signedExact = { ...valid, asksWholeAccount: false, amountRequested: rupees(18_413.95) };
+    const ok = evaluateGate({ kind: "WHOLE_FREEZE", account: "NT" }, ctx(signedExact, { account: acct, assessment: shop }), P);
+    expect(ok.action).toEqual({ kind: "EXACT_HOLD", account: "NT", amount: rupees(18_413.95) });
+    expect(ok.badges.sized).toBe(true);
+  });
+
+  it("9. Neelkanth Pharma (Delhi HC, 2025; R3 chart only, unverified): ₹93.50 crore frozen over a ₹200 credit, cut to a ₹200 lien", () => {
+    const whole = fairnessReport([{ account: "NP", held: rupees(93_50_00_000), traced: rupees(200), group: "CURRENT" }]);
+    expect(whole.overall.freezeRatio).toBe(4_675_000);
+    expect(whole.overall.innocentHeld).toBe(rupees(93_49_99_800));
+    // Delhi HC (Malabar Gold): a police s.106 freeze in Delhi goes to a Magistrate.
+    const dl = real({ asksWholeAccount: true, amountRequested: null, issuer: { name: "IO", rank: "Inspector", station: "Cyber PS", state: "DL" }, account: { id: "NP", branchState: "DL" } });
+    expect(checkRequisition(dl, P, overlays).route).toBe("MAGISTRATE_S107");
+  });
+});

@@ -42,9 +42,9 @@ export interface RequisitionResult {
   memo: string[];
 }
 
-// Format rules are placeholders until research prompt R2 confirms the real formats.
+// FIR format is still a placeholder. R2 (24 Nov 2026): the NCRP / 1930 acknowledgement number is 14 digits.
 const FIR_RE = /^\s*\d{1,6}\s*\/\s*(19|20)\d{2}\s*$/;
-const NCRP_RE = /^\d{10,20}$/;
+const NCRP_RE = /^\d{14}$/;
 const H24 = 24 * 3600 * 1000;
 
 export function checkRequisition(req: Requisition, policy: PolicySet, overlays: Overlay[]): RequisitionResult {
