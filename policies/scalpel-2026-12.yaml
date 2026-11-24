@@ -61,8 +61,11 @@ regimes:
     max_days: null
     sources: [mha-sop-2026-01]
     clocks:
-      - { id: grm_upload, label: "Upload to the I4C grievance module", starts_on: HOLD_PLACED, days: 7, satisfied_by: [GRM_UPLOADED, RELEASED], on_expiry: OVERDUE, sources: [mha-sop-2026-01] }
-      - { id: io_decision, label: "Investigating officer decides", starts_on: HOLD_PLACED, days: 15, satisfied_by: [IO_DECISION, RELEASED, COURT_ORDER_RECEIVED], on_expiry: ESCALATE, sources: [mha-sop-2026-01] }
+      # MHA SOP (per R1 report): the bank uploads the holder's grievance to the grievance module within 7 days (after CDD/EDD);
+      # the IO then has 15 days to release or record reasons, else it escalates to the District Grievance Officer.
+      # The holder's grievance is modelled as REPLY_RECEIVED.
+      - { id: grm_upload, label: "Bank uploads the holder's grievance to the grievance module", starts_on: REPLY_RECEIVED, days: 7, satisfied_by: [GRM_UPLOADED, RELEASED], on_expiry: OVERDUE, sources: [mha-sop-2026-01] }
+      - { id: io_decision, label: "IO releases or records reasons, else District Grievance Officer", starts_on: GRM_UPLOADED, days: 15, satisfied_by: [IO_DECISION, RELEASED, COURT_ORDER_RECEIVED], on_expiry: ESCALATE, sources: [mha-sop-2026-01] }
       # MHA SOP Para 10.1 / Annexure I item 3: for holds contested through the grievance module, the bank MAY remove the hold
       # after 90 days (after EDD, as police direct), with 15 days' notice; police may extend once by 90 days. No amount limit.
       # It is not automatic, so at 90 days the bank must DECIDE. The SOP counts from the grievance (Para 10.1) or the hold
