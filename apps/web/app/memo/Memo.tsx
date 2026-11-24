@@ -79,6 +79,8 @@ function MemoBody({ m, memo, role, ap, set }: { m: MemoCase; memo: DemoData["mem
           {m.tracedIfAccusedPaise > m.tracedPaise
             ? <> If the police name the holder as accused, the courts&apos; rule for a wrongdoer (Re Hallett: he spent his own money first) traces <b>{formatRupees(m.tracedIfAccusedPaise)}</b> instead.</>
             : <> Even if the holder is named as accused (Re Hallett: own money spent first), the figure stays the same.</>}
+          <span className="no-print">{" "}Cases: {["barlow-clowes", "re-hallett"].map((id) => memo.sources.find((x) => x.id === id)).filter(Boolean)
+            .map((x) => `${x!.title.split(" - ")[0]}${x!.verified ? "" : " (still being checked)"}`).join("; ")}.</span>
         </p>
         <h3 className="mt-3 font-semibold text-sm">Money trail into this account</h3>
         <div className="overflow-x-auto">

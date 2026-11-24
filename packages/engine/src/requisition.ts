@@ -34,6 +34,10 @@ export type PoliceAuthority = "FULL" | "EXACT_ONLY" | "NONE";
 export interface Finding { checkId: string; ok: boolean; pending?: boolean; severity: "defect" | "review"; message: string; sources: string[]; /** cited sources not yet verified */ unverified: string[] }
 
 export interface RequisitionResult {
+  /** The account the request names. The Gate refuses to use it for any other account. */
+  account: string;
+  /** Exact amount the police asked for (null if they asked for the whole account). A hold never goes above it. */
+  amountRequested: Paise | null;
   status: "VALID" | "DEFECTIVE" | "NEEDS_REVIEW";
   findings: Finding[];
   authority: PoliceAuthority;
@@ -47,7 +51,8 @@ const FIR_RE = /^\s*\d{1,6}\s*\/\s*(19|20)\d{2}\s*$/;
 const NCRP_RE = /^\d{14}$/;
 const H24 = 24 * 3600 * 1000;
 
-export function checkRequisition(req: Requisition, policy: PolicySet, overlays: Overlay[]): RequisitionResult {
+/** `now` is when the check runs (defaults to receipt): a "due within 24 hours" item turns into a defect once that time has passed. */
+export function checkRequisition(req: Requisition, policy: PolicySet, overlays: Overlay[], now: Instant = req.receivedAt): RequisitionResult {
   const findings: Finding[] = [];
   const add = (checkId: string, ok: boolean, message: string, extra: Partial<Finding> = {}) => {
     const def = policy.requisition.checks.find((c) => c.id === checkId);
@@ -57,8 +62,11 @@ export function checkRequisition(req: Requisition, policy: PolicySet, overlays: 
 
   const minRank = RANKS.indexOf(policy.requisition.min_signing_rank as Rank);
   const rankOk = req.issuer.rank !== undefined && (minRank < 0 || RANKS.indexOf(req.issuer.rank) >= minRank);
-  add("signed_dated", req.signed && req.signedAt !== undefined && rankOk,
-    !req.signed || req.signedAt === undefined ? "Request is not signed and dated" : `Signed by ${req.issuer.rank ?? "unknown rank"}; needs at least ${policy.requisition.min_signing_rank}`);
+  const future = req.signedAt !== undefined && req.signedAt > req.receivedAt;
+  add("signed_dated", req.signed && req.signedAt !== undefined && rankOk && !future,
+    !req.signed || req.signedAt === undefined ? "Request is not signed and dated"
+      : future ? "Request is dated after the bank received it"
+      : `Signed by ${req.issuer.rank ?? "unknown rank"}; needs at least ${policy.requisition.min_signing_rank}`);
 
   const ref = (req.firNo && FIR_RE.test(req.firNo)) || (req.ncrpAck && NCRP_RE.test(req.ncrpAck));
   add("case_reference", Boolean(ref), req.firNo || req.ncrpAck ? "FIR / NCRP number is in an unrecognised format" : "No FIR or NCRP acknowledgement number");
@@ -76,7 +84,7 @@ export function checkRequisition(req: Requisition, policy: PolicySet, overlays: 
     const start = req.signedAt ?? req.receivedAt;
     if (req.magistrateIntimatedAt != null) {
       add("magistrate_intimation", req.magistrateIntimatedAt - start <= hrs, `Magistrate informed after more than ${policy.requisition.magistrate_intimation_hours} hours`);
-    } else if (req.receivedAt - start < hrs) {
+    } else if (Math.max(now, req.receivedAt) - start < hrs) {
       add("magistrate_intimation", false, `Proof of informing the Magistrate is due within ${policy.requisition.magistrate_intimation_hours} hours`, { pending: true, severity: "review" });
     } else {
       add("magistrate_intimation", false, "No proof the Magistrate was informed");
@@ -103,5 +111,6 @@ export function checkRequisition(req: Requisition, policy: PolicySet, overlays: 
   if (route) memo.push(`${memo.length + 1}. In ${jurisdiction.strictest.highCourt} High Court's area, police cannot debit-freeze under BNSS s.106 alone. Please obtain a Magistrate's order under s.107.`);
   if (jurisdiction.conflict) memo.push(`Note: the states involved (${jurisdiction.views.map((v) => v.state).join(", ")}) follow different rulings; the strictest was applied.`);
 
-  return { status, findings, authority, route, jurisdiction, memo };
+  const amountRequested = !req.asksWholeAccount && typeof req.amountRequested === "number" ? req.amountRequested : null;
+  return { account: req.account.id, amountRequested, status, findings, authority, route, jurisdiction, memo };
 }

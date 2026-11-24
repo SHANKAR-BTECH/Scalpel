@@ -92,7 +92,7 @@ describe("golden cases", () => {
   });
 
   it("4. Over-asking: ₹1,00,000 requested where ₹40,000 was traced -> hold cut to ₹40,000 (R1)", () => {
-    const r = evaluateGate({ kind: "EXACT_HOLD", account: "M9", amount: rupees(1_00_000) }, ctx(policeReq({ amountRequested: rupees(1_00_000) }), { account: { id: "M9", type: "SAVINGS", balance: rupees(2_50_000), traced: rupees(40_000) } }), P);
+    const r = evaluateGate({ kind: "EXACT_HOLD", account: "M9", amount: rupees(1_00_000) }, ctx(policeReq({ amountRequested: rupees(1_00_000), account: { id: "M9", branchState: "KA" } }), { account: { id: "M9", type: "SAVINGS", balance: rupees(2_50_000), traced: rupees(40_000) } }), P);
     expect(r.action).toEqual({ kind: "EXACT_HOLD", account: "M9", amount: rupees(40_000) });
     expect(r.badges.sized).toBe(true);
   });

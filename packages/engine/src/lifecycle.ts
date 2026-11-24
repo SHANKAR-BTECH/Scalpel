@@ -56,7 +56,11 @@ export function clockViews(h: Hold, policy: PolicySet, now: Instant): ClockView[
     const dueAt = deadline(start.at, days, c.unit);
     const alertAt = c.alert_before_days > 0 ? istStart(addDays(istDate(dueAt), -c.alert_before_days)) : null;
     const sat = seg.find((e) => e.at >= start.at && c.satisfied_by.includes(e.type) && e !== start);
-    const state: ClockState = sat ? (sat.at > dueAt ? "SATISFIED_LATE" : "SATISFIED") : now > dueAt ? "EXPIRED" : alertAt !== null && now >= alertAt ? "ALERT" : "RUNNING";
+    // A release ends every clock. A deadline missed before the release stays EXPIRED on the record.
+    const rel = seg.find((e) => e.type === "RELEASED" && e.at >= start.at);
+    const state: ClockState = sat ? (sat.at > dueAt ? "SATISFIED_LATE" : "SATISFIED")
+      : rel ? (rel.at > dueAt ? "EXPIRED" : "NOT_APPLICABLE")
+      : now > dueAt ? "EXPIRED" : alertAt !== null && now >= alertAt ? "ALERT" : "RUNNING";
     return { ...base, state, startedAt: start.at, dueAt, alertAt, extensionsUsed: ext };
   });
 }

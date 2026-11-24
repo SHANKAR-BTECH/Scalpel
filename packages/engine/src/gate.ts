@@ -125,6 +125,7 @@ export function evaluateGate(original: Action, ctx: GateContext, policy: PolicyS
     // Right size?
     if (ctx.account && isMoney) {
       if (held > ctx.account.traced) fail("sized", `Holds ${formatINR(held - ctx.account.traced)} more than the traced victim money`);
+      else if (held > ctx.account.balance) caution("sized", `The lien is ${formatINR(held - ctx.account.balance)} more than today's balance, so it will also catch later credits that are not victim money`);
     }
     // On time?
     if (isMoney && !timed) fail("timed", "No time limit and no deadlines for this hold");
@@ -167,10 +168,16 @@ export function evaluateGate(original: Action, ctx: GateContext, policy: PolicyS
   if (ctx.requester === "POLICE") {
     const req = ctx.requisition;
     if (!req) { ok("R0", false, "Police action needs a checked requisition"); return stop("ROUTE"); }
+    if (req.account !== acct.id) { ok("R0", false, `The police request names account ${req.account}, not ${acct.id}`); return stop("ROUTE"); }
     const usable = req.status !== "DEFECTIVE" && req.authority !== "NONE";
     if (!usable) {
       const own = signals.length >= g.bank_self_hold_min_signals && ctx.assessment.role === "mule";
       const why = req.route ? `Police alone cannot freeze here (${req.jurisdiction.strictest.highCourt} HC)` : "Request is defective";
+      const rbi = policy.regimes.RBI_BANK;
+      if (own && rbi?.exempt_account_types.includes(acct.type)) {
+        ok("R0", false, `${why}. ${acct.type} accounts are exempt from a bank's own hold, so the memo goes back to the officer.`, rbi.sources);
+        return stop("ROUTE");
+      }
       if (own && acct.traced > 0) {
         ok("R0", true, `${why}. Bank's own signals are strong (${signals.length}), so the bank places its own exact hold under RBI rules and returns the memo to the officer.`, ["rbi-draft-mule-2026"]);
         regime = "RBI_BANK";
@@ -218,12 +225,17 @@ export function evaluateGate(original: Action, ctx: GateContext, policy: PolicyS
 
   // R1: exact hold never above traced victim money
   if (action.kind === "EXACT_HOLD") {
-    const cap = Math.floor(acct.traced * g.exact_hold_max_ratio_of_traced);
+    const tracedCap = Math.floor(acct.traced * g.exact_hold_max_ratio_of_traced);
+    // Under a usable police request the hold also never exceeds what the police asked for.
+    const asked = ctx.requester === "POLICE" && regime === "MHA_POLICE" ? ctx.requisition?.amountRequested ?? null : null;
+    const cap = asked !== null && asked > 0 ? Math.min(tracedCap, asked) : tracedCap;
     if (cap <= 0) { ok("R1", false, "No victim money traced into this account: nothing to hold"); return stop("DENY"); }
     const min = regime ? policy.regimes[regime]?.min_amount ?? 0 : 0;
     if (cap < min) { ok("R1", false, `Traced ${formatINR(cap)} is below the ${formatINR(min)} minimum for this kind of hold`); return stop("DENY"); }
     if (action.amount > cap) {
-      ok("R1", false, `Asked ${formatINR(action.amount)}; traced victim money is ${formatINR(cap)}. Hold reduced.`, ["himanshu-gupta"]);
+      ok("R1", false, cap < tracedCap
+        ? `Proposed ${formatINR(action.amount)}; the police asked for ${formatINR(cap)}. Hold reduced to the amount asked.`
+        : `Asked ${formatINR(action.amount)}; traced victim money is ${formatINR(cap)}. Hold reduced.`, cap < tracedCap ? [] : ["himanshu-gupta"]);
       action = { ...action, amount: cap }; modify();
     } else ok("R1", true, `Hold ${formatINR(action.amount)} ≤ traced ${formatINR(cap)}`);
     // A lien may exceed today's balance (Himanshu Gupta: Rs 82,800 lien on a Rs 31,221 balance); it then also catches later credits. Say so.
