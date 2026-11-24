@@ -11,6 +11,7 @@ import { heldNow, RULE_LABEL, sortCases, useDesk, type CaseState } from "@/lib/d
 import { HoldBars } from "./HoldBars";
 import { CaseActions, StatusChip, statusOf } from "./CaseActions";
 import { EASE_OUT, SPRING } from "./ui/motion";
+import { RoleNow, Steps } from "@/app/memo/Memo";
 
 type Msg =
   | { id: string; kind: "guide"; from: string; subject: string; preview: string; at: number }
@@ -40,9 +41,11 @@ export function Inbox() {
   }, [cases, get, shop]);
 
   const [sel, setSel] = useState<string>(cases[0]?.account ?? "guide");
+  const [ready, setReady] = useState(false); // read ?m= before showing a case, so a link never flashes the wrong one
   useEffect(() => {
     const q = new URLSearchParams(window.location.search).get("m");
     if (q) setSel(q);
+    setReady(true);
   }, []);
   const choose = (id: string) => {
     setSel(id);
@@ -55,7 +58,7 @@ export function Inbox() {
   return (
     <>
       <Kpis />
-      <div className="mt-6 grid gap-5 lg:grid-cols-[minmax(300px,380px)_minmax(0,1fr)] items-start">
+      <div className="mt-6 grid gap-5 lg:grid-cols-[minmax(290px,340px)_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)_300px] items-start">
         <section className="card overflow-hidden lg:sticky lg:top-24" aria-label="Messages">
           <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "var(--line)" }}>
             <span className="font-semibold">Messages</span>
@@ -74,13 +77,23 @@ export function Inbox() {
 
         <section id="reader" className="min-w-0 scroll-mt-32">
           <AnimatePresence mode="wait">
-            <m.div key={current.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.28, ease: EASE_OUT }}>
+            {ready && <m.div key={current.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.28, ease: EASE_OUT }}>
               {current.kind === "request" && <CaseView c={current.c} />}
               {current.kind === "holder" && <HolderView c={current.c} />}
               {current.kind === "guide" && <GuideView />}
-            </m.div>
+            </m.div>}
           </AnimatePresence>
         </section>
+
+        <aside className="hidden xl:grid gap-4 sticky top-24" aria-label="Your role and the steps">
+          <RoleNow role={desk.role} />
+          {"c" in current && (
+            <section className="card p-5">
+              <p className="eyebrow">Steps for this hold</p>
+              <Steps s={get(current.c.account)} />
+            </section>
+          )}
+        </aside>
       </div>
     </>
   );
@@ -172,7 +185,7 @@ export function CaseView({ c }: { c: MemoCase }) {
       <div className="px-5 sm:px-7 py-6 grid gap-8">
         <section>
           <p className="eyebrow">Suggested hold</p>
-          <div className="card-flat p-4 sm:p-5" style={{ background: "linear-gradient(180deg, var(--card), #fbfaf7)" }}><HoldBars heldPaise={c.heldPaise} balancePaise={c.balancePaise} /></div>
+          <div className="card-flat p-4 sm:p-5" style={{ background: "linear-gradient(180deg, var(--card), #f7fafa)" }}><HoldBars heldPaise={c.heldPaise} balancePaise={c.balancePaise} /></div>
         </section>
 
         <section>

@@ -18,7 +18,7 @@ export function PageHead({ eyebrow, title, purpose, how, right }: { eyebrow?: st
 }
 
 /** Dense tables stay one click away for the people who want them. */
-export function FullData({ title, children, open = false, testid }: { title: string; children: React.ReactNode; open?: boolean; testid?: string }) {
+export function FullData({ title, children, open = false, testid }: { title: React.ReactNode; children: React.ReactNode; open?: boolean; testid?: string }) {
   return (
     <details className="full card mt-6" open={open} data-testid={testid}>
       <summary className="flex items-center justify-between gap-3 px-5 py-4 rounded-[10px] transition-colors hover:bg-[var(--accent-tint)]">

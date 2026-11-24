@@ -10,6 +10,7 @@ import { ReplayLane, LANE_COLOR } from "@/components/ReplayLane";
 import { Button } from "@/components/ui/Button";
 import { Segmented } from "@/components/ui/Segmented";
 import { SPRING } from "@/components/ui/motion";
+import { FullData } from "@/components/ui/Explain";
 
 type LaneKey = (typeof LANE_KEYS)[number];
 
@@ -56,7 +57,7 @@ export function Replay({ replay, total }: { replay: DemoData["replay"]; total: n
         <div className="grid gap-3" data-testid="replay-chart" aria-label={`Money at hour ${hour}, by policy`}>
           <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-[12.5px] muted">
             <span className="inline-flex items-center gap-1.5"><i className="inline-block w-3 h-2 rounded-sm" style={{ background: "var(--accent)" }} />Victim money secured</span>
-            <span className="inline-flex items-center gap-1.5"><i className="inline-block w-3 h-2 rounded-sm" style={{ background: "repeating-linear-gradient(135deg, var(--freeze) 0 3px, #e9b7b0 3px 6px)" }} />Innocent money locked</span>
+            <span className="inline-flex items-center gap-1.5"><i className="inline-block w-3 h-2 rounded-sm" style={{ background: "repeating-linear-gradient(135deg, var(--freeze) 0 3px, #f2b8b3 3px 6px)" }} />Innocent money locked</span>
             <span className="ml-auto num">Hour {hour} of {LAST_HOUR}</span>
           </div>
           {LANE_KEYS.map((k) => {
@@ -69,7 +70,7 @@ export function Replay({ replay, total }: { replay: DemoData["replay"]; total: n
                 <span className={`text-[14px] ${on ? "font-semibold" : "font-medium"}`}>{LANE_LABEL[k]}</span>
                 <span className="grid gap-1.5">
                   <Bar value={v.secured} max={scaleMax} color={LANE_COLOR[k]} label={formatRupees(v.secured)} />
-                  <Bar value={v.innocentLocked} max={scaleMax} color="repeating-linear-gradient(135deg, var(--freeze) 0 3px, #e9b7b0 3px 6px)" label={v.innocentLocked ? `${formatRupees(v.innocentLocked)} innocent` : "₹0 innocent"} muted={!v.innocentLocked} />
+                  <Bar value={v.innocentLocked} max={scaleMax} color="repeating-linear-gradient(135deg, var(--freeze) 0 3px, #f2b8b3 3px 6px)" label={v.innocentLocked ? `${formatRupees(v.innocentLocked)} innocent` : "₹0 innocent"} muted={!v.innocentLocked} />
                 </span>
               </button>
             );
@@ -98,16 +99,12 @@ export function Replay({ replay, total }: { replay: DemoData["replay"]; total: n
         </p>
       </div>
 
-      <h2 className="title text-[22px] mt-10">All four policies at hour <span className="mono">{hour}</span></h2>
-      <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {LANE_KEYS.map((k) => <ReplayLane key={k} id={k} lane={replay.lanes[k]} hour={hour} total={total} picked={k === pick} />)}
-      </div>
-      <p className="mt-5 text-[15px] leading-relaxed max-w-3xl">
-        Read it in pairs. <b>Whole freeze vs Exact hold, biggest first:</b> same order, only the hold size differs.{" "}
-        <b>Exact hold, biggest first vs Scalpel:</b> same hold sizes, only the order differs. In this small world both orders reach every
-        account within a few hours, so they end level; <Link href="/order" className="link">Work order</Link> compares orders on the 5 bigger test worlds.
-        The whole freeze secures more victim money because it also catches money from victims who had not complained yet, at the cost of the innocent money it locks.
-      </p>
+      <FullData title={<>Each policy in detail at hour <span className="num">{hour}</span></>} testid="lanes">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {LANE_KEYS.map((k) => <ReplayLane key={k} id={k} lane={replay.lanes[k]} hour={hour} total={total} picked={k === pick} />)}
+        </div>
+        <p className="mt-4 text-[14px] muted">Whole freeze vs Exact hold differ only in hold size; Exact hold vs Scalpel differ only in order.</p>
+      </FullData>
       <p className="mt-3 text-[15px]"><Link href="/memo?a=D00191" className="link font-medium" data-testid="to-memo">See the hold memo for one shop in this world</Link></p>
     </>
   );

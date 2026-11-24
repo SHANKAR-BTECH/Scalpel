@@ -40,3 +40,14 @@ test("phone width: inbox does not scroll sideways", async ({ page }) => {
   const [sw, cw] = await page.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.clientWidth]);
   expect(sw).toBeLessThanOrEqual(cw);
 });
+
+test("after approval, the trace replays the engine's credits and ends on the held amount", async ({ page }) => {
+  await page.goto("/?m=D09001");
+  await expect(page.getByTestId("act-trace")).toHaveCount(0);
+  await page.getByTestId("act-propose-exact").click();
+  await page.getByTestId("role-supervisor").click();
+  await page.getByTestId("act-approve-exact").click();
+  await page.getByTestId("act-trace").click();
+  await expect(page.getByTestId("trace-done")).toContainText("₹30,000", { timeout: 10000 });
+  await expect(page.getByTestId("trace-total")).toHaveText("₹80,000");
+});

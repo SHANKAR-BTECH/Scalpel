@@ -5,8 +5,8 @@ import { SPRING } from "./motion";
 
 type Variant = "primary" | "secondary" | "ghost";
 const STYLE: Record<Variant, React.CSSProperties> = {
-  primary: { background: "var(--accent)", color: "var(--on-accent)", border: "1px solid var(--accent-ink)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.16), 0 6px 16px -8px rgba(33,63,115,0.55)" },
-  secondary: { background: "rgba(255,255,255,0.7)", color: "var(--fg)", border: "1px solid rgba(0,0,0,0.12)", boxShadow: "0 2px 8px rgba(33,63,115,0.05), inset 0 1px 0 rgba(255,255,255,0.85)" },
+  primary: { background: "var(--accent)", color: "var(--on-accent)", border: "1px solid var(--accent-ink)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.16), 0 6px 16px -8px rgba(11,85,99,0.55)" },
+  secondary: { background: "rgba(255,255,255,0.7)", color: "var(--fg)", border: "1px solid rgba(0,0,0,0.12)", boxShadow: "0 2px 8px rgba(11,85,99,0.05), inset 0 1px 0 rgba(255,255,255,0.85)" },
   ghost: { background: "transparent", color: "var(--accent-ink)", border: "1px solid transparent" },
 };
 const BASE = "inline-flex items-center justify-center gap-2 min-h-[42px] rounded-[14px] px-5 py-2 text-[14.5px] font-[550] tracking-[-0.01em] transition-[background-color,border-color,box-shadow] duration-200 hover:brightness-[1.04] select-none disabled:opacity-40 disabled:cursor-not-allowed";

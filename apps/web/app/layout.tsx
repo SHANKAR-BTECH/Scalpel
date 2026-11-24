@@ -23,7 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Banner />
             <Nav />
             <main className="relative z-[1]">
-              <div className="mx-auto max-w-[1260px] px-4 sm:px-6 lg:px-9 pb-14">{children}</div>
+              <div className="mx-auto max-w-[1480px] px-4 sm:px-5 lg:px-6 pb-14">{children}</div>
             </main>
           </DeskProvider>
         </MotionProvider>

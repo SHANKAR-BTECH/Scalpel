@@ -38,28 +38,66 @@ export function Memo({ memo }: { memo: DemoData["memo"] }) {
     else if (x.proposed) desk.act(account, { whole: "proposed" }, "proposed a whole-account freeze");
   };
 
+  const approved = st.exact === "approved" || st.whole === "approved";
   return (
-    <>
-      <div className="no-print mt-6 grid gap-4">
-        <div className="card p-4 sm:p-5 grid gap-4">
-          <div className="flex flex-wrap gap-3 items-center justify-between">
-            <Segmented label="Account" value={account} onChange={pick}
-              options={memo.cases.map((c) => ({ value: c.account, label: TITLES[c.account] ?? c.account }))} />
-            <div className="flex flex-wrap gap-2">
-              <Button onClick={() => setNotice(true)} data-testid="preview-notice">Preview notice to holder</Button>
-              <Button variant="primary" onClick={() => window.print()}>
-                <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"><path d="M4 6V1.8h8V6M4 12H2.5V6.5h11V12H12M4.5 9.5h7v5h-7z" /></svg>
-                Print memo
-              </Button>
-            </div>
-          </div>
-          <CaseActions c={m} showMemoLink={false} />
+    <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_360px] items-start desk-shell">
+      <div className="min-w-0 grid grid-cols-[minmax(0,1fr)] gap-4">
+        <div className="no-print flex flex-wrap gap-3 items-center justify-between">
+          <Segmented label="Account" value={account} onChange={pick}
+            options={memo.cases.map((c) => ({ value: c.account, label: TITLES[c.account] ?? c.account }))} />
+          <Button onClick={() => setNotice(true)} data-testid="preview-notice">Preview notice to holder</Button>
         </div>
-        <RoleNow role={role} />
+        <MemoBody m={m} memo={memo} role={role} ap={ap} set={set} />
       </div>
+      <aside className="no-print grid gap-4 lg:sticky lg:top-24">
+        <RoleNow role={role} />
+        <section className="card p-5" data-testid="memo-steps">
+          <p className="eyebrow">Steps for this hold</p>
+          <Steps s={st} />
+          <div className="mt-4"><CaseActions c={m} showMemoLink={false} compact /></div>
+          <Button variant="primary" className="mt-4 w-full" disabled={!approved} onClick={() => window.print()} data-testid="print-memo">
+            <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"><path d="M4 6V1.8h8V6M4 12H2.5V6.5h11V12H12M4.5 9.5h7v5h-7z" /></svg>
+            {approved ? "Print memo (A4)" : "Print after approval"}
+          </Button>
+        </section>
+      </aside>
       <NoticeDialog open={notice} onClose={() => setNotice(false)} m={m} sent={st.notice} />
-      <MemoBody m={m} memo={memo} role={role} ap={ap} set={set} />
-    </>
+    </div>
+  );
+}
+
+/** Request, propose, approve, notify, print: done steps tick, the next one pulses and says who does it. */
+export function Steps({ s }: { s: ReturnType<ReturnType<typeof useDesk>["get"]> }) {
+  const approved = s.exact === "approved" || s.whole === "approved";
+  const steps = [
+    { label: "Police request received", who: "", done: true },
+    { label: "Propose the hold", who: "Officer", done: s.exact !== "none" || s.whole !== "none" },
+    { label: "Approve the hold", who: "Supervisor", done: approved },
+    { label: "Send notice to the holder", who: "Officer", done: s.notice },
+    { label: "Print the memo", who: "Anyone", done: false },
+  ];
+  const next = steps.findIndex((x) => !x.done);
+  return (
+    <ol className="relative grid gap-0.5">
+      {steps.map((x, i) => {
+        const now = i === next;
+        return (
+          <li key={x.label} className="relative flex items-start gap-3 py-1.5">
+            {i < steps.length - 1 && <span className="absolute left-[11px] top-7 bottom-[-6px] w-px" style={{ background: x.done ? "var(--accent)" : "var(--line)" }} aria-hidden />}
+            <motion.span className="relative z-[1] mt-0.5 grid place-items-center w-[23px] h-[23px] rounded-full text-[11px] font-bold shrink-0"
+              initial={false} animate={{ scale: now ? 1.08 : 1 }} transition={SPRING}
+              style={{ background: x.done ? "var(--accent)" : now ? "var(--card)" : "var(--bg-2)", color: x.done ? "#fff" : now ? "var(--accent)" : "var(--muted)", border: now ? "2px solid var(--accent)" : "none" }}>
+              {x.done ? "✓" : i + 1}
+              {now && <motion.span className="absolute inset-0 rounded-full" style={{ border: "2px solid var(--accent)" }} animate={{ scale: [1, 1.7], opacity: [0.5, 0] }} transition={{ duration: 1.6, repeat: Infinity, ease: "easeOut" }} />}
+            </motion.span>
+            <span className="min-w-0">
+              <span className={`block text-[14.5px] ${now ? "font-semibold" : x.done ? "" : "muted"}`}>{x.label}</span>
+              {x.who && <span className="block text-[12px] muted">{now ? `Next: ${x.who}` : x.who}</span>}
+            </span>
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 
@@ -148,19 +186,8 @@ function MemoBody({ m, memo, role, ap, set }: { m: MemoCase; memo: DemoData["mem
 
       <section className="mt-6">
         <h3 className="font-semibold text-sm">The three checks</h3>
-        <div className="no-print mt-2 mb-4 rounded-xl p-4 text-[14.5px] leading-relaxed" style={{ background: "var(--bg)", border: "1px solid var(--line)" }} data-testid="why-sources">
-          <b>Why are there links under each check?</b> Each check rests on a law, an RBI or police rule, or a court judgment. The link opens that original document,
-          so a bank manager, a lawyer or a judge can check the hold for themselves instead of trusting this page. Only sources we have read against the original are
-          linked here; anything not yet checked is listed under &ldquo;Still being checked&rdquo; at the bottom and never counts towards a green tick.
-        </div>
+        <p className="no-print mt-1 mb-3 text-[13px] muted" data-testid="why-sources">Each link opens the original law or judgment, so anyone can check the hold themselves.</p>
         <Badges badges={badges} sources={memo.sources} />
-      </section>
-
-      <section className="mt-4 card-flat p-4 text-sm" data-testid="whole-compare" style={{ background: "var(--freeze-tint)", borderColor: "transparent" }}>
-        <h3 className="font-semibold">If the whole account were frozen instead</h3>
-        <p>It would lock {formatRupees(m.wholeFreeze.heldPaise)}, which is {formatRupees(m.wholeFreeze.overTracedPaise)} more than the traced money.
-          {" "}Right size? <b style={{ color: m.wholeFreeze.sized === "fail" ? "var(--bad)" : "var(--good)" }} data-testid="whole-sized">{m.wholeFreeze.sized === "fail" ? "✕ No" : "✓ Yes"}</b></p>
-        {m.wholeFreeze.risks.length > 0 && <p className="text-xs mt-1">Grounds a court could quash it on: {m.wholeFreeze.risks.map((r) => `${r.id} ${r.ground}`).join("; ")}.</p>}
       </section>
 
       <section className="mt-4">
@@ -218,23 +245,23 @@ function MemoBody({ m, memo, role, ap, set }: { m: MemoCase; memo: DemoData["mem
 }
 
 /** What the person at the keyboard may do right now, in plain words. Changes with the Officer / Supervisor switch. */
-function RoleNow({ role }: { role: Role }) {
+export function RoleNow({ role }: { role: Role }) {
   const r = ROLES[role];
   return (
-    <section className="no-print mt-4 rounded-2xl p-5 grid gap-4 md:grid-cols-[1fr_1fr_1fr]" style={{ background: "var(--accent-tint)", border: "1px solid var(--accent-line)" }} data-testid="role-now">
+    <motion.section layout transition={SPRING} key={role} initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} className="no-print rounded-xl p-5 grid gap-3" style={{ background: "var(--accent-tint)", border: "1px solid var(--accent-line)" }} data-testid="role-now">
       <div>
         <p className="label" style={{ color: "var(--accent-ink)" }}>You are acting as</p>
-        <p className="font-semibold text-[20px] mt-1">{r.title}</p>
-        <p className="text-[14.5px] muted mt-1">{r.who} Two people are enough to run every hold: one officer and one supervisor.</p>
+        <p className="font-semibold text-[20px] mt-1" style={{ fontFamily: "var(--font-display)" }}>{r.title}</p>
+        <p className="text-[13.5px] muted mt-0.5">{r.who}</p>
       </div>
       <div>
         <p className="label" style={{ color: "var(--good)" }}>You can</p>
-        <ul className="mt-1.5 text-[15px] space-y-1 list-disc ml-5">{r.can.map((x) => <li key={x}>{x}</li>)}</ul>
+        <ul className="mt-1 text-[14px] space-y-0.5 list-disc ml-5">{r.can.map((x) => <li key={x}>{x}</li>)}</ul>
       </div>
       <div>
         <p className="label" style={{ color: "var(--bad)" }}>You cannot</p>
-        <ul className="mt-1.5 text-[15px] space-y-1 list-disc ml-5">{r.cannot.map((x) => <li key={x}>{x}</li>)}</ul>
+        <ul className="mt-1 text-[14px] space-y-0.5 list-disc ml-5">{r.cannot.map((x) => <li key={x}>{x}</li>)}</ul>
       </div>
-    </section>
+    </motion.section>
   );
 }

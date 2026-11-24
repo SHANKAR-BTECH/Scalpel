@@ -7,6 +7,10 @@ import { formatRupees } from "@/lib/money";
 import { useDesk, type CaseState } from "@/lib/desk";
 import { Button } from "./ui/Button";
 import { SPRING } from "./ui/motion";
+import { useState } from "react";
+import { TracePanel } from "./TracePanel";
+
+const s0 = (s: CaseState) => s.exact === "approved" || s.whole === "approved";
 
 export function statusOf(s: CaseState): { text: string; fg: string; bg: string } {
   if (s.whole === "approved") return { text: "Whole account frozen", fg: "var(--freeze)", bg: "var(--freeze-tint)" };
@@ -43,8 +47,10 @@ export function Progress({ s }: { s: CaseState }) {
 }
 
 /** The buttons an officer or supervisor may press on one case. Only the allowed ones are live; the rest say why not. */
-export function CaseActions({ c, showMemoLink = true }: { c: MemoCase; showMemoLink?: boolean }) {
+export function CaseActions({ c, showMemoLink = true, compact = false }: { c: MemoCase; showMemoLink?: boolean; compact?: boolean }) {
   const { role, get, act, reset } = useDesk();
+  const [tracing, setTracing] = useState(false);
+  const approved = s0(get(c.account));
   const s = get(c.account);
   const officer = role === "officer";
   const held = formatRupees(c.heldPaise);
@@ -56,7 +62,7 @@ export function CaseActions({ c, showMemoLink = true }: { c: MemoCase; showMemoL
     if (s.exact === "approved" && !s.notice) buttons.push({ label: "Send notice to account holder", variant: "primary", testid: "act-notice", onClick: () => act(c.account, { notice: true }, "sent the notice to the account holder") });
     if (c.suggestedWholeFreeze && s.whole === "none" && s.exact !== "none")
       buttons.push({ label: "Propose whole freeze (last resort)", variant: "danger", testid: "act-propose-whole", onClick: () => act(c.account, { whole: "proposed" }, "proposed a whole-account freeze") });
-    if (s.exact === "proposed" || s.whole === "proposed") note = "Waiting for a supervisor. Switch 'Working as' to Supervisor to approve.";
+    if (s.exact === "proposed" || s.whole === "proposed") note = "Waiting for a supervisor. Switch to Supervisor at the top right.";
     else if (!buttons.length) note = "Nothing left for the officer on this case.";
   } else {
     if (s.exact === "proposed") {
@@ -68,6 +74,37 @@ export function CaseActions({ c, showMemoLink = true }: { c: MemoCase; showMemoL
       buttons.push({ label: "Refuse whole freeze", testid: "act-refuse-whole", onClick: () => act(c.account, { whole: "none" }, "refused the whole-account freeze") });
     }
     if (!buttons.length) note = s.exact === "none" ? "Nothing to approve yet. The officer proposes first." : "Nothing waiting for a supervisor on this case.";
+  }
+
+  const traceBtn = approved && (
+    <m.span key="trace" layout initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} transition={SPRING}>
+      <Button data-testid="act-trace" onClick={() => setTracing(true)} className={compact ? "w-full" : ""}
+        style={{ color: "var(--accent-ink)", borderColor: "var(--accent-line)", background: "var(--accent-tint)" }}>
+        <span className="relative grid place-items-center w-3 h-3" aria-hidden>
+          <span className="absolute w-3 h-3 rounded-full animate-ping" style={{ background: "var(--hold-fill)", opacity: 0.5 }} />
+          <span className="relative w-2 h-2 rounded-full" style={{ background: "var(--hold-fill)" }} />
+        </span>
+        Trace the money
+      </Button>
+    </m.span>
+  );
+
+  if (compact) {
+    return (
+      <section className="grid gap-2.5" data-testid="case-actions">
+        <AnimatePresence mode="popLayout" initial={false}>
+          {buttons.map((b) => (
+            <m.span key={b.testid} layout initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={SPRING}>
+              <Button variant={b.variant === "danger" ? "secondary" : b.variant ?? "secondary"} data-testid={b.testid} onClick={b.onClick} className="w-full"
+                style={b.variant === "danger" ? { color: "var(--freeze)", borderColor: "color-mix(in srgb, var(--freeze) 40%, transparent)" } : undefined}>{b.label}</Button>
+            </m.span>
+          ))}
+          {traceBtn}
+        </AnimatePresence>
+        {note && <p className="text-[13px] muted">{note}</p>}
+        <TracePanel c={c} open={tracing} onClose={() => setTracing(false)} />
+      </section>
+    );
   }
 
   return (
@@ -85,11 +122,13 @@ export function CaseActions({ c, showMemoLink = true }: { c: MemoCase; showMemoL
                 </Button>
               </m.span>
             ))}
+            {traceBtn}
           </AnimatePresence>
           {note && <span className="text-[13.5px] muted">{note}</span>}
           {showMemoLink && <Link href={`/memo?a=${c.account}`} className="ml-auto text-[13.5px] font-semibold link">Open hold memo</Link>}
         </div>
       </div>
+      <TracePanel c={c} open={tracing} onClose={() => setTracing(false)} />
       {s.log.length > 0 && (
         <div>
           <div className="flex items-baseline justify-between">

@@ -12,7 +12,7 @@ export function Segmented<T extends string>({ options, value, onChange, label, s
   const pad = size === "sm" ? "px-3 py-1 text-[13px]" : "px-4 py-1.5 text-sm";
   return (
     <div role="group" aria-label={label} className={`inline-flex flex-wrap gap-0.5 rounded-full p-1 ${className}`}
-      style={dark ? { background: "rgba(0,0,0,0.25)" } : { background: "rgba(33,63,115,0.05)", border: "1px solid var(--line)" }}>
+      style={dark ? { background: "rgba(0,0,0,0.25)" } : { background: "rgba(11,85,99,0.05)", border: "1px solid var(--line)" }}>
       {options.map((o) => {
         const on = o.value === value;
         return (
@@ -21,7 +21,7 @@ export function Segmented<T extends string>({ options, value, onChange, label, s
             whileTap={{ scale: 0.96 }} transition={SPRING}>
             {on && (
               <m.span layoutId={`seg-${id}`} className="absolute inset-0 rounded-full" transition={SPRING}
-                style={dark ? { background: "var(--accent)" } : { background: "var(--card)", border: "1px solid var(--accent-line)", boxShadow: "0 1px 3px rgba(33,63,115,0.10)" }} />
+                style={dark ? { background: "var(--accent)" } : { background: "var(--card)", border: "1px solid var(--accent-line)", boxShadow: "0 1px 3px rgba(11,85,99,0.10)" }} />
             )}
             <span className="relative">{o.label}</span>
           </m.button>

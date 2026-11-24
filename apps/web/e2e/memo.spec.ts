@@ -82,12 +82,10 @@ test("phone width: the memo does not scroll sideways", async ({ page }) => {
   expect(sw).toBeLessThanOrEqual(cw);
 });
 
-test("badges can show amber and red: deadlines on unchecked sources are amber; a whole freeze is red on Right size?", async ({ page }) => {
+test("badges show amber when deadlines rest on unchecked sources", async ({ page }) => {
   await page.goto("/memo?a=D09001");
   await expect(page.getByTestId("badge-timed")).toHaveAttribute("data-state", "caution");
   await expect(page.getByTestId("badge-timed")).toContainText("Yes, with caution");
-  await expect(page.getByTestId("whole-sized")).toHaveText("✕ No");
-  await expect(page.getByTestId("whole-compare")).toContainText("₹7,500 more than the traced money");
 });
 
 test("the memo says what the model may do: it can only help an officer PROPOSE a whole freeze", async ({ page }) => {
