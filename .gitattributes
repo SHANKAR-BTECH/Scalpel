@@ -1,0 +1,3 @@
+# Keep the website data byte-for-byte, so its sha256 matches on Windows too.
+apps/web/data/demo.json -text
+apps/web/data/demo.sha256 -text
