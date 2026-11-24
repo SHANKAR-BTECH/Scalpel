@@ -1,0 +1,9 @@
+id: hc-allahabad
+high_court: "Allahabad"
+states: [UP]
+status: final
+effective_from: "2026-01-19"   # Khalsa Medical Store v RBI (Lucknow Bench, DB), confirmed by R1
+effective_to: null
+police_debit_freeze_s106: allowed
+notes: "Allahabad HC: bank accounts are seizable under BNSS s.106, but only with its 5-point protocol (reasonable belief, exact lien amount, FIR/complaint copy, Magistrate told within 24h). High Courts are split; binding only in UP."
+sources: [allahabad-protocol]
