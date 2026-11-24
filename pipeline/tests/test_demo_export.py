@@ -97,4 +97,4 @@ def test_built_demo_has_no_roles_and_ids_only_in_memo_and_worst():
     for prefix in ("D0", "B0", "A0"):
         assert f'"{prefix}' not in text
     assert d["schema"] == "scalpel-demo/3"
-    assert len(d["provenance"]["demoSha256"]) == 0  # filled when written to disk
+    assert "demoSha256" not in d["provenance"]  # the fingerprint is written next to the file (demo.sha256)

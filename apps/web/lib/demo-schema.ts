@@ -10,8 +10,10 @@ const hours73 = <T extends z.ZodType>(t: T) => z.array(t).length(73);
 const Check = z.object({ rule: z.string(), ok: z.boolean(), note: z.string(), sources: z.array(z.string()), unverified: z.array(z.string()) });
 const Clock = z.object({
   id: z.string(), label: z.string(), days: z.number(), startsOn: z.string(), dueAt: z.number().nullable(), onExpiry: z.string(),
-  status: z.string().nullable(), sources: z.array(z.string()), unverified: z.array(z.string()),
+  status: z.string().nullable(), state: z.string(), sources: z.array(z.string()), unverified: z.array(z.string()),
 });
+const BadgeState = z.enum(["pass", "caution", "fail"]);
+const BadgeTrio = <T extends z.ZodType>(t: T) => z.object({ allowed: t, sized: t, timed: t });
 export const Source = z.object({
   id: z.string(), title: z.string(), issuer: z.string().optional(), date: z.string().optional(), ref: z.string().optional(),
   url: z.string().optional(), verified: z.boolean().optional(),
@@ -24,18 +26,23 @@ export const MemoCase = z.object({
   muleScore: z.number().min(0).max(1), reasons: z.array(z.string()), signals: z.array(z.string()),
   requisitionStatus: z.string(), requisitionChecks: z.array(Check), jurisdiction: z.string(),
   checks: z.array(Check), badges: z.object({ allowed: z.boolean(), sized: z.boolean(), timed: z.boolean() }),
+  badgeStates: BadgeTrio(BadgeState), badgeReasons: BadgeTrio(z.array(z.string())), asOf: z.number(),
+  wholeFreeze: z.object({ heldPaise: paise, overTracedPaise: paise, sized: BadgeState, risks: z.array(z.object({ id: z.string(), ground: z.string() })) }),
   wholeFreezeChecks: z.array(Check).nullable(), clocks: z.array(Clock),
   quashRisksAfter: z.array(z.object({ id: z.string(), ground: z.string() })), flags: z.array(z.string()),
 });
 const Head = z.object({
-  freezeRatio: z.number().nullable(), heldPaise: paise, victimMoneyPaise: paise, victimMoneyMissedPaise: paise,
+  freezeRatio: z.number().nullable(), reportedRatio: z.number(), reportedMoneyPaise: paise, heldPaise: paise, victimMoneyPaise: paise, victimMoneyMissedPaise: paise,
   innocentHeldPaise: paise, peopleWronglyRestricted: z.number().int(), accountsHeld: z.number().int(),
 });
-const HeadV2 = z.object({ freezeRatio: z.number(), victimMoneyMissedPaise: paise, victimMoneyPaise: paise, innocentHeldPaise: paise, peopleWronglyRestricted: z.number().int() });
+const HeadV2 = z.object({ freezeRatio: z.number(), reportedRatio: z.number(), victimMoneyMissedPaise: paise, victimMoneyPaise: paise, innocentHeldPaise: paise, peopleWronglyRestricted: z.number().int() });
 export const LANE_KEYS = ["none", "axe", "biggest", "scalpel"] as const;
 export const POLICY_KEYS = ["none", "axe", "ruler", "scalpel"] as const;
 export const ORDER_KEYS = ["fcfs", "biggest", "signrule", "scalpel", "oracle"] as const;
-const Buckets = z.object({ securedPaise: paise, neverComplainedPaise: paise, reportedGoneBeforeHoldPaise: paise, reportedNotReachedOrNotTracedPaise: paise });
+const Buckets = z.object({
+  securedPaise: paise, neverComplainedHeldAccountPaise: paise, neverComplainedNoTracePaise: paise,
+  reportedGoneBeforeHoldPaise: paise, reportedNotReachedOrNotTracedPaise: paise,
+});
 export const Lane = z.object({
   securedPaise: hours73(paise), victimMoneyGonePaise: hours73(paise), innocentLockedPaise: hours73(paise),
   peopleRestricted: hours73(z.number().int()), shopsHurt: hours73(z.number().int()), buckets: Buckets,
@@ -57,14 +64,16 @@ export const DemoData = z.object({
     source: z.string(),
     byK: z.record(z.string(), z.object(Object.fromEntries(ORDER_KEYS.map((k) => [k, Band])) as Record<(typeof ORDER_KEYS)[number], typeof Band>)),
     caption: z.array(z.string()),
+    ceilingV2: z.object({ ceiling: z.number(), biggest: z.number(), scalpel: z.number() }),
     v3: z.object({
       verdict: z.enum(["earned", "not earned"]), sentence: z.string(), marginPoints: z.number(), passMarkPoints: z.number(),
+      ceilingMarginPoints: z.number(), barReachable: z.boolean(),
       headline: z.record(z.string(), z.number()), high: z.record(z.string(), z.record(z.string(), z.array(z.number()).length(3))), lock: z.string(),
     }).nullable(),
   }),
   worst: z.array(z.object({ world: z.string(), account: z.string(), reallyMule: z.boolean(), muleScore: z.number(), tracedPaise: paise, reasons: z.array(z.string()) })),
   memo: z.object({ policyId: z.string(), policyStatus: z.string(), sources: z.array(Source), cases: z.array(MemoCase).min(1) }),
-  provenance: z.object({ commit: z.string(), demoSha256: z.string().regex(/^[0-9a-f]{64}$/), policyId: z.string(), generatedAt: z.string() }),
+  provenance: z.object({ commit: z.string(), policyId: z.string(), generatedAt: z.string() }),
 });
 export type DemoData = z.infer<typeof DemoData>;
 export type MemoCase = z.infer<typeof MemoCase>;

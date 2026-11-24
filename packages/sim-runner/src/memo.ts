@@ -4,8 +4,8 @@
  * Like the rest of the runner, this only reads the world folder: never the hidden answers.
  */
 import {
-  checkRequisition, clockViews, createHold, planAccount, trace, unverifiedSources,
-  type Action, type GateContext, type GateResult, type Instant, type Signal,
+  checkRequisition, clockViews, createHold, planAccount, quashRisks, trace, unverifiedSources,
+  type Action, type BadgeKey, type BadgeState, type GateContext, type GateResult, type Instant, type Signal,
 } from "@scalpel/engine";
 import { parseAssessments, parseSignals, type World } from "./schema";
 import { readOptional, traceWorld } from "./run";
@@ -13,7 +13,9 @@ import { policy, requisition } from "./scalpel";
 
 export interface MemoHop { utr: string; at: number; from: string; to: string; amountPaise: number; taintPaise: number; layer: number | null }
 export interface MemoCheck { rule: string; ok: boolean; note: string; sources: string[]; unverified: string[] }
-export interface MemoClock { id: string; label: string; days: number; startsOn: string; dueAt: number | null; onExpiry: string; status: string | null; sources: string[]; unverified: string[] }
+export interface MemoClock { id: string; label: string; days: number; startsOn: string; dueAt: number | null; onExpiry: string; status: string | null; state: string; sources: string[]; unverified: string[] }
+/** What the memo would say if the whole account were frozen instead (the comparison a court makes). */
+export interface MemoWholeFreeze { heldPaise: number; overTracedPaise: number; sized: BadgeState; risks: { id: string; ground: string }[] }
 export interface MemoCase {
   account: string; type: string; balancePaise: number; tracedPaise: number;
   action: string; heldPaise: number; suggestedWholeFreeze: boolean;
@@ -21,6 +23,7 @@ export interface MemoCase {
   hops: MemoHop[]; muleScore: number; reasons: string[]; signals: string[];
   requisitionStatus: string; requisitionChecks: MemoCheck[]; jurisdiction: string;
   checks: MemoCheck[]; badges: { allowed: boolean; sized: boolean; timed: boolean };
+  badgeStates: Record<BadgeKey, BadgeState>; badgeReasons: Record<BadgeKey, string[]>; asOf: number; wholeFreeze: MemoWholeFreeze;
   wholeFreezeChecks: MemoCheck[] | null;
   clocks: MemoClock[]; quashRisksAfter: { id: string; ground: string }[]; flags: string[];
 }
@@ -67,7 +70,7 @@ export function buildMemo(world: World, dir: string, accounts: string[], now: In
     const clocks: MemoClock[] = regime
       ? clockViews(createHold({ id: `H-${account}`, account, amount: held, regime, at: world.cutoff, by: "officer", policy: P }), P, now).map((v) => ({
           id: v.clock.id, label: v.clock.label, days: v.clock.days, startsOn: v.clock.starts_on, dueAt: v.dueAt, onExpiry: v.clock.on_expiry,
-          status: v.clock.status ?? null, sources: v.clock.sources, unverified: unverifiedSources(P, v.clock.sources),
+          status: v.clock.status ?? null, state: v.state, sources: v.clock.sources, unverified: unverifiedSources(P, v.clock.sources),
         }))
       : [];
     const hops: MemoHop[] = full.flows
@@ -76,6 +79,16 @@ export function buildMemo(world: World, dir: string, accounts: string[], now: In
         taintPaise: Object.values(f.taint).reduce((s, v) => s + v, 0), layer: full.accounts[f.from]?.hop != null ? full.accounts[f.from]!.hop! + 1 : 1 }))
       .filter((h) => h.taintPaise > 0)
       .sort((x, y) => x.at - y.at);
+    // On time? also reads the clocks on the memo date: a missed or late deadline turns it red.
+    const states = { ...(gate?.badgeStates ?? { allowed: "fail", sized: "fail", timed: "fail" }) } as Record<BadgeKey, BadgeState>;
+    const reasons = { allowed: [...(gate?.badgeReasons.allowed ?? [])], sized: [...(gate?.badgeReasons.sized ?? [])], timed: [...(gate?.badgeReasons.timed ?? [])] };
+    const missed = clocks.filter((c) => c.state === "EXPIRED" || c.state === "SATISFIED_LATE");
+    if (missed.length) { states.timed = "fail"; reasons.timed.unshift(`Missed: ${missed.map((c) => c.label).join(", ")}`); }
+    const wf: Action = { kind: "WHOLE_FREEZE", account };
+    const wholeFreeze: MemoWholeFreeze = {
+      heldPaise: t.balance, overTracedPaise: Math.max(0, t.balance - t.traced), sized: t.balance > t.traced ? "fail" : "pass",
+      risks: quashRisks(wf, ctx(true), regime, P),
+    };
     return {
       account, type: types[account] ?? "SAVINGS", balancePaise: t.balance, tracedPaise: t.traced,
       action: gate?.action?.kind ?? "NONE", heldPaise: held, suggestedWholeFreeze: suggested,
@@ -85,6 +98,7 @@ export function buildMemo(world: World, dir: string, accounts: string[], now: In
       requisitionChecks: reqResult.findings.map((f) => ({ rule: f.checkId, ok: f.ok, note: f.message, sources: f.sources, unverified: f.unverified })),
       jurisdiction: `${req.issuer.state}: ${reqResult.authority}`,
       checks: checksOf(gate), badges: gate?.badges ?? { allowed: false, sized: false, timed: false },
+      badgeStates: states, badgeReasons: reasons, asOf: now, wholeFreeze,
       wholeFreezeChecks: suggested ? checksOf(withOfficer?.gate) : null,
       clocks, quashRisksAfter: gate?.quashRisksAfter ?? [], flags: gate?.flags ?? [],
     };

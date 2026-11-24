@@ -93,7 +93,8 @@ def missed_buckets(rows: list[dict], order: list[str], truth: dict, k: int = K, 
     held = _lane_holds(rows)
     traced = {r["account"]: r["traced"] for r in rows}
     when = _acted_hour([a for a in order if a in held] + [a for a in held if a not in order], k)
-    b = {"securedPaise": 0, "neverComplainedPaise": 0, "reportedGoneBeforeHoldPaise": 0, "reportedNotReachedOrNotTracedPaise": 0}
+    b = {"securedPaise": 0, "neverComplainedHeldAccountPaise": 0, "neverComplainedNoTracePaise": 0,
+         "reportedGoneBeforeHoldPaise": 0, "reportedNotReachedOrNotTracedPaise": 0}
     for a, v in truth["victimMoneyAtCutoff"].items():
         acted = a in when and when[a] <= hours
         sec = _saved(a, when[a], held, truth, None) if acted else 0
@@ -106,7 +107,8 @@ def missed_buckets(rows: list[dict], order: list[str], truth: dict, k: int = K, 
         else:
             b["reportedNotReachedOrNotTracedPaise"] += rest
         b["securedPaise"] += sec
-        b["neverComplainedPaise"] += never
+        # Unreported money in an account the lane held (only a whole freeze could have reached it) vs in an account no complaint leads to.
+        b["neverComplainedHeldAccountPaise" if a in held else "neverComplainedNoTracePaise"] += never
     return b
 
 
@@ -188,6 +190,7 @@ def build_demo(pipe: Path = PIPE) -> dict:
         g = grade_holds(rows[p], truth)
         headline[key] = {
             "freezeRatio": g["freezeRatio"] if isinstance(g["freezeRatio"], (int, float)) else None,
+            "reportedRatio": g["reportedRatio"], "reportedMoneyPaise": g["reportedMoney"],
             "heldPaise": g["held"], "victimMoneyPaise": g["victimMoney"], "victimMoneyMissedPaise": g["victimMoneyMissed"],
             "innocentHeldPaise": g["innocentHeld"], "peopleWronglyRestricted": g["peopleWronglyRestricted"], "accountsHeld": g["accountsHeld"],
         }
@@ -198,6 +201,7 @@ def build_demo(pipe: Path = PIPE) -> dict:
         "victimMoneyPaise": sum(w["holds"][p]["victimMoney"] for w in v2),
         "innocentHeldPaise": sum(w["holds"][p]["innocentHeld"] for w in v2),
         "peopleWronglyRestricted": sum(w["holds"][p]["peopleWronglyRestricted"] for w in v2),
+        "reportedRatio": sum(w["holds"][p]["held"] for w in v2) / max(1, sum(w["holds"][p]["reportedMoney"] for w in v2)),
     } for key, p in HEADLINE_POLICIES.items()}
 
     lanes = {}
@@ -218,12 +222,13 @@ def build_demo(pipe: Path = PIPE) -> dict:
         "headlineV2": v2_head,
         "replay": {"k": K, "hours": HOURS, "timeline": timeline_30d(world, truth), "lanes": lanes},
         "order": {"source": "5 unseen v2 worlds (seeds 201-205), mule-score model: logistic regression",
-                  "byK": order_curves(worlds) if worlds else {}, "caption": [results["firstLine"]], "v3": _v3(results.get("v3"))},
+                  "byK": order_curves(worlds) if worlds else {}, "caption": [results["firstLine"]], "v3": _v3(results.get("v3")),
+                  "ceilingV2": {k: round(v, 2) for k, v in results["ceilingV2"].items()}},
         "worst": [{"world": w, "account": x["account"], "reallyMule": x["role"] == "mule", "muleScore": x["muleScore"],
                    "tracedPaise": x["traced"], "reasons": x["reasons"]} for w, x in worst],
         "memo": {"policyId": memo["policyId"], "policyStatus": memo["policyStatus"], "sources": memo["sources"],
                  "cases": [c for c in memo["cases"] if c["account"] in MEMO_ACCOUNTS]},
-        "provenance": {"commit": _git_commit(), "demoSha256": "", "policyId": memo["policyId"],
+        "provenance": {"commit": _git_commit(), "policyId": memo["policyId"],
                        "generatedAt": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")},
     }
 
@@ -233,6 +238,7 @@ def _v3(v3: dict | None) -> dict | None:
         return None
     return {"verdict": v3["verdict"], "sentence": v3["sentence"], "marginPoints": round(v3["marginPoints"], 2),
             "passMarkPoints": v3["passMarkPoints"], "headline": {k: round(v, 2) for k, v in v3["headline"].items()},
+            "ceilingMarginPoints": round(v3["ceilingMarginPoints"], 2), "barReachable": v3["barReachable"],
             "high": {k: {n: [round(x, 2) for x in t] for n, t in row.items()} for k, row in v3["table"]["high"].items()},
             "lock": "pipeline/configs/v3_split.lock"}
 
@@ -240,10 +246,11 @@ def _v3(v3: dict | None) -> dict | None:
 def export_demo(out: Path = OUT) -> Path:
     write_memo()
     d = build_demo()
-    body = json.dumps(d, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-    d["provenance"]["demoSha256"] = hashlib.sha256(body.encode()).hexdigest()
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(d, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    data = (json.dumps(d, ensure_ascii=False, indent=1) + "\n").encode("utf-8")
+    out.write_bytes(data)
+    # The fingerprint lives next to the file, so `sha256sum demo.json` (or certutil on Windows) gives the same answer.
+    out.with_suffix(".sha256").write_text(f"{hashlib.sha256(data).hexdigest()}  demo.json\n", encoding="utf-8")
     return out
 
 

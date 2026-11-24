@@ -9,7 +9,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from scalpel_sim.export import read_json
-from .grade import (suggested_on_innocent, future_money_stopped, grade_holds, headline_line, oracle_order, rescue, role_counts,
+from .grade import (ceiling_order, suggested_on_innocent, future_money_stopped, grade_holds, headline_line, oracle_order, rescue, role_counts,
                     top_mules, verdict)
 
 PIPE = Path(__file__).resolve().parents[1]
@@ -72,7 +72,8 @@ def grade_world(folder: Path) -> dict:
         for drain in DRAINS:
             for k in KS:
                 best = rescue(oracle_order(held, truth, k, drain), held, truth, k, drain)
-                res[f"{drain:g}x/K{k}"] = {"oracle": best, **{n: rescue(orders[n], held, truth, k, drain) for n in QUEUES}}
+                res[f"{drain:g}x/K{k}"] = {"oracle": best, "ceiling": rescue(ceiling_order(held, truth, drain), held, truth, k, drain),
+                                           **{n: rescue(orders[n], held, truth, k, drain) for n in QUEUES}}
         out["rescue"][m] = res
         out["top10"][m] = {n: top_mules(orders[n], truth, 10) for n in QUEUES}
         a = read_json(folder / "world" / f"assessments-{m}.json")["accounts"]
@@ -183,6 +184,7 @@ def summarise(v1: dict, v2: list[dict], v2noisy: list[dict]) -> dict:
         "verdictVsBiggest": verdict(sc, bg),
         "verdict": verdict(sc, sr),
         "headline": {"scalpel": [sc, sc_lo, sc_hi], "signrule": [sr, sr_lo, sr_hi]},
+        "ceilingV2": {"ceiling": pooled_pct(v2, "logistic", head, "ceiling")[0], "biggest": bg, "scalpel": sc},
         "conditional": cond,
         "conditionalSentence": conditional_sentence({d: cond[f"low/{d:g}x"]["verdict"] for d in DRAINS}),
         "conditionalSentenceNoisy": conditional_sentence({d: cond[f"high/{d:g}x"]["verdict"] for d in DRAINS}),
@@ -200,16 +202,21 @@ def summarise_v3(v3: list[dict], v3noisy: list[dict]) -> dict | None:
     for label, ws in (("high", v3noisy), ("low", v3)):
         if not ws:
             continue
-        table[label] = {str(k): {n: list(pooled_pct(ws, "logistic", f"{HEADLINE['drain']:g}x/K{k}", n)) for n in QUEUES} for k in KS}
-    h = {n: pooled_pct(v3noisy, "logistic", head, n)[0] for n in QUEUES}
+        table[label] = {str(k): {n: list(pooled_pct(ws, "logistic", f"{HEADLINE['drain']:g}x/K{k}", n)) for n in QUEUES + ["ceiling"]} for k in KS}
+    h = {n: pooled_pct(v3noisy, "logistic", head, n)[0] for n in QUEUES + ["ceiling"]}
+    ceiling_margin = h["ceiling"] - max(h["biggest"], h["biggestcase"])
     v = v3_verdict(h["scalpel"], h["biggest"], h["biggestcase"])
     margin = h["scalpel"] - max(h["biggest"], h["biggestcase"])
     sentence = (f"Split-payment world (locked in advance; high phone-signal noise, K={HEADLINE['k']}, 3 seeds): the mule-score model's order got "
                 f"{h['scalpel']:.1f}% of the best possible, against {h['biggest']:.1f}% for biggest amount first and {h['biggestcase']:.1f}% for biggest case first. "
                 f"That is {margin:+.1f} points against the better simple rule; the pass mark was +{PASS_MARK_POINTS:g}, so the model's order has "
-                + ("earned its place in this world." if v == "earned" else "not earned its place in this world."))
+                + ("earned its place in this world." if v == "earned" else "not earned its place in this world.")
+                + f" Even perfect knowledge of who is a mule would only reach {h['ceiling']:.1f}% ({ceiling_margin:+.1f} points), "
+                + ("so no model could have passed this bar: in this world the amount already gives away who the mules are." if ceiling_margin < PASS_MARK_POINTS
+                   else "so the bar was reachable."))
     aucs = [w["models"]["logistic"]["auc"] for w in v3noisy if w["models"]["logistic"]["auc"] is not None]
     return {"verdict": v, "marginPoints": margin, "passMarkPoints": PASS_MARK_POINTS, "headline": h, "sentence": sentence,
+            "ceilingMarginPoints": ceiling_margin, "barReachable": ceiling_margin >= PASS_MARK_POINTS,
             "table": table, "worlds": [w["world"] for w in v3noisy + v3], "aucHigh": sum(aucs) / len(aucs) if aucs else None,
             "tracedAccounts": [len(read_json(OUT / w["world"] / "decisions" / "queues-logistic.json")["held"]) for w in v3noisy]}
 
@@ -254,14 +261,16 @@ def render(s: dict) -> str:
           "(K = 5, 10, 20 are **assumptions**, not measured). Mule money drains 15% an hour; shop money drains 5× slower. "
           "Shown as % of the best possible order (the \"oracle\", which knows the hidden answers).", "",
           "| Order | K=5 v2 | K=10 v2 | K=20 v2 | K=10 v1 |", "|---|---|---|---|---|"]
-    for n in QUEUES:
+    for n in QUEUES + ["ceiling"]:
         cells = []
         for k in KS:
             pct, lo, hi = pooled_pct(v2, "logistic", f"{HEAD_DRAIN:g}x/K{k}", n)
             cells.append(f"{pct:.1f}% ({lo:.0f}–{hi:.0f})")
         p1 = pooled_pct([v1], "logistic", f"{HEAD_DRAIN:g}x/K{HEAD_K}", n)[0]
-        L.append(f"| {QUEUE_NAMES[n]} | {' | '.join(cells)} | {p1:.1f}% |")
-    L += ["", "Scalpel's order = amount × (mule score × 15% + (1 − mule score) × 3%), the money likely lost per hour of waiting. "
+        L.append(f"| {QUEUE_NAMES.get(n, 'Perfect knowledge of who is a mule (ceiling)')} | {' | '.join(cells)} | {p1:.1f}% |")
+    L += ["", "The ceiling row feeds Scalpel's own formula the TRUE roles: no mule-score model can do better with this rule. "
+          "Where it barely beats 'biggest amount first', the amount already gives away who the mules are, so better detection cannot help the order.",
+          "", "Scalpel's order = amount × (mule score × 15% + (1 − mule score) × 3%), the money likely lost per hour of waiting. "
           "It uses the 5× drain assumption; section 3 tests it against 1×, 2× and 10×.", ""]
 
     L += ["## 3. When does it win? (the conditional headline)", "", f"**{s['conditionalSentence']}**", "",
@@ -321,11 +330,12 @@ def render(s: dict) -> str:
               "Settings, the stronger simple rule (biggest case first) and the pass mark (+2 points over both simple rules) were locked in "
               "`configs/v3_split.lock` before any v3 world was graded. The mule-score model was not retrained.", "",
               f"**{v3['sentence']}**", "", "| Order | K=5 high noise | K=10 high noise | K=20 high noise | K=10 low noise |", "|---|---|---|---|---|"]
-        for n in QUEUES:
+        for n in QUEUES + ["ceiling"]:
             cells = [f"{v3['table']['high'][str(k)][n][0]:.1f}% ({v3['table']['high'][str(k)][n][1]:.0f}–{v3['table']['high'][str(k)][n][2]:.0f})" for k in KS]
             low = v3["table"].get("low", {}).get(str(HEAD_K), {}).get(n)
-            L.append(f"| {QUEUE_NAMES[n]} | {' | '.join(cells)} | {f'{low[0]:.1f}%' if low else '-'} |")
-        L.append("")
+            L.append(f"| {QUEUE_NAMES.get(n, 'Perfect knowledge of who is a mule (ceiling)')} | {' | '.join(cells)} | {f'{low[0]:.1f}%' if low else '-'} |")
+        L += ["", "Disclosed after grading: the \"mixed credit\" top-up in the v3 generator is taken from money the mule kept back, which is mostly victim "
+              "money, not the mule's own. The lock and the result are unchanged.", ""]
 
     L += ["## 7. Assumptions (change these and the numbers change)", "",
           "- The worlds are invented. v2 changes criminal habits on purpose: older rented mule accounts, slower mules, twice as many innocent shops, more digital-arrest scams.",

@@ -1,4 +1,9 @@
 {
+ "ceilingV2": {
+  "biggest": 98.06275422015015,
+  "ceiling": 98.0863729073652,
+  "scalpel": 97.82350953178269
+ },
  "conditional": {
   "high/10x": {
    "scalpel": 97.915622621349,
@@ -67,6 +72,8 @@
     "innocentHeld": 0,
     "peopleWronglyRestricted": 0,
     "recoveryRate": 0.0,
+    "reportedMoney": 640084566,
+    "reportedRatio": 0.0,
     "suggestedOnInnocent": 0,
     "suggestedWholeFreezes": 0,
     "victimMoney": 1299282580,
@@ -80,6 +87,8 @@
     "innocentHeld": 12585249873,
     "peopleWronglyRestricted": 610,
     "recoveryRate": 0.9105571260718357,
+    "reportedMoney": 640084566,
+    "reportedRatio": 21.510159151376882,
     "suggestedOnInnocent": 0,
     "suggestedWholeFreezes": 0,
     "victimMoney": 1299282580,
@@ -93,6 +102,8 @@
     "innocentHeld": 0,
     "peopleWronglyRestricted": 0,
     "recoveryRate": 0.49264461469190174,
+    "reportedMoney": 640084566,
+    "reportedRatio": 1.0,
     "suggestedOnInnocent": 0,
     "suggestedWholeFreezes": 0,
     "victimMoney": 1299282580,
@@ -106,6 +117,8 @@
     "innocentHeld": 0,
     "peopleWronglyRestricted": 0,
     "recoveryRate": 0.49264461469190174,
+    "reportedMoney": 640084566,
+    "reportedRatio": 1.0,
     "suggestedOnInnocent": 0,
     "suggestedWholeFreezes": 83,
     "victimMoney": 1299282580,
@@ -250,6 +263,7 @@
     "10x/K10": {
      "biggest": 591976443,
      "biggestcase": 198654220,
+     "ceiling": 592102481,
      "fcfs": 123797552,
      "oracle": 630532508,
      "scalpel": 592124805,
@@ -258,6 +272,7 @@
     "10x/K20": {
      "biggest": 631265585,
      "biggestcase": 341037697,
+     "ceiling": 631281453,
      "fcfs": 225570987,
      "oracle": 640084558,
      "scalpel": 631281453,
@@ -266,6 +281,7 @@
     "10x/K5": {
      "biggest": 481217608,
      "biggestcase": 123287477,
+     "ceiling": 481636034,
      "fcfs": 70915309,
      "oracle": 513452827,
      "scalpel": 481667709,
@@ -274,6 +290,7 @@
     "1x/K10": {
      "biggest": 576071008,
      "biggestcase": 182826595,
+     "ceiling": 576071008,
      "fcfs": 108702316,
      "oracle": 615566158,
      "scalpel": 575650664,
@@ -282,6 +299,7 @@
     "1x/K20": {
      "biggest": 624002682,
      "biggestcase": 327112644,
+     "ceiling": 624002682,
      "fcfs": 211017644,
      "oracle": 638649744,
      "scalpel": 623362175,
@@ -290,6 +308,7 @@
     "1x/K5": {
      "biggest": 461287541,
      "biggestcase": 109763815,
+     "ceiling": 461287541,
      "fcfs": 58998547,
      "oracle": 493235740,
      "scalpel": 461709391,
@@ -298,6 +317,7 @@
     "2x/K10": {
      "biggest": 585023550,
      "biggestcase": 186552426,
+     "ceiling": 584762471,
      "fcfs": 112200655,
      "oracle": 624383898,
      "scalpel": 584649137,
@@ -306,6 +326,7 @@
     "2x/K20": {
      "biggest": 629044676,
      "biggestcase": 333183926,
+     "ceiling": 628905265,
      "fcfs": 216136109,
      "oracle": 640012253,
      "scalpel": 628790534,
@@ -314,6 +335,7 @@
     "2x/K5": {
      "biggest": 466787292,
      "biggestcase": 111741069,
+     "ceiling": 466930630,
      "fcfs": 60680077,
      "oracle": 498826034,
      "scalpel": 466765984,
@@ -322,6 +344,7 @@
     "5x/K10": {
      "biggest": 590774824,
      "biggestcase": 194458460,
+     "ceiling": 590789439,
      "fcfs": 118987529,
      "oracle": 629691767,
      "scalpel": 590789439,
@@ -330,6 +353,7 @@
     "5x/K20": {
      "biggest": 630934647,
      "biggestcase": 339324765,
+     "ceiling": 630886712,
      "fcfs": 222755742,
      "oracle": 640084548,
      "scalpel": 630886712,
@@ -338,6 +362,7 @@
     "5x/K5": {
      "biggest": 477514684,
      "biggestcase": 117185713,
+     "ceiling": 477643466,
      "fcfs": 65685607,
      "oracle": 509706882,
      "scalpel": 477643466,
@@ -348,6 +373,7 @@
     "10x/K10": {
      "biggest": 591976443,
      "biggestcase": 198654220,
+     "ceiling": 592102481,
      "fcfs": 123797552,
      "oracle": 630532508,
      "scalpel": 592478146,
@@ -356,6 +382,7 @@
     "10x/K20": {
      "biggest": 631265585,
      "biggestcase": 341037697,
+     "ceiling": 631281453,
      "fcfs": 225570987,
      "oracle": 640084558,
      "scalpel": 631290262,
@@ -364,6 +391,7 @@
     "10x/K5": {
      "biggest": 481217608,
      "biggestcase": 123287477,
+     "ceiling": 481636034,
      "fcfs": 70915309,
      "oracle": 513452827,
      "scalpel": 481387038,
@@ -372,6 +400,7 @@
     "1x/K10": {
      "biggest": 576071008,
      "biggestcase": 182826595,
+     "ceiling": 576071008,
      "fcfs": 108702316,
      "oracle": 615566158,
      "scalpel": 575994826,
@@ -380,6 +409,7 @@
     "1x/K20": {
      "biggest": 624002682,
      "biggestcase": 327112644,
+     "ceiling": 624002682,
      "fcfs": 211017644,
      "oracle": 638649744,
      "scalpel": 623370662,
@@ -388,6 +418,7 @@
     "1x/K5": {
      "biggest": 461287541,
      "biggestcase": 109763815,
+     "ceiling": 461287541,
      "fcfs": 58998547,
      "oracle": 493235740,
      "scalpel": 461422177,
@@ -396,6 +427,7 @@
     "2x/K10": {
      "biggest": 585023550,
      "biggestcase": 186552426,
+     "ceiling": 584762471,
      "fcfs": 112200655,
      "oracle": 624383898,
      "scalpel": 585002371,
@@ -404,6 +436,7 @@
     "2x/K20": {
      "biggest": 629044676,
      "biggestcase": 333183926,
+     "ceiling": 628905265,
      "fcfs": 216136109,
      "oracle": 640012253,
      "scalpel": 628799197,
@@ -412,6 +445,7 @@
     "2x/K5": {
      "biggest": 466787292,
      "biggestcase": 111741069,
+     "ceiling": 466930630,
      "fcfs": 60680077,
      "oracle": 498826034,
      "scalpel": 466492612,
@@ -420,6 +454,7 @@
     "5x/K10": {
      "biggest": 590774824,
      "biggestcase": 194458460,
+     "ceiling": 590789439,
      "fcfs": 118987529,
      "oracle": 629691767,
      "scalpel": 591142730,
@@ -428,6 +463,7 @@
     "5x/K20": {
      "biggest": 630934647,
      "biggestcase": 339324765,
+     "ceiling": 630886712,
      "fcfs": 222755742,
      "oracle": 640084548,
      "scalpel": 630895503,
@@ -436,6 +472,7 @@
     "5x/K5": {
      "biggest": 477514684,
      "biggestcase": 117185713,
+     "ceiling": 477643466,
      "fcfs": 65685607,
      "oracle": 509706882,
      "scalpel": 477372945,
@@ -478,6 +515,8 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.0,
+     "reportedMoney": 318691379,
+     "reportedRatio": 0.0,
      "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 674829338,
@@ -491,6 +530,8 @@
      "innocentHeld": 8103470943,
      "peopleWronglyRestricted": 472,
      "recoveryRate": 0.961348405394906,
+     "reportedMoney": 318691379,
+     "reportedRatio": 27.46298653720407,
      "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 674829338,
@@ -504,6 +545,8 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.47225477769610547,
+     "reportedMoney": 318691379,
+     "reportedRatio": 1.0,
      "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 674829338,
@@ -517,6 +560,8 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.47225477769610547,
+     "reportedMoney": 318691379,
+     "reportedRatio": 1.0,
      "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 37,
      "victimMoney": 674829338,
@@ -661,6 +706,7 @@
      "10x/K10": {
       "biggest": 314624744,
       "biggestcase": 156316895,
+      "ceiling": 314746781,
       "fcfs": 144644494,
       "oracle": 318677444,
       "scalpel": 309903642,
@@ -669,6 +715,7 @@
      "10x/K20": {
       "biggest": 317818736,
       "biggestcase": 216346931,
+      "ceiling": 317785460,
       "fcfs": 206377050,
       "oracle": 318691224,
       "scalpel": 317104633,
@@ -677,6 +724,7 @@
      "10x/K5": {
       "biggest": 294585985,
       "biggestcase": 121521926,
+      "ceiling": 295013517,
       "fcfs": 103845064,
       "oracle": 309601948,
       "scalpel": 275795467,
@@ -685,6 +733,7 @@
      "1x/K10": {
       "biggest": 305014047,
       "biggestcase": 145229710,
+      "ceiling": 305014047,
       "fcfs": 130990358,
       "oracle": 314392865,
       "scalpel": 299728901,
@@ -693,6 +742,7 @@
      "1x/K20": {
       "biggest": 314074152,
       "biggestcase": 208631910,
+      "ceiling": 314074152,
       "fcfs": 195152837,
       "oracle": 318349650,
       "scalpel": 313033229,
@@ -701,6 +751,7 @@
      "1x/K5": {
       "biggest": 279841337,
       "biggestcase": 109873328,
+      "ceiling": 279841337,
       "fcfs": 92060808,
       "oracle": 294572610,
       "scalpel": 260726553,
@@ -709,6 +760,7 @@
      "2x/K10": {
       "biggest": 311098035,
       "biggestcase": 148890243,
+      "ceiling": 310923720,
       "fcfs": 134527246,
       "oracle": 317674629,
       "scalpel": 306112620,
@@ -717,6 +769,7 @@
      "2x/K20": {
       "biggest": 316717226,
       "biggestcase": 213147081,
+      "ceiling": 316510988,
       "fcfs": 200266826,
       "oracle": 318668934,
       "scalpel": 315831645,
@@ -725,6 +778,7 @@
      "2x/K5": {
       "biggest": 285704809,
       "biggestcase": 112303119,
+      "ceiling": 285610944,
       "fcfs": 93667013,
       "oracle": 300519717,
       "scalpel": 266381418,
@@ -733,6 +787,7 @@
      "5x/K10": {
       "biggest": 314036851,
       "biggestcase": 154465750,
+      "ceiling": 314079869,
       "fcfs": 141230242,
       "oracle": 318636713,
       "scalpel": 309244997,
@@ -741,6 +796,7 @@
      "5x/K20": {
       "biggest": 317609143,
       "biggestcase": 216041874,
+      "ceiling": 317505647,
       "fcfs": 205310133,
       "oracle": 318690670,
       "scalpel": 316833569,
@@ -749,6 +805,7 @@
      "5x/K5": {
       "biggest": 292832461,
       "biggestcase": 117405250,
+      "ceiling": 293003761,
       "fcfs": 98748889,
       "oracle": 307974248,
       "scalpel": 273868537,
@@ -759,6 +816,7 @@
      "10x/K10": {
       "biggest": 314624744,
       "biggestcase": 156316895,
+      "ceiling": 314746781,
       "fcfs": 144644494,
       "oracle": 318677444,
       "scalpel": 312371407,
@@ -767,6 +825,7 @@
      "10x/K20": {
       "biggest": 317818736,
       "biggestcase": 216346931,
+      "ceiling": 317785460,
       "fcfs": 206377050,
       "oracle": 318691224,
       "scalpel": 317101958,
@@ -775,6 +834,7 @@
      "10x/K5": {
       "biggest": 294585985,
       "biggestcase": 121521926,
+      "ceiling": 295013517,
       "fcfs": 103845064,
       "oracle": 309601948,
       "scalpel": 284472910,
@@ -783,6 +843,7 @@
      "1x/K10": {
       "biggest": 305014047,
       "biggestcase": 145229710,
+      "ceiling": 305014047,
       "fcfs": 130990358,
       "oracle": 314392865,
       "scalpel": 301930728,
@@ -791,6 +852,7 @@
      "1x/K20": {
       "biggest": 314074152,
       "biggestcase": 208631910,
+      "ceiling": 314074152,
       "fcfs": 195152837,
       "oracle": 318349650,
       "scalpel": 312955953,
@@ -799,6 +861,7 @@
      "1x/K5": {
       "biggest": 279841337,
       "biggestcase": 109873328,
+      "ceiling": 279841337,
       "fcfs": 92060808,
       "oracle": 294572610,
       "scalpel": 269287631,
@@ -807,6 +870,7 @@
      "2x/K10": {
       "biggest": 311098035,
       "biggestcase": 148890243,
+      "ceiling": 310923720,
       "fcfs": 134527246,
       "oracle": 317674629,
       "scalpel": 308406765,
@@ -815,6 +879,7 @@
      "2x/K20": {
       "biggest": 316717226,
       "biggestcase": 213147081,
+      "ceiling": 316510988,
       "fcfs": 200266826,
       "oracle": 318668934,
       "scalpel": 315823473,
@@ -823,6 +888,7 @@
      "2x/K5": {
       "biggest": 285704809,
       "biggestcase": 112303119,
+      "ceiling": 285610944,
       "fcfs": 93667013,
       "oracle": 300519717,
       "scalpel": 274846832,
@@ -831,6 +897,7 @@
      "5x/K10": {
       "biggest": 314036851,
       "biggestcase": 154465750,
+      "ceiling": 314079869,
       "fcfs": 141230242,
       "oracle": 318636713,
       "scalpel": 311704889,
@@ -839,6 +906,7 @@
      "5x/K20": {
       "biggest": 317609143,
       "biggestcase": 216041874,
+      "ceiling": 317505647,
       "fcfs": 205310133,
       "oracle": 318690670,
       "scalpel": 316828512,
@@ -847,6 +915,7 @@
      "5x/K5": {
       "biggest": 292832461,
       "biggestcase": 117405250,
+      "ceiling": 293003761,
       "fcfs": 98748889,
       "oracle": 307974248,
       "scalpel": 282485720,
@@ -888,6 +957,8 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.0,
+     "reportedMoney": 233496934,
+     "reportedRatio": 0.0,
      "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 512844545,
@@ -901,6 +972,8 @@
      "innocentHeld": 7256068598,
      "peopleWronglyRestricted": 420,
      "recoveryRate": 0.9267565437397799,
+     "reportedMoney": 233496934,
+     "reportedRatio": 33.11114413176834,
      "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 512844545,
@@ -914,6 +987,8 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.4552976847984217,
+     "reportedMoney": 233496934,
+     "reportedRatio": 1.0,
      "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 512844545,
@@ -927,6 +1002,8 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.4552976847984217,
+     "reportedMoney": 233496934,
+     "reportedRatio": 1.0,
      "suggestedOnInnocent": 1,
      "suggestedWholeFreezes": 30,
      "victimMoney": 512844545,
@@ -1071,6 +1148,7 @@
      "10x/K10": {
       "biggest": 229314847,
       "biggestcase": 113019694,
+      "ceiling": 229326626,
       "fcfs": 77379328,
       "oracle": 233493347,
       "scalpel": 228736855,
@@ -1079,6 +1157,7 @@
      "10x/K20": {
       "biggest": 233068020,
       "biggestcase": 164078234,
+      "ceiling": 233090668,
       "fcfs": 123861545,
       "oracle": 233496869,
       "scalpel": 232965313,
@@ -1087,6 +1166,7 @@
      "10x/K5": {
       "biggest": 218752955,
       "biggestcase": 75971081,
+      "ceiling": 218853879,
       "fcfs": 49160993,
       "oracle": 227604961,
       "scalpel": 205703818,
@@ -1095,6 +1175,7 @@
      "1x/K10": {
       "biggest": 222949560,
       "biggestcase": 103140668,
+      "ceiling": 222949560,
       "fcfs": 66249805,
       "oracle": 230450004,
       "scalpel": 222228123,
@@ -1103,6 +1184,7 @@
      "1x/K20": {
       "biggest": 230895395,
       "biggestcase": 156446764,
+      "ceiling": 230895395,
       "fcfs": 114285560,
       "oracle": 233169362,
       "scalpel": 230783116,
@@ -1111,6 +1193,7 @@
      "1x/K5": {
       "biggest": 207191772,
       "biggestcase": 65912294,
+      "ceiling": 207191772,
       "fcfs": 39498713,
       "oracle": 216537319,
       "scalpel": 193945354,
@@ -1119,6 +1202,7 @@
      "2x/K10": {
       "biggest": 227228514,
       "biggestcase": 106317549,
+      "ceiling": 227066593,
       "fcfs": 69112151,
       "oracle": 232826335,
       "scalpel": 226572463,
@@ -1127,6 +1211,7 @@
      "2x/K20": {
       "biggest": 232436935,
       "biggestcase": 160265957,
+      "ceiling": 232436935,
       "fcfs": 118578358,
       "oracle": 233481103,
       "scalpel": 232334228,
@@ -1135,6 +1220,7 @@
      "2x/K5": {
       "biggest": 212804263,
       "biggestcase": 68218501,
+      "ceiling": 212651790,
       "fcfs": 40831307,
       "oracle": 222109199,
       "scalpel": 199540816,
@@ -1143,6 +1229,7 @@
      "5x/K10": {
       "biggest": 228976867,
       "biggestcase": 111017902,
+      "ceiling": 228968449,
       "fcfs": 74618646,
       "oracle": 233466304,
       "scalpel": 228392332,
@@ -1151,6 +1238,7 @@
      "5x/K20": {
       "biggest": 232970868,
       "biggestcase": 163233337,
+      "ceiling": 232993516,
       "fcfs": 122620635,
       "oracle": 233496803,
       "scalpel": 232868160,
@@ -1159,6 +1247,7 @@
      "5x/K5": {
       "biggest": 217646246,
       "biggestcase": 72452963,
+      "ceiling": 217715067,
       "fcfs": 44968423,
       "oracle": 226785758,
       "scalpel": 204566112,
@@ -1169,6 +1258,7 @@
      "10x/K10": {
       "biggest": 229314847,
       "biggestcase": 113019694,
+      "ceiling": 229326626,
       "fcfs": 77379328,
       "oracle": 233493347,
       "scalpel": 230377417,
@@ -1177,6 +1267,7 @@
      "10x/K20": {
       "biggest": 233068020,
       "biggestcase": 164078234,
+      "ceiling": 233090668,
       "fcfs": 123861545,
       "oracle": 233496869,
       "scalpel": 233287515,
@@ -1185,6 +1276,7 @@
      "10x/K5": {
       "biggest": 218752955,
       "biggestcase": 75971081,
+      "ceiling": 218853879,
       "fcfs": 49160993,
       "oracle": 227604961,
       "scalpel": 217402228,
@@ -1193,6 +1285,7 @@
      "1x/K10": {
       "biggest": 222949560,
       "biggestcase": 103140668,
+      "ceiling": 222949560,
       "fcfs": 66249805,
       "oracle": 230450004,
       "scalpel": 223668158,
@@ -1201,6 +1294,7 @@
      "1x/K20": {
       "biggest": 230895395,
       "biggestcase": 156446764,
+      "ceiling": 230895395,
       "fcfs": 114285560,
       "oracle": 233169362,
       "scalpel": 231106474,
@@ -1209,6 +1303,7 @@
      "1x/K5": {
       "biggest": 207191772,
       "biggestcase": 65912294,
+      "ceiling": 207191772,
       "fcfs": 39498713,
       "oracle": 216537319,
       "scalpel": 205563068,
@@ -1217,6 +1312,7 @@
      "2x/K10": {
       "biggest": 227228514,
       "biggestcase": 106317549,
+      "ceiling": 227066593,
       "fcfs": 69112151,
       "oracle": 232826335,
       "scalpel": 228127184,
@@ -1225,6 +1321,7 @@
      "2x/K20": {
       "biggest": 232436935,
       "biggestcase": 160265957,
+      "ceiling": 232436935,
       "fcfs": 118578358,
       "oracle": 233481103,
       "scalpel": 232656081,
@@ -1233,6 +1330,7 @@
      "2x/K5": {
       "biggest": 212804263,
       "biggestcase": 68218501,
+      "ceiling": 212651790,
       "fcfs": 40831307,
       "oracle": 222109199,
       "scalpel": 211150572,
@@ -1241,6 +1339,7 @@
      "5x/K10": {
       "biggest": 228976867,
       "biggestcase": 111017902,
+      "ceiling": 228968449,
       "fcfs": 74618646,
       "oracle": 233466304,
       "scalpel": 230018381,
@@ -1249,6 +1348,7 @@
      "5x/K20": {
       "biggest": 232970868,
       "biggestcase": 163233337,
+      "ceiling": 232993516,
       "fcfs": 122620635,
       "oracle": 233496803,
       "scalpel": 233189844,
@@ -1257,6 +1357,7 @@
      "5x/K5": {
       "biggest": 217646246,
       "biggestcase": 72452963,
+      "ceiling": 217715067,
       "fcfs": 44968423,
       "oracle": 226785758,
       "scalpel": 216254417,
@@ -1298,6 +1399,8 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.0,
+     "reportedMoney": 121516616,
+     "reportedRatio": 0.0,
      "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 469406518,
@@ -1311,6 +1414,8 @@
      "innocentHeld": 7394198833,
      "peopleWronglyRestricted": 405,
      "recoveryRate": 0.838336004955091,
+     "reportedMoney": 121516616,
+     "reportedRatio": 64.08769001598925,
      "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 469406518,
@@ -1324,6 +1429,8 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.2588728774320087,
+     "reportedMoney": 121516616,
+     "reportedRatio": 1.0,
      "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 469406518,
@@ -1337,6 +1444,8 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.2588728774320087,
+     "reportedMoney": 121516616,
+     "reportedRatio": 1.0,
      "suggestedOnInnocent": 1,
      "suggestedWholeFreezes": 27,
      "victimMoney": 469406518,
@@ -1481,6 +1590,7 @@
      "10x/K10": {
       "biggest": 120887265,
       "biggestcase": 65462421,
+      "ceiling": 120920011,
       "fcfs": 82382595,
       "oracle": 121516609,
       "scalpel": 120287215,
@@ -1489,6 +1599,7 @@
      "10x/K20": {
       "biggest": 121493660,
       "biggestcase": 85867958,
+      "ceiling": 121489391,
       "fcfs": 99492298,
       "oracle": 121516616,
       "scalpel": 121489391,
@@ -1497,6 +1608,7 @@
      "10x/K5": {
       "biggest": 115980856,
       "biggestcase": 54286159,
+      "ceiling": 116335506,
       "fcfs": 64596749,
       "oracle": 121511043,
       "scalpel": 112888066,
@@ -1505,6 +1617,7 @@
      "1x/K10": {
       "biggest": 119011789,
       "biggestcase": 60176385,
+      "ceiling": 119011789,
       "fcfs": 76118166,
       "oracle": 121136534,
       "scalpel": 118234560,
@@ -1513,6 +1626,7 @@
      "1x/K20": {
       "biggest": 121021982,
       "biggestcase": 82498349,
+      "ceiling": 121021982,
       "fcfs": 95666126,
       "oracle": 121503079,
       "scalpel": 120990192,
@@ -1521,6 +1635,7 @@
      "1x/K5": {
       "biggest": 110349356,
       "biggestcase": 48006861,
+      "ceiling": 110349356,
       "fcfs": 57109603,
       "oracle": 117316601,
       "scalpel": 106598195,
@@ -1529,6 +1644,7 @@
      "2x/K10": {
       "biggest": 120434036,
       "biggestcase": 62219704,
+      "ceiling": 120455964,
       "fcfs": 78750278,
       "oracle": 121492976,
       "scalpel": 119823168,
@@ -1537,6 +1653,7 @@
      "2x/K20": {
       "biggest": 121366242,
       "biggestcase": 84892190,
+      "ceiling": 121347418,
       "fcfs": 98593090,
       "oracle": 121516612,
       "scalpel": 121347418,
@@ -1545,6 +1662,7 @@
      "2x/K5": {
       "biggest": 114211196,
       "biggestcase": 49478949,
+      "ceiling": 114350350,
       "fcfs": 58755694,
       "oracle": 120402419,
       "scalpel": 110914533,
@@ -1553,6 +1671,7 @@
      "5x/K10": {
       "biggest": 120819918,
       "biggestcase": 65037162,
+      "ceiling": 120849187,
       "fcfs": 82025363,
       "oracle": 121516609,
       "scalpel": 120216391,
@@ -1561,6 +1680,7 @@
      "5x/K20": {
       "biggest": 121465224,
       "biggestcase": 85814668,
+      "ceiling": 121456944,
       "fcfs": 99399429,
       "oracle": 121516616,
       "scalpel": 121456944,
@@ -1569,6 +1689,7 @@
      "5x/K5": {
       "biggest": 115771940,
       "biggestcase": 52291726,
+      "ceiling": 116112949,
       "fcfs": 62380486,
       "oracle": 121489039,
       "scalpel": 112674450,
@@ -1579,6 +1700,7 @@
      "10x/K10": {
       "biggest": 120887265,
       "biggestcase": 65462421,
+      "ceiling": 120920011,
       "fcfs": 82382595,
       "oracle": 121516609,
       "scalpel": 120510549,
@@ -1587,6 +1709,7 @@
      "10x/K20": {
       "biggest": 121493660,
       "biggestcase": 85867958,
+      "ceiling": 121489391,
       "fcfs": 99492298,
       "oracle": 121516616,
       "scalpel": 121145068,
@@ -1595,6 +1718,7 @@
      "10x/K5": {
       "biggest": 115980856,
       "biggestcase": 54286159,
+      "ceiling": 116335506,
       "fcfs": 64596749,
       "oracle": 121511043,
       "scalpel": 115587018,
@@ -1603,6 +1727,7 @@
      "1x/K10": {
       "biggest": 119011789,
       "biggestcase": 60176385,
+      "ceiling": 119011789,
       "fcfs": 76118166,
       "oracle": 121136534,
       "scalpel": 118350610,
@@ -1611,6 +1736,7 @@
      "1x/K20": {
       "biggest": 121021982,
       "biggestcase": 82498349,
+      "ceiling": 121021982,
       "fcfs": 95666126,
       "oracle": 121503079,
       "scalpel": 120644422,
@@ -1619,6 +1745,7 @@
      "1x/K5": {
       "biggest": 110349356,
       "biggestcase": 48006861,
+      "ceiling": 110349356,
       "fcfs": 57109603,
       "oracle": 117316601,
       "scalpel": 109236384,
@@ -1627,6 +1754,7 @@
      "2x/K10": {
       "biggest": 120434036,
       "biggestcase": 62219704,
+      "ceiling": 120455964,
       "fcfs": 78750278,
       "oracle": 121492976,
       "scalpel": 120039367,
@@ -1635,6 +1763,7 @@
      "2x/K20": {
       "biggest": 121366242,
       "biggestcase": 84892190,
+      "ceiling": 121347418,
       "fcfs": 98593090,
       "oracle": 121516612,
       "scalpel": 121002034,
@@ -1643,6 +1772,7 @@
      "2x/K5": {
       "biggest": 114211196,
       "biggestcase": 49478949,
+      "ceiling": 114350350,
       "fcfs": 58755694,
       "oracle": 120402419,
       "scalpel": 113557605,
@@ -1651,6 +1781,7 @@
      "5x/K10": {
       "biggest": 120819918,
       "biggestcase": 65037162,
+      "ceiling": 120849187,
       "fcfs": 82025363,
       "oracle": 121516609,
       "scalpel": 120439949,
@@ -1659,6 +1790,7 @@
      "5x/K20": {
       "biggest": 121465224,
       "biggestcase": 85814668,
+      "ceiling": 121456944,
       "fcfs": 99399429,
       "oracle": 121516616,
       "scalpel": 121112520,
@@ -1667,6 +1799,7 @@
      "5x/K5": {
       "biggest": 115771940,
       "biggestcase": 52291726,
+      "ceiling": 116112949,
       "fcfs": 62380486,
       "oracle": 121489039,
       "scalpel": 115366118,
@@ -1708,6 +1841,8 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.0,
+     "reportedMoney": 265027095,
+     "reportedRatio": 0.0,
      "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 473897396,
@@ -1721,6 +1856,8 @@
      "innocentHeld": 7120910294,
      "peopleWronglyRestricted": 399,
      "recoveryRate": 0.9680614345473213,
+     "reportedMoney": 265027095,
+     "reportedRatio": 28.599612001935125,
      "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 473897396,
@@ -1734,6 +1871,8 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.5592499499617424,
+     "reportedMoney": 265027095,
+     "reportedRatio": 1.0,
      "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 473897396,
@@ -1747,6 +1886,8 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.5592499499617424,
+     "reportedMoney": 265027095,
+     "reportedRatio": 1.0,
      "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 25,
      "victimMoney": 473897396,
@@ -1891,6 +2032,7 @@
      "10x/K10": {
       "biggest": 255877385,
       "biggestcase": 125748126,
+      "ceiling": 256158861,
       "fcfs": 63502998,
       "oracle": 264254602,
       "scalpel": 250931818,
@@ -1899,6 +2041,7 @@
      "10x/K20": {
       "biggest": 262742393,
       "biggestcase": 174750987,
+      "ceiling": 262799733,
       "fcfs": 112775124,
       "oracle": 265025874,
       "scalpel": 260184746,
@@ -1907,6 +2050,7 @@
      "10x/K5": {
       "biggest": 232541492,
       "biggestcase": 96113776,
+      "ceiling": 233510914,
       "fcfs": 42100589,
       "oracle": 245152934,
       "scalpel": 216390885,
@@ -1915,6 +2059,7 @@
      "1x/K10": {
       "biggest": 246991021,
       "biggestcase": 112858323,
+      "ceiling": 246991021,
       "fcfs": 48123434,
       "oracle": 257277862,
       "scalpel": 241248269,
@@ -1923,6 +2068,7 @@
      "1x/K20": {
       "biggest": 259596479,
       "biggestcase": 165349912,
+      "ceiling": 259596479,
       "fcfs": 100871193,
       "oracle": 264405555,
       "scalpel": 256598933,
@@ -1931,6 +2077,7 @@
      "1x/K5": {
       "biggest": 216872390,
       "biggestcase": 83195810,
+      "ceiling": 216872390,
       "fcfs": 27667255,
       "oracle": 229065052,
       "scalpel": 200063518,
@@ -1939,6 +2086,7 @@
      "2x/K10": {
       "biggest": 252777462,
       "biggestcase": 116903916,
+      "ceiling": 252705424,
       "fcfs": 52589271,
       "oracle": 262289885,
       "scalpel": 247478312,
@@ -1947,6 +2095,7 @@
      "2x/K20": {
       "biggest": 261818497,
       "biggestcase": 170832651,
+      "ceiling": 261751697,
       "fcfs": 106927565,
       "oracle": 264965601,
       "scalpel": 259164169,
@@ -1955,6 +2104,7 @@
      "2x/K5": {
       "biggest": 224274898,
       "biggestcase": 85208199,
+      "ceiling": 224315714,
       "fcfs": 30061409,
       "oracle": 236520241,
       "scalpel": 207334176,
@@ -1963,6 +2113,7 @@
      "5x/K10": {
       "biggest": 255405751,
       "biggestcase": 123772015,
+      "ceiling": 255604321,
       "fcfs": 60291828,
       "oracle": 264050650,
       "scalpel": 250404002,
@@ -1971,6 +2122,7 @@
      "5x/K20": {
       "biggest": 262576167,
       "biggestcase": 174231481,
+      "ceiling": 262615627,
       "fcfs": 111939044,
       "oracle": 265021453,
       "scalpel": 260013306,
@@ -1979,6 +2131,7 @@
      "5x/K5": {
       "biggest": 230965155,
       "biggestcase": 91016037,
+      "ceiling": 231682984,
       "fcfs": 36307111,
       "oracle": 243697584,
       "scalpel": 214667916,
@@ -1989,6 +2142,7 @@
      "10x/K10": {
       "biggest": 255877385,
       "biggestcase": 125748126,
+      "ceiling": 256158861,
       "fcfs": 63502998,
       "oracle": 264254602,
       "scalpel": 255089154,
@@ -1997,6 +2151,7 @@
      "10x/K20": {
       "biggest": 262742393,
       "biggestcase": 174750987,
+      "ceiling": 262799733,
       "fcfs": 112775124,
       "oracle": 265025874,
       "scalpel": 262122494,
@@ -2005,6 +2160,7 @@
      "10x/K5": {
       "biggest": 232541492,
       "biggestcase": 96113776,
+      "ceiling": 233510914,
       "fcfs": 42100589,
       "oracle": 245152934,
       "scalpel": 226087743,
@@ -2013,6 +2169,7 @@
      "1x/K10": {
       "biggest": 246991021,
       "biggestcase": 112858323,
+      "ceiling": 246991021,
       "fcfs": 48123434,
       "oracle": 257277862,
       "scalpel": 245092921,
@@ -2021,6 +2178,7 @@
      "1x/K20": {
       "biggest": 259596479,
       "biggestcase": 165349912,
+      "ceiling": 259596479,
       "fcfs": 100871193,
       "oracle": 264405555,
       "scalpel": 258430958,
@@ -2029,6 +2187,7 @@
      "1x/K5": {
       "biggest": 216872390,
       "biggestcase": 83195810,
+      "ceiling": 216872390,
       "fcfs": 27667255,
       "oracle": 229065052,
       "scalpel": 209595551,
@@ -2037,6 +2196,7 @@
      "2x/K10": {
       "biggest": 252777462,
       "biggestcase": 116903916,
+      "ceiling": 252705424,
       "fcfs": 52589271,
       "oracle": 262289885,
       "scalpel": 251476833,
@@ -2045,6 +2205,7 @@
      "2x/K20": {
       "biggest": 261818497,
       "biggestcase": 170832651,
+      "ceiling": 261751697,
       "fcfs": 106927565,
       "oracle": 264965601,
       "scalpel": 261075111,
@@ -2053,6 +2214,7 @@
      "2x/K5": {
       "biggest": 224274898,
       "biggestcase": 85208199,
+      "ceiling": 224315714,
       "fcfs": 30061409,
       "oracle": 236520241,
       "scalpel": 216776843,
@@ -2061,6 +2223,7 @@
      "5x/K10": {
       "biggest": 255405751,
       "biggestcase": 123772015,
+      "ceiling": 255604321,
       "fcfs": 60291828,
       "oracle": 264050650,
       "scalpel": 254557496,
@@ -2069,6 +2232,7 @@
      "5x/K20": {
       "biggest": 262576167,
       "biggestcase": 174231481,
+      "ceiling": 262615627,
       "fcfs": 111939044,
       "oracle": 265021453,
       "scalpel": 261937685,
@@ -2077,6 +2241,7 @@
      "5x/K5": {
       "biggest": 230965155,
       "biggestcase": 91016037,
+      "ceiling": 231682984,
       "fcfs": 36307111,
       "oracle": 243697584,
       "scalpel": 224313575,
@@ -2118,6 +2283,8 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.0,
+     "reportedMoney": 174312205,
+     "reportedRatio": 0.0,
      "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 397183632,
@@ -2131,6 +2298,8 @@
      "innocentHeld": 6244026643,
      "peopleWronglyRestricted": 362,
      "recoveryRate": 0.974291853497125,
+     "reportedMoney": 174312205,
+     "reportedRatio": 38.04093591725261,
      "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 397183632,
@@ -2144,6 +2313,8 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.43887056503879296,
+     "reportedMoney": 174312205,
+     "reportedRatio": 1.0,
      "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 397183632,
@@ -2157,6 +2328,8 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.43887056503879296,
+     "reportedMoney": 174312205,
+     "reportedRatio": 1.0,
      "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 17,
      "victimMoney": 397183632,
@@ -2301,6 +2474,7 @@
      "10x/K10": {
       "biggest": 171450133,
       "biggestcase": 83613266,
+      "ceiling": 171471430,
       "fcfs": 108846518,
       "oracle": 174298192,
       "scalpel": 169179717,
@@ -2309,6 +2483,7 @@
      "10x/K20": {
       "biggest": 173946986,
       "biggestcase": 124958476,
+      "ceiling": 173995082,
       "fcfs": 134950079,
       "oracle": 174311248,
       "scalpel": 173168371,
@@ -2317,6 +2492,7 @@
      "10x/K5": {
       "biggest": 165766344,
       "biggestcase": 60695567,
+      "ceiling": 165870562,
       "fcfs": 75848139,
       "oracle": 174028306,
       "scalpel": 159493808,
@@ -2325,6 +2501,7 @@
      "1x/K10": {
       "biggest": 167901906,
       "biggestcase": 76526715,
+      "ceiling": 167901906,
       "fcfs": 100956731,
       "oracle": 173248493,
       "scalpel": 165356839,
@@ -2333,6 +2510,7 @@
      "1x/K20": {
       "biggest": 172619981,
       "biggestcase": 120025108,
+      "ceiling": 172619981,
       "fcfs": 129689876,
       "oracle": 174170127,
       "scalpel": 171744205,
@@ -2341,6 +2519,7 @@
      "1x/K5": {
       "biggest": 158717036,
       "biggestcase": 53595593,
+      "ceiling": 158717036,
       "fcfs": 67626956,
       "oracle": 169097624,
       "scalpel": 152000724,
@@ -2349,6 +2528,7 @@
      "2x/K10": {
       "biggest": 170152401,
       "biggestcase": 79017568,
+      "ceiling": 170128897,
       "fcfs": 104195587,
       "oracle": 174006419,
       "scalpel": 167850231,
@@ -2357,6 +2537,7 @@
      "2x/K20": {
       "biggest": 173425600,
       "biggestcase": 122760005,
+      "ceiling": 173438259,
       "fcfs": 132388884,
       "oracle": 174286580,
       "scalpel": 172598058,
@@ -2365,6 +2546,7 @@
      "2x/K5": {
       "biggest": 162474254,
       "biggestcase": 54877406,
+      "ceiling": 162231436,
       "fcfs": 69386743,
       "oracle": 171996197,
       "scalpel": 155884845,
@@ -2373,6 +2555,7 @@
      "5x/K10": {
       "biggest": 171156984,
       "biggestcase": 82419145,
+      "ceiling": 171157170,
       "fcfs": 107483006,
       "oracle": 174267054,
       "scalpel": 168877368,
@@ -2381,6 +2564,7 @@
      "5x/K20": {
       "biggest": 173834287,
       "biggestcase": 124627221,
+      "ceiling": 173855367,
       "fcfs": 134384673,
       "oracle": 174309251,
       "scalpel": 173041736,
@@ -2389,6 +2573,7 @@
      "5x/K5": {
       "biggest": 165111004,
       "biggestcase": 58189329,
+      "ceiling": 165139128,
       "fcfs": 73672002,
       "oracle": 173679580,
       "scalpel": 158804408,
@@ -2399,6 +2584,7 @@
      "10x/K10": {
       "biggest": 171450133,
       "biggestcase": 83613266,
+      "ceiling": 171471430,
       "fcfs": 108846518,
       "oracle": 174298192,
       "scalpel": 171329536,
@@ -2407,6 +2593,7 @@
      "10x/K20": {
       "biggest": 173946986,
       "biggestcase": 124958476,
+      "ceiling": 173995082,
       "fcfs": 134950079,
       "oracle": 174311248,
       "scalpel": 174144179,
@@ -2415,6 +2602,7 @@
      "10x/K5": {
       "biggest": 165766344,
       "biggestcase": 60695567,
+      "ceiling": 165870562,
       "fcfs": 75848139,
       "oracle": 174028306,
       "scalpel": 163383270,
@@ -2423,6 +2611,7 @@
      "1x/K10": {
       "biggest": 167901906,
       "biggestcase": 76526715,
+      "ceiling": 167901906,
       "fcfs": 100956731,
       "oracle": 173248493,
       "scalpel": 167313474,
@@ -2431,6 +2620,7 @@
      "1x/K20": {
       "biggest": 172619981,
       "biggestcase": 120025108,
+      "ceiling": 172619981,
       "fcfs": 129689876,
       "oracle": 174170127,
       "scalpel": 172535406,
@@ -2439,6 +2629,7 @@
      "1x/K5": {
       "biggest": 158717036,
       "biggestcase": 53595593,
+      "ceiling": 158717036,
       "fcfs": 67626956,
       "oracle": 169097624,
       "scalpel": 155753397,
@@ -2447,6 +2638,7 @@
      "2x/K10": {
       "biggest": 170152401,
       "biggestcase": 79017568,
+      "ceiling": 170128897,
       "fcfs": 104195587,
       "oracle": 174006419,
       "scalpel": 169877999,
@@ -2455,6 +2647,7 @@
      "2x/K20": {
       "biggest": 173425600,
       "biggestcase": 122760005,
+      "ceiling": 173438259,
       "fcfs": 132388884,
       "oracle": 174286580,
       "scalpel": 173524266,
@@ -2463,6 +2656,7 @@
      "2x/K5": {
       "biggest": 162474254,
       "biggestcase": 54877406,
+      "ceiling": 162231436,
       "fcfs": 69386743,
       "oracle": 171996197,
       "scalpel": 159645861,
@@ -2471,6 +2665,7 @@
      "5x/K10": {
       "biggest": 171156984,
       "biggestcase": 82419145,
+      "ceiling": 171157170,
       "fcfs": 107483006,
       "oracle": 174267054,
       "scalpel": 171015405,
@@ -2479,6 +2674,7 @@
      "5x/K20": {
       "biggest": 173834287,
       "biggestcase": 124627221,
+      "ceiling": 173855367,
       "fcfs": 134384673,
       "oracle": 174309251,
       "scalpel": 174004477,
@@ -2487,6 +2683,7 @@
      "5x/K5": {
       "biggest": 165111004,
       "biggestcase": 58189329,
+      "ceiling": 165139128,
       "fcfs": 73672002,
       "oracle": 173679580,
       "scalpel": 162653504,
@@ -2530,6 +2727,8 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.0,
+     "reportedMoney": 318691379,
+     "reportedRatio": 0.0,
      "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 674829338,
@@ -2543,6 +2742,8 @@
      "innocentHeld": 8103470943,
      "peopleWronglyRestricted": 472,
      "recoveryRate": 0.961348405394906,
+     "reportedMoney": 318691379,
+     "reportedRatio": 27.46298653720407,
      "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 674829338,
@@ -2556,6 +2757,8 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.47225477769610547,
+     "reportedMoney": 318691379,
+     "reportedRatio": 1.0,
      "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 674829338,
@@ -2569,6 +2772,8 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.47225477769610547,
+     "reportedMoney": 318691379,
+     "reportedRatio": 1.0,
      "suggestedOnInnocent": 1,
      "suggestedWholeFreezes": 30,
      "victimMoney": 674829338,
@@ -2713,6 +2918,7 @@
      "10x/K10": {
       "biggest": 314624744,
       "biggestcase": 156240323,
+      "ceiling": 314746781,
       "fcfs": 144644494,
       "oracle": 318677444,
       "scalpel": 309797217,
@@ -2721,6 +2927,7 @@
      "10x/K20": {
       "biggest": 317818736,
       "biggestcase": 216014218,
+      "ceiling": 317785460,
       "fcfs": 206377050,
       "oracle": 318691224,
       "scalpel": 316931337,
@@ -2729,6 +2936,7 @@
      "10x/K5": {
       "biggest": 294585985,
       "biggestcase": 121391407,
+      "ceiling": 295013517,
       "fcfs": 103845064,
       "oracle": 309601948,
       "scalpel": 275774374,
@@ -2737,6 +2945,7 @@
      "1x/K10": {
       "biggest": 305014047,
       "biggestcase": 145105092,
+      "ceiling": 305014047,
       "fcfs": 130990358,
       "oracle": 314392865,
       "scalpel": 299622476,
@@ -2745,6 +2954,7 @@
      "1x/K20": {
       "biggest": 314074152,
       "biggestcase": 208190420,
+      "ceiling": 314074152,
       "fcfs": 195152837,
       "oracle": 318349650,
       "scalpel": 312859933,
@@ -2753,6 +2963,7 @@
      "1x/K5": {
       "biggest": 279841337,
       "biggestcase": 109742798,
+      "ceiling": 279841337,
       "fcfs": 92060808,
       "oracle": 294572610,
       "scalpel": 260705460,
@@ -2761,6 +2972,7 @@
      "2x/K10": {
       "biggest": 311098035,
       "biggestcase": 148752894,
+      "ceiling": 310923720,
       "fcfs": 134527246,
       "oracle": 317674629,
       "scalpel": 306006195,
@@ -2769,6 +2981,7 @@
      "2x/K20": {
       "biggest": 316717226,
       "biggestcase": 212801015,
+      "ceiling": 316510988,
       "fcfs": 200266826,
       "oracle": 318668934,
       "scalpel": 315658349,
@@ -2777,6 +2990,7 @@
      "2x/K5": {
       "biggest": 285704809,
       "biggestcase": 112151513,
+      "ceiling": 285610944,
       "fcfs": 93667013,
       "oracle": 300519717,
       "scalpel": 266360325,
@@ -2785,6 +2999,7 @@
      "5x/K10": {
       "biggest": 314036851,
       "biggestcase": 154387849,
+      "ceiling": 314079869,
       "fcfs": 141230242,
       "oracle": 318636713,
       "scalpel": 309138572,
@@ -2793,6 +3008,7 @@
      "5x/K20": {
       "biggest": 317609143,
       "biggestcase": 215708688,
+      "ceiling": 317505647,
       "fcfs": 205310133,
       "oracle": 318690670,
       "scalpel": 316660273,
@@ -2801,6 +3017,7 @@
      "5x/K5": {
       "biggest": 292832461,
       "biggestcase": 117241077,
+      "ceiling": 293003761,
       "fcfs": 98748889,
       "oracle": 307974248,
       "scalpel": 273847444,
@@ -2811,6 +3028,7 @@
      "10x/K10": {
       "biggest": 314624744,
       "biggestcase": 156240323,
+      "ceiling": 314746781,
       "fcfs": 144644494,
       "oracle": 318677444,
       "scalpel": 312714588,
@@ -2819,6 +3037,7 @@
      "10x/K20": {
       "biggest": 317818736,
       "biggestcase": 216014218,
+      "ceiling": 317785460,
       "fcfs": 206377050,
       "oracle": 318691224,
       "scalpel": 317102065,
@@ -2827,6 +3046,7 @@
      "10x/K5": {
       "biggest": 294585985,
       "biggestcase": 121391407,
+      "ceiling": 295013517,
       "fcfs": 103845064,
       "oracle": 309601948,
       "scalpel": 288599483,
@@ -2835,6 +3055,7 @@
      "1x/K10": {
       "biggest": 305014047,
       "biggestcase": 145105092,
+      "ceiling": 305014047,
       "fcfs": 130990358,
       "oracle": 314392865,
       "scalpel": 302353888,
@@ -2843,6 +3064,7 @@
      "1x/K20": {
       "biggest": 314074152,
       "biggestcase": 208190420,
+      "ceiling": 314074152,
       "fcfs": 195152837,
       "oracle": 318349650,
       "scalpel": 312956327,
@@ -2851,6 +3073,7 @@
      "1x/K5": {
       "biggest": 279841337,
       "biggestcase": 109742798,
+      "ceiling": 279841337,
       "fcfs": 92060808,
       "oracle": 294572610,
       "scalpel": 273441611,
@@ -2859,6 +3082,7 @@
      "2x/K10": {
       "biggest": 311098035,
       "biggestcase": 148752894,
+      "ceiling": 310923720,
       "fcfs": 134527246,
       "oracle": 317674629,
       "scalpel": 308816917,
@@ -2867,6 +3091,7 @@
      "2x/K20": {
       "biggest": 316717226,
       "biggestcase": 212801015,
+      "ceiling": 316510988,
       "fcfs": 200266826,
       "oracle": 318668934,
       "scalpel": 315823811,
@@ -2875,6 +3100,7 @@
      "2x/K5": {
       "biggest": 285704809,
       "biggestcase": 112151513,
+      "ceiling": 285610944,
       "fcfs": 93667013,
       "oracle": 300519717,
       "scalpel": 279013933,
@@ -2883,6 +3109,7 @@
      "5x/K10": {
       "biggest": 314036851,
       "biggestcase": 154387849,
+      "ceiling": 314079869,
       "fcfs": 141230242,
       "oracle": 318636713,
       "scalpel": 312047005,
@@ -2891,6 +3118,7 @@
      "5x/K20": {
       "biggest": 317609143,
       "biggestcase": 215708688,
+      "ceiling": 317505647,
       "fcfs": 205310133,
       "oracle": 318690670,
       "scalpel": 316828704,
@@ -2899,6 +3127,7 @@
      "5x/K5": {
       "biggest": 292832461,
       "biggestcase": 117241077,
+      "ceiling": 293003761,
       "fcfs": 98748889,
       "oracle": 307974248,
       "scalpel": 286611261,
@@ -2940,6 +3169,8 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.0,
+     "reportedMoney": 233496934,
+     "reportedRatio": 0.0,
      "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 512844545,
@@ -2953,6 +3184,8 @@
      "innocentHeld": 7256068598,
      "peopleWronglyRestricted": 420,
      "recoveryRate": 0.9267565437397799,
+     "reportedMoney": 233496934,
+     "reportedRatio": 33.11114413176834,
      "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 512844545,
@@ -2966,6 +3199,8 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.4552976847984217,
+     "reportedMoney": 233496934,
+     "reportedRatio": 1.0,
      "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 512844545,
@@ -2979,6 +3214,8 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.4552976847984217,
+     "reportedMoney": 233496934,
+     "reportedRatio": 1.0,
      "suggestedOnInnocent": 1,
      "suggestedWholeFreezes": 27,
      "victimMoney": 512844545,
@@ -3123,6 +3360,7 @@
      "10x/K10": {
       "biggest": 229314847,
       "biggestcase": 112996619,
+      "ceiling": 229326626,
       "fcfs": 77379328,
       "oracle": 233493347,
       "scalpel": 228736855,
@@ -3131,6 +3369,7 @@
      "10x/K20": {
       "biggest": 233068020,
       "biggestcase": 164078258,
+      "ceiling": 233090668,
       "fcfs": 123861545,
       "oracle": 233496869,
       "scalpel": 232965313,
@@ -3139,6 +3378,7 @@
      "10x/K5": {
       "biggest": 218752955,
       "biggestcase": 75975033,
+      "ceiling": 218853879,
       "fcfs": 49160993,
       "oracle": 227604961,
       "scalpel": 205530789,
@@ -3147,6 +3387,7 @@
      "1x/K10": {
       "biggest": 222949560,
       "biggestcase": 103123027,
+      "ceiling": 222949560,
       "fcfs": 66249805,
       "oracle": 230450004,
       "scalpel": 222228123,
@@ -3155,6 +3396,7 @@
      "1x/K20": {
       "biggest": 230895395,
       "biggestcase": 156470067,
+      "ceiling": 230895395,
       "fcfs": 114285560,
       "oracle": 233169362,
       "scalpel": 230783116,
@@ -3163,6 +3405,7 @@
      "1x/K5": {
       "biggest": 207191772,
       "biggestcase": 65915694,
+      "ceiling": 207191772,
       "fcfs": 39498713,
       "oracle": 216537319,
       "scalpel": 193772325,
@@ -3171,6 +3414,7 @@
      "2x/K10": {
       "biggest": 227228514,
       "biggestcase": 106307137,
+      "ceiling": 227066593,
       "fcfs": 69112151,
       "oracle": 232826335,
       "scalpel": 226572463,
@@ -3179,6 +3423,7 @@
      "2x/K20": {
       "biggest": 232436935,
       "biggestcase": 160290462,
+      "ceiling": 232436935,
       "fcfs": 118578358,
       "oracle": 233481103,
       "scalpel": 232334228,
@@ -3187,6 +3432,7 @@
      "2x/K5": {
       "biggest": 212804263,
       "biggestcase": 68224516,
+      "ceiling": 212651790,
       "fcfs": 40831307,
       "oracle": 222109199,
       "scalpel": 199367787,
@@ -3195,6 +3441,7 @@
      "5x/K10": {
       "biggest": 228976867,
       "biggestcase": 110995519,
+      "ceiling": 228968449,
       "fcfs": 74618646,
       "oracle": 233466304,
       "scalpel": 228392332,
@@ -3203,6 +3450,7 @@
      "5x/K20": {
       "biggest": 232970868,
       "biggestcase": 163232378,
+      "ceiling": 232993516,
       "fcfs": 122620635,
       "oracle": 233496803,
       "scalpel": 232868160,
@@ -3211,6 +3459,7 @@
      "5x/K5": {
       "biggest": 217646246,
       "biggestcase": 72463487,
+      "ceiling": 217715067,
       "fcfs": 44968423,
       "oracle": 226785758,
       "scalpel": 204393083,
@@ -3221,6 +3470,7 @@
      "10x/K10": {
       "biggest": 229314847,
       "biggestcase": 112996619,
+      "ceiling": 229326626,
       "fcfs": 77379328,
       "oracle": 233493347,
       "scalpel": 229172725,
@@ -3229,6 +3479,7 @@
      "10x/K20": {
       "biggest": 233068020,
       "biggestcase": 164078258,
+      "ceiling": 233090668,
       "fcfs": 123861545,
       "oracle": 233496869,
       "scalpel": 233287515,
@@ -3237,6 +3488,7 @@
      "10x/K5": {
       "biggest": 218752955,
       "biggestcase": 75975033,
+      "ceiling": 218853879,
       "fcfs": 49160993,
       "oracle": 227604961,
       "scalpel": 216088744,
@@ -3245,6 +3497,7 @@
      "1x/K10": {
       "biggest": 222949560,
       "biggestcase": 103123027,
+      "ceiling": 222949560,
       "fcfs": 66249805,
       "oracle": 230450004,
       "scalpel": 222593438,
@@ -3253,6 +3506,7 @@
      "1x/K20": {
       "biggest": 230895395,
       "biggestcase": 156470067,
+      "ceiling": 230895395,
       "fcfs": 114285560,
       "oracle": 233169362,
       "scalpel": 231106474,
@@ -3261,6 +3515,7 @@
      "1x/K5": {
       "biggest": 207191772,
       "biggestcase": 65915694,
+      "ceiling": 207191772,
       "fcfs": 39498713,
       "oracle": 216537319,
       "scalpel": 204307253,
@@ -3269,6 +3524,7 @@
      "2x/K10": {
       "biggest": 227228514,
       "biggestcase": 106307137,
+      "ceiling": 227066593,
       "fcfs": 69112151,
       "oracle": 232826335,
       "scalpel": 226963594,
@@ -3277,6 +3533,7 @@
      "2x/K20": {
       "biggest": 232436935,
       "biggestcase": 160290462,
+      "ceiling": 232436935,
       "fcfs": 118578358,
       "oracle": 233481103,
       "scalpel": 232656081,
@@ -3285,6 +3542,7 @@
      "2x/K5": {
       "biggest": 212804263,
       "biggestcase": 68224516,
+      "ceiling": 212651790,
       "fcfs": 40831307,
       "oracle": 222109199,
       "scalpel": 209898807,
@@ -3293,6 +3551,7 @@
      "5x/K10": {
       "biggest": 228976867,
       "biggestcase": 110995519,
+      "ceiling": 228968449,
       "fcfs": 74618646,
       "oracle": 233466304,
       "scalpel": 228813689,
@@ -3301,6 +3560,7 @@
      "5x/K20": {
       "biggest": 232970868,
       "biggestcase": 163232378,
+      "ceiling": 232993516,
       "fcfs": 122620635,
       "oracle": 233496803,
       "scalpel": 233189844,
@@ -3309,6 +3569,7 @@
      "5x/K5": {
       "biggest": 217646246,
       "biggestcase": 72463487,
+      "ceiling": 217715067,
       "fcfs": 44968423,
       "oracle": 226785758,
       "scalpel": 214940933,
@@ -3350,6 +3611,8 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.0,
+     "reportedMoney": 121516616,
+     "reportedRatio": 0.0,
      "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 469406518,
@@ -3363,6 +3626,8 @@
      "innocentHeld": 7394198833,
      "peopleWronglyRestricted": 405,
      "recoveryRate": 0.838336004955091,
+     "reportedMoney": 121516616,
+     "reportedRatio": 64.08769001598925,
      "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 469406518,
@@ -3376,6 +3641,8 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.2588728774320087,
+     "reportedMoney": 121516616,
+     "reportedRatio": 1.0,
      "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 469406518,
@@ -3389,6 +3656,8 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.2588728774320087,
+     "reportedMoney": 121516616,
+     "reportedRatio": 1.0,
      "suggestedOnInnocent": 1,
      "suggestedWholeFreezes": 27,
      "victimMoney": 469406518,
@@ -3533,6 +3802,7 @@
      "10x/K10": {
       "biggest": 120887265,
       "biggestcase": 64927815,
+      "ceiling": 120920011,
       "fcfs": 82382595,
       "oracle": 121516609,
       "scalpel": 120287215,
@@ -3541,6 +3811,7 @@
      "10x/K20": {
       "biggest": 121493660,
       "biggestcase": 85159023,
+      "ceiling": 121489391,
       "fcfs": 99492298,
       "oracle": 121516616,
       "scalpel": 121489391,
@@ -3549,6 +3820,7 @@
      "10x/K5": {
       "biggest": 115980856,
       "biggestcase": 54143409,
+      "ceiling": 116335506,
       "fcfs": 64596749,
       "oracle": 121511043,
       "scalpel": 114382343,
@@ -3557,6 +3829,7 @@
      "1x/K10": {
       "biggest": 119011789,
       "biggestcase": 59611631,
+      "ceiling": 119011789,
       "fcfs": 76118166,
       "oracle": 121136534,
       "scalpel": 118234560,
@@ -3565,6 +3838,7 @@
      "1x/K20": {
       "biggest": 121021982,
       "biggestcase": 81786188,
+      "ceiling": 121021982,
       "fcfs": 95666126,
       "oracle": 121503079,
       "scalpel": 120990192,
@@ -3573,6 +3847,7 @@
      "1x/K5": {
       "biggest": 110349356,
       "biggestcase": 47887329,
+      "ceiling": 110349356,
       "fcfs": 57109603,
       "oracle": 117316601,
       "scalpel": 108092472,
@@ -3581,6 +3856,7 @@
      "2x/K10": {
       "biggest": 120434036,
       "biggestcase": 61629168,
+      "ceiling": 120455964,
       "fcfs": 78750278,
       "oracle": 121492976,
       "scalpel": 119823168,
@@ -3589,6 +3865,7 @@
      "2x/K20": {
       "biggest": 121366242,
       "biggestcase": 84182513,
+      "ceiling": 121347418,
       "fcfs": 98593090,
       "oracle": 121516612,
       "scalpel": 121347418,
@@ -3597,6 +3874,7 @@
      "2x/K5": {
       "biggest": 114211196,
       "biggestcase": 49323310,
+      "ceiling": 114350350,
       "fcfs": 58755694,
       "oracle": 120402419,
       "scalpel": 112408810,
@@ -3605,6 +3883,7 @@
      "5x/K10": {
       "biggest": 120819918,
       "biggestcase": 64458635,
+      "ceiling": 120849187,
       "fcfs": 82025363,
       "oracle": 121516609,
       "scalpel": 120216391,
@@ -3613,6 +3892,7 @@
      "5x/K20": {
       "biggest": 121465224,
       "biggestcase": 85105683,
+      "ceiling": 121456944,
       "fcfs": 99399429,
       "oracle": 121516616,
       "scalpel": 121456944,
@@ -3621,6 +3901,7 @@
      "5x/K5": {
       "biggest": 115771940,
       "biggestcase": 52116505,
+      "ceiling": 116112949,
       "fcfs": 62380486,
       "oracle": 121489039,
       "scalpel": 114168727,
@@ -3631,6 +3912,7 @@
      "10x/K10": {
       "biggest": 120887265,
       "biggestcase": 64927815,
+      "ceiling": 120920011,
       "fcfs": 82382595,
       "oracle": 121516609,
       "scalpel": 120644970,
@@ -3639,6 +3921,7 @@
      "10x/K20": {
       "biggest": 121493660,
       "biggestcase": 85159023,
+      "ceiling": 121489391,
       "fcfs": 99492298,
       "oracle": 121516616,
       "scalpel": 121145068,
@@ -3647,6 +3930,7 @@
      "10x/K5": {
       "biggest": 115980856,
       "biggestcase": 54143409,
+      "ceiling": 116335506,
       "fcfs": 64596749,
       "oracle": 121511043,
       "scalpel": 115343581,
@@ -3655,6 +3939,7 @@
      "1x/K10": {
       "biggest": 119011789,
       "biggestcase": 59611631,
+      "ceiling": 119011789,
       "fcfs": 76118166,
       "oracle": 121136534,
       "scalpel": 118486587,
@@ -3663,6 +3948,7 @@
      "1x/K20": {
       "biggest": 121021982,
       "biggestcase": 81786188,
+      "ceiling": 121021982,
       "fcfs": 95666126,
       "oracle": 121503079,
       "scalpel": 120645956,
@@ -3671,6 +3957,7 @@
      "1x/K5": {
       "biggest": 110349356,
       "biggestcase": 47887329,
+      "ceiling": 110349356,
       "fcfs": 57109603,
       "oracle": 117316601,
       "scalpel": 108993215,
@@ -3679,6 +3966,7 @@
      "2x/K10": {
       "biggest": 120434036,
       "biggestcase": 61629168,
+      "ceiling": 120455964,
       "fcfs": 78750278,
       "oracle": 121492976,
       "scalpel": 120174324,
@@ -3687,6 +3975,7 @@
      "2x/K20": {
       "biggest": 121366242,
       "biggestcase": 84182513,
+      "ceiling": 121347418,
       "fcfs": 98593090,
       "oracle": 121516612,
       "scalpel": 121001698,
@@ -3695,6 +3984,7 @@
      "2x/K5": {
       "biggest": 114211196,
       "biggestcase": 49323310,
+      "ceiling": 114350350,
       "fcfs": 58755694,
       "oracle": 120402419,
       "scalpel": 113314390,
@@ -3703,6 +3993,7 @@
      "5x/K10": {
       "biggest": 120819918,
       "biggestcase": 64458635,
+      "ceiling": 120849187,
       "fcfs": 82025363,
       "oracle": 121516609,
       "scalpel": 120574273,
@@ -3711,6 +4002,7 @@
      "5x/K20": {
       "biggest": 121465224,
       "biggestcase": 85105683,
+      "ceiling": 121456944,
       "fcfs": 99399429,
       "oracle": 121516616,
       "scalpel": 121112520,
@@ -3719,6 +4011,7 @@
      "5x/K5": {
       "biggest": 115771940,
       "biggestcase": 52116505,
+      "ceiling": 116112949,
       "fcfs": 62380486,
       "oracle": 121489039,
       "scalpel": 115123072,
@@ -3760,6 +4053,8 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.0,
+     "reportedMoney": 265027095,
+     "reportedRatio": 0.0,
      "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 473897396,
@@ -3773,6 +4068,8 @@
      "innocentHeld": 7120910294,
      "peopleWronglyRestricted": 399,
      "recoveryRate": 0.9680614345473213,
+     "reportedMoney": 265027095,
+     "reportedRatio": 28.599612001935125,
      "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 473897396,
@@ -3786,6 +4083,8 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.5592499499617424,
+     "reportedMoney": 265027095,
+     "reportedRatio": 1.0,
      "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 473897396,
@@ -3799,6 +4098,8 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.5592499499617424,
+     "reportedMoney": 265027095,
+     "reportedRatio": 1.0,
      "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 19,
      "victimMoney": 473897396,
@@ -3943,6 +4244,7 @@
      "10x/K10": {
       "biggest": 255877385,
       "biggestcase": 125731680,
+      "ceiling": 256158861,
       "fcfs": 63502998,
       "oracle": 264254602,
       "scalpel": 250210985,
@@ -3951,6 +4253,7 @@
      "10x/K20": {
       "biggest": 262742393,
       "biggestcase": 174552620,
+      "ceiling": 262799733,
       "fcfs": 112775124,
       "oracle": 265025874,
       "scalpel": 259896197,
@@ -3959,6 +4262,7 @@
      "10x/K5": {
       "biggest": 232541492,
       "biggestcase": 96107368,
+      "ceiling": 233510914,
       "fcfs": 42100589,
       "oracle": 245152934,
       "scalpel": 216335828,
@@ -3967,6 +4271,7 @@
      "1x/K10": {
       "biggest": 246991021,
       "biggestcase": 112838246,
+      "ceiling": 246991021,
       "fcfs": 48123434,
       "oracle": 257277862,
       "scalpel": 240520113,
@@ -3975,6 +4280,7 @@
      "1x/K20": {
       "biggest": 259596479,
       "biggestcase": 165145318,
+      "ceiling": 259596479,
       "fcfs": 100871193,
       "oracle": 264405555,
       "scalpel": 256302919,
@@ -3983,6 +4289,7 @@
      "1x/K5": {
       "biggest": 216872390,
       "biggestcase": 83195464,
+      "ceiling": 216872390,
       "fcfs": 27667255,
       "oracle": 229065052,
       "scalpel": 200008176,
@@ -3991,6 +4298,7 @@
      "2x/K10": {
       "biggest": 252777462,
       "biggestcase": 116871628,
+      "ceiling": 252705424,
       "fcfs": 52589271,
       "oracle": 262289885,
       "scalpel": 246735569,
@@ -3999,6 +4307,7 @@
      "2x/K20": {
       "biggest": 261818497,
       "biggestcase": 170626389,
+      "ceiling": 261751697,
       "fcfs": 106927565,
       "oracle": 264965601,
       "scalpel": 258875621,
@@ -4007,6 +4316,7 @@
      "2x/K5": {
       "biggest": 224274898,
       "biggestcase": 85201318,
+      "ceiling": 224315714,
       "fcfs": 30061409,
       "oracle": 236520241,
       "scalpel": 207279466,
@@ -4015,6 +4325,7 @@
      "5x/K10": {
       "biggest": 255405751,
       "biggestcase": 123743133,
+      "ceiling": 255604321,
       "fcfs": 60291828,
       "oracle": 264050650,
       "scalpel": 249683170,
@@ -4023,6 +4334,7 @@
      "5x/K20": {
       "biggest": 262576167,
       "biggestcase": 174033064,
+      "ceiling": 262615627,
       "fcfs": 111939044,
       "oracle": 265021453,
       "scalpel": 259724759,
@@ -4031,6 +4343,7 @@
      "5x/K5": {
       "biggest": 230965155,
       "biggestcase": 90990359,
+      "ceiling": 231682984,
       "fcfs": 36307111,
       "oracle": 243697584,
       "scalpel": 214598628,
@@ -4041,6 +4354,7 @@
      "10x/K10": {
       "biggest": 255877385,
       "biggestcase": 125731680,
+      "ceiling": 256158861,
       "fcfs": 63502998,
       "oracle": 264254602,
       "scalpel": 255856922,
@@ -4049,6 +4363,7 @@
      "10x/K20": {
       "biggest": 262742393,
       "biggestcase": 174552620,
+      "ceiling": 262799733,
       "fcfs": 112775124,
       "oracle": 265025874,
       "scalpel": 262343400,
@@ -4057,6 +4372,7 @@
      "10x/K5": {
       "biggest": 232541492,
       "biggestcase": 96107368,
+      "ceiling": 233510914,
       "fcfs": 42100589,
       "oracle": 245152934,
       "scalpel": 226531522,
@@ -4065,6 +4381,7 @@
      "1x/K10": {
       "biggest": 246991021,
       "biggestcase": 112838246,
+      "ceiling": 246991021,
       "fcfs": 48123434,
       "oracle": 257277862,
       "scalpel": 245961708,
@@ -4073,6 +4390,7 @@
      "1x/K20": {
       "biggest": 259596479,
       "biggestcase": 165145318,
+      "ceiling": 259596479,
       "fcfs": 100871193,
       "oracle": 264405555,
       "scalpel": 258734774,
@@ -4081,6 +4399,7 @@
      "1x/K5": {
       "biggest": 216872390,
       "biggestcase": 83195464,
+      "ceiling": 216872390,
       "fcfs": 27667255,
       "oracle": 229065052,
       "scalpel": 210152525,
@@ -4089,6 +4408,7 @@
      "2x/K10": {
       "biggest": 252777462,
       "biggestcase": 116871628,
+      "ceiling": 252705424,
       "fcfs": 52589271,
       "oracle": 262289885,
       "scalpel": 252340031,
@@ -4097,6 +4417,7 @@
      "2x/K20": {
       "biggest": 261818497,
       "biggestcase": 170626389,
+      "ceiling": 261751697,
       "fcfs": 106927565,
       "oracle": 264965601,
       "scalpel": 261296016,
@@ -4105,6 +4426,7 @@
      "2x/K5": {
       "biggest": 224274898,
       "biggestcase": 85201318,
+      "ceiling": 224315714,
       "fcfs": 30061409,
       "oracle": 236520241,
       "scalpel": 217393180,
@@ -4113,6 +4435,7 @@
      "5x/K10": {
       "biggest": 255405751,
       "biggestcase": 123743133,
+      "ceiling": 255604321,
       "fcfs": 60291828,
       "oracle": 264050650,
       "scalpel": 255321792,
@@ -4121,6 +4444,7 @@
      "5x/K20": {
       "biggest": 262576167,
       "biggestcase": 174033064,
+      "ceiling": 262615627,
       "fcfs": 111939044,
       "oracle": 265021453,
       "scalpel": 262158591,
@@ -4129,6 +4453,7 @@
      "5x/K5": {
       "biggest": 230965155,
       "biggestcase": 90990359,
+      "ceiling": 231682984,
       "fcfs": 36307111,
       "oracle": 243697584,
       "scalpel": 224773615,
@@ -4170,6 +4495,8 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.0,
+     "reportedMoney": 174312205,
+     "reportedRatio": 0.0,
      "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 397183632,
@@ -4183,6 +4510,8 @@
      "innocentHeld": 6244026643,
      "peopleWronglyRestricted": 362,
      "recoveryRate": 0.974291853497125,
+     "reportedMoney": 174312205,
+     "reportedRatio": 38.04093591725261,
      "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 397183632,
@@ -4196,6 +4525,8 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.43887056503879296,
+     "reportedMoney": 174312205,
+     "reportedRatio": 1.0,
      "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 0,
      "victimMoney": 397183632,
@@ -4209,6 +4540,8 @@
      "innocentHeld": 0,
      "peopleWronglyRestricted": 0,
      "recoveryRate": 0.43887056503879296,
+     "reportedMoney": 174312205,
+     "reportedRatio": 1.0,
      "suggestedOnInnocent": 0,
      "suggestedWholeFreezes": 13,
      "victimMoney": 397183632,
@@ -4353,6 +4686,7 @@
      "10x/K10": {
       "biggest": 171450133,
       "biggestcase": 83613266,
+      "ceiling": 171471430,
       "fcfs": 108846518,
       "oracle": 174298192,
       "scalpel": 169179717,
@@ -4361,6 +4695,7 @@
      "10x/K20": {
       "biggest": 173946986,
       "biggestcase": 124958476,
+      "ceiling": 173995082,
       "fcfs": 134950079,
       "oracle": 174311248,
       "scalpel": 173168371,
@@ -4369,6 +4704,7 @@
      "10x/K5": {
       "biggest": 165766344,
       "biggestcase": 60699329,
+      "ceiling": 165870562,
       "fcfs": 75848139,
       "oracle": 174028306,
       "scalpel": 159493800,
@@ -4377,6 +4713,7 @@
      "1x/K10": {
       "biggest": 167901906,
       "biggestcase": 76527938,
+      "ceiling": 167901906,
       "fcfs": 100956731,
       "oracle": 173248493,
       "scalpel": 165356841,
@@ -4385,6 +4722,7 @@
      "1x/K20": {
       "biggest": 172619981,
       "biggestcase": 120025155,
+      "ceiling": 172619981,
       "fcfs": 129689876,
       "oracle": 174170127,
       "scalpel": 171744206,
@@ -4393,6 +4731,7 @@
      "1x/K5": {
       "biggest": 158717036,
       "biggestcase": 53595618,
+      "ceiling": 158717036,
       "fcfs": 67626956,
       "oracle": 169097624,
       "scalpel": 152000725,
@@ -4401,6 +4740,7 @@
      "2x/K10": {
       "biggest": 170152401,
       "biggestcase": 79023083,
+      "ceiling": 170128897,
       "fcfs": 104195587,
       "oracle": 174006419,
       "scalpel": 167850237,
@@ -4409,6 +4749,7 @@
      "2x/K20": {
       "biggest": 173425600,
       "biggestcase": 122760077,
+      "ceiling": 173438259,
       "fcfs": 132388884,
       "oracle": 174286580,
       "scalpel": 172598034,
@@ -4417,6 +4758,7 @@
      "2x/K5": {
       "biggest": 162474254,
       "biggestcase": 54878165,
+      "ceiling": 162231436,
       "fcfs": 69386743,
       "oracle": 171996197,
       "scalpel": 155884849,
@@ -4425,6 +4767,7 @@
      "5x/K10": {
       "biggest": 171156984,
       "biggestcase": 82426731,
+      "ceiling": 171157170,
       "fcfs": 107483006,
       "oracle": 174267054,
       "scalpel": 168877368,
@@ -4433,6 +4776,7 @@
      "5x/K20": {
       "biggest": 173834287,
       "biggestcase": 124627221,
+      "ceiling": 173855367,
       "fcfs": 134384673,
       "oracle": 174309251,
       "scalpel": 173041736,
@@ -4441,6 +4785,7 @@
      "5x/K5": {
       "biggest": 165111004,
       "biggestcase": 58192664,
+      "ceiling": 165139128,
       "fcfs": 73672002,
       "oracle": 173679580,
       "scalpel": 158804390,
@@ -4451,6 +4796,7 @@
      "10x/K10": {
       "biggest": 171450133,
       "biggestcase": 83613266,
+      "ceiling": 171471430,
       "fcfs": 108846518,
       "oracle": 174298192,
       "scalpel": 170667706,
@@ -4459,6 +4805,7 @@
      "10x/K20": {
       "biggest": 173946986,
       "biggestcase": 124958476,
+      "ceiling": 173995082,
       "fcfs": 134950079,
       "oracle": 174311248,
       "scalpel": 173365564,
@@ -4467,6 +4814,7 @@
      "10x/K5": {
       "biggest": 165766344,
       "biggestcase": 60699329,
+      "ceiling": 165870562,
       "fcfs": 75848139,
       "oracle": 174028306,
       "scalpel": 162840568,
@@ -4475,6 +4823,7 @@
      "1x/K10": {
       "biggest": 167901906,
       "biggestcase": 76527938,
+      "ceiling": 167901906,
       "fcfs": 100956731,
       "oracle": 173248493,
       "scalpel": 166642406,
@@ -4483,6 +4832,7 @@
      "1x/K20": {
       "biggest": 172619981,
       "biggestcase": 120025155,
+      "ceiling": 172619981,
       "fcfs": 129689876,
       "oracle": 174170127,
       "scalpel": 171753357,
@@ -4491,6 +4841,7 @@
      "1x/K5": {
       "biggest": 158717036,
       "biggestcase": 53595618,
+      "ceiling": 158717036,
       "fcfs": 67626956,
       "oracle": 169097624,
       "scalpel": 155214897,
@@ -4499,6 +4850,7 @@
      "2x/K10": {
       "biggest": 170152401,
       "biggestcase": 79023083,
+      "ceiling": 170128897,
       "fcfs": 104195587,
       "oracle": 174006419,
       "scalpel": 169210441,
@@ -4507,6 +4859,7 @@
      "2x/K20": {
       "biggest": 173425600,
       "biggestcase": 122760077,
+      "ceiling": 173438259,
       "fcfs": 132388884,
       "oracle": 174286580,
       "scalpel": 172747365,
@@ -4515,6 +4868,7 @@
      "2x/K5": {
       "biggest": 162474254,
       "biggestcase": 54878165,
+      "ceiling": 162231436,
       "fcfs": 69386743,
       "oracle": 171996197,
       "scalpel": 159106734,
@@ -4523,6 +4877,7 @@
      "5x/K10": {
       "biggest": 171156984,
       "biggestcase": 82426731,
+      "ceiling": 171157170,
       "fcfs": 107483006,
       "oracle": 174267054,
       "scalpel": 170353574,
@@ -4531,6 +4886,7 @@
      "5x/K20": {
       "biggest": 173834287,
       "biggestcase": 124627221,
+      "ceiling": 173855367,
       "fcfs": 134384673,
       "oracle": 174309251,
       "scalpel": 173225860,
@@ -4539,6 +4895,7 @@
      "5x/K5": {
       "biggest": 165111004,
       "biggestcase": 58192664,
+      "ceiling": 165139128,
       "fcfs": 73672002,
       "oracle": 173679580,
       "scalpel": 162110889,
@@ -4572,16 +4929,19 @@
  ],
  "v3": {
   "aucHigh": 0.9986645814863517,
+  "barReachable": false,
+  "ceilingMarginPoints": 0.4064752893893768,
   "headline": {
    "biggest": 96.7305627634414,
    "biggestcase": 42.18054331976044,
+   "ceiling": 97.13703805283077,
    "fcfs": 13.879847671660814,
    "scalpel": 97.05072762378697,
    "signrule": 75.27292036445479
   },
   "marginPoints": 0.3201648603455709,
   "passMarkPoints": 2.0,
-  "sentence": "Split-payment world (locked in advance; high phone-signal noise, K=10, 3 seeds): the mule-score model's order got 97.1% of the best possible, against 96.7% for biggest amount first and 42.2% for biggest case first. That is +0.3 points against the better simple rule; the pass mark was +2, so the model's order has not earned its place in this world.",
+  "sentence": "Split-payment world (locked in advance; high phone-signal noise, K=10, 3 seeds): the mule-score model's order got 97.1% of the best possible, against 96.7% for biggest amount first and 42.2% for biggest case first. That is +0.3 points against the better simple rule; the pass mark was +2, so the model's order has not earned its place in this world. Even perfect knowledge of who is a mule would only reach 97.1% (+0.4 points), so no model could have passed this bar: in this world the amount already gives away who the mules are.",
   "table": {
    "high": {
     "10": {
@@ -4594,6 +4954,11 @@
       42.18054331976044,
       28.40794237340706,
       52.692669957557406
+     ],
+     "ceiling": [
+      97.13703805283077,
+      96.52498962715454,
+      97.51150993480564
      ],
      "fcfs": [
       13.879847671660814,
@@ -4622,6 +4987,11 @@
       44.9813992968795,
       75.49450379415728
      ],
+     "ceiling": [
+      98.99724183054364,
+      98.56259354687805,
+      99.41709396260194
+     ],
      "fcfs": [
       26.796110952468307,
       20.892326464367503,
@@ -4648,6 +5018,11 @@
       33.05903587390194,
       22.291102161089835,
       38.26352719071189
+     ],
+     "ceiling": [
+      95.6280652110116,
+      94.23872440739339,
+      97.04599531768379
      ],
      "fcfs": [
       9.78543828460279,
@@ -4678,6 +5053,11 @@
       28.471580841587006,
       52.68978466413167
      ],
+     "ceiling": [
+      97.13703805283077,
+      96.52498962715454,
+      97.51150993480564
+     ],
      "fcfs": [
       13.879847671660814,
       11.021840564342732,
@@ -4705,6 +5085,11 @@
       45.18389322728178,
       75.48979565601867
      ],
+     "ceiling": [
+      98.99724183054364,
+      98.56259354687805,
+      99.41709396260194
+     ],
      "fcfs": [
       26.796110952468307,
       20.892326464367503,
@@ -4731,6 +5116,11 @@
       33.079293623652674,
       22.330699412747443,
       38.26268900107031
+     ],
+     "ceiling": [
+      95.6280652110116,
+      94.23872440739339,
+      97.04599531768379
      ],
      "fcfs": [
       9.78543828460279,

@@ -20,18 +20,23 @@ const ALLOWED_REQ = new Set(["signed_dated", "case_reference", "criminal_nature"
 const SIZED_REQ = new Set(["exact_amount"]);
 
 export interface BadgeItem { id: string; plain: string; ok: boolean; sources: string[] }
-export interface Badge { key: "allowed" | "sized" | "timed"; title: string; pass: boolean; items: BadgeItem[] }
+export type BadgeState = "pass" | "caution" | "fail";
+export interface Badge { key: "allowed" | "sized" | "timed"; title: string; state: BadgeState; reasons: string[]; items: BadgeItem[] }
+
+export const STATE_WORD: Record<BadgeState, string> = { pass: "Yes", caution: "Yes, with caution", fail: "No" };
+export const STATE_MARK: Record<BadgeState, string> = { pass: "✓", caution: "!", fail: "✕" };
 
 const item = (c: Check, req = false): BadgeItem => ({ id: c.rule, plain: req ? c.note : (RULE_PLAIN[c.rule] ?? c.note), ok: c.ok, sources: c.sources });
 
-/** Group the engine's checks into the three badges. Pass/fail comes from the engine; this only arranges them. */
+/** Group the engine's checks into the three badges. Green/amber/red comes from the engine; this only arranges them. */
 export function badgesFor(m: MemoCase): Badge[] {
   const gate = (ids: string[]) => m.checks.filter((c) => ids.includes(c.rule)).map((c) => item(c));
   const req = (ids: Set<string>) => m.requisitionChecks.filter((c) => ids.has(c.rule)).map((c) => item(c, true));
   return [
-    { key: "allowed", title: "Allowed?", pass: m.badges.allowed, items: [...gate(["R0", "R9"]), ...req(ALLOWED_REQ)] },
-    { key: "sized", title: "Right size?", pass: m.badges.sized, items: [...gate(["R1", "R8"]), ...req(SIZED_REQ)] },
-    { key: "timed", title: "On time?", pass: m.badges.timed, items: [...gate(["R3"]), ...m.clocks.map((c) => ({ id: c.id, plain: `${c.label} (${c.days} days)`, ok: true, sources: c.sources }))] },
+    { key: "allowed", title: "Allowed?", state: m.badgeStates.allowed, reasons: m.badgeReasons.allowed, items: [...gate(["R0", "R9"]), ...req(ALLOWED_REQ)] },
+    { key: "sized", title: "Right size?", state: m.badgeStates.sized, reasons: m.badgeReasons.sized, items: [...gate(["R1", "R8"]), ...req(SIZED_REQ)] },
+    { key: "timed", title: "On time?", state: m.badgeStates.timed, reasons: m.badgeReasons.timed,
+      items: [...gate(["R3"]), ...m.clocks.map((c) => ({ id: c.id, plain: `${c.label} (${c.days} days)`, ok: c.state !== "EXPIRED" && c.state !== "SATISFIED_LATE", sources: c.sources }))] },
   ];
 }
 

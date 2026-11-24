@@ -15,7 +15,7 @@ TEXT = {
     "dwell_median_min": (lambda v: f"Money left within {_n(v)} minutes of arriving",
                          lambda v: f"Money usually stays a long time ({_n(v)} minutes or more)"),
     "senders": (lambda v: "All the money came from one sender" if v == 1 else f"Money came from {_n(v)} different senders",
-                lambda v: f"Few senders ({_n(v)})"),
+                lambda v: "All the money came from one sender" if v == 1 else f"Money came from {_n(v)} different senders"),
     "reported_senders": (lambda v: f"{_n(v)} people who reported fraud paid into this account",
                          lambda v: "Few or no fraud reporters paid into this account"),
     "share_in_reported": (lambda v: f"{v:.0%} of money in came from reported fraud", lambda v: "Most money in is not from reported fraud"),

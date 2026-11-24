@@ -6,7 +6,7 @@ import { Provenance } from "@/components/Provenance";
 
 export const metadata = { title: "Who first? · Scalpel" };
 
-const V3_ROWS = ["scalpel", "biggest", "biggestcase", "signrule", "fcfs"] as const;
+const V3_ROWS = ["ceiling", "scalpel", "biggest", "biggestcase", "signrule", "fcfs"] as const;
 
 export default function OrderPage() {
   const o = demo.order;
@@ -20,6 +20,11 @@ export default function OrderPage() {
       </p>
       <p className="mt-2 max-w-3xl font-medium" data-testid="caption">{o.caption[0]}</p>
       <p className="text-xs muted">{o.source}.</p>
+      <p className="mt-2 max-w-3xl text-sm" data-testid="ceiling-v2">
+        Why the model can&apos;t pull ahead here: even <b>perfect knowledge</b> of who is a mule, fed into the same formula, reaches only {pct(o.ceilingV2.ceiling)} against
+        {" "}{pct(o.ceilingV2.biggest)} for biggest amount first. In these worlds the amount already gives away who the mules are, so better detection cannot improve the order.
+        The model&apos;s real jobs are the 3 plain reasons and the whole-freeze condition (R2).
+      </p>
       <div className="mt-4"><OrderChart byK={o.byK} /></div>
 
       <section className="card p-4 mt-6" data-testid="v3">
@@ -37,13 +42,14 @@ export default function OrderPage() {
                 <thead><tr className="text-left"><th className="pr-4">Order (high noise, pooled over 3 worlds)</th><th className="pr-4">K=5</th><th className="pr-4">K=10</th><th className="pr-4">K=20</th></tr></thead>
                 <tbody>
                   {V3_ROWS.map((n) => (
-                    <tr key={n}><td className="pr-4">{ORDER_LABEL[n]}</td>{["5", "10", "20"].map((k) => <td key={k} className="pr-4 tabular-nums">{pct(v3.high[k]![n]![0]!)}</td>)}</tr>
+                    <tr key={n} className={n === "ceiling" ? "italic" : undefined}><td className="pr-4">{ORDER_LABEL[n]}</td>{["5", "10", "20"].map((k) => <td key={k} className="pr-4 tabular-nums">{pct(v3.high[k]![n]![0]!)}</td>)}</tr>
                   ))}
                 </tbody>
               </table>
             </div>
             <p className="text-xs muted mt-2">
               Our reading of why &ldquo;biggest case first&rdquo; did so badly: when a case is split over many accounts, it sends the officer to many small pieces of one big case before a large piece elsewhere.
+              The &ldquo;mixed credit&rdquo; pieces turned out to draw on money the mule kept back, which is mostly victim money (a generator bug found after grading; the lock and result are unchanged).
               Lock file: <span className="font-mono">{v3.lock}</span>. <span className="tag">known only afterwards</span>
             </p>
           </>

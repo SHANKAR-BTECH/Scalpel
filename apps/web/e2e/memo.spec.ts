@@ -71,3 +71,32 @@ test("phone width: the memo does not scroll sideways", async ({ page }) => {
   const [sw, cw] = await page.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.clientWidth]);
   expect(sw).toBeLessThanOrEqual(cw);
 });
+
+test("badges can show amber and red: deadlines on unchecked sources are amber; a whole freeze is red on Right size?", async ({ page }) => {
+  await page.goto("/memo?a=D09001");
+  await expect(page.getByTestId("badge-timed")).toHaveAttribute("data-state", "caution");
+  await expect(page.getByTestId("badge-timed")).toContainText("Yes, with caution");
+  await expect(page.getByTestId("whole-sized")).toHaveText("✕ No");
+  await expect(page.getByTestId("whole-compare")).toContainText("₹7,500 more than the traced money");
+});
+
+test("the memo says what the model may do: it can only help an officer PROPOSE a whole freeze", async ({ page }) => {
+  await page.goto("/memo?a=D09001");
+  await expect(page.getByTestId("memo")).toContainText("one of the conditions (R2) before an officer may propose a whole-account freeze");
+  await expect(page.getByTestId("memo")).not.toContainText("cannot place or approve a hold");
+});
+
+test("the shop memo hides sub-rupee hops and sums them", async ({ page }) => {
+  await page.goto("/memo?a=D00191");
+  for (const cell of await page.getByTestId("hops").locator("tbody tr td:last-child").allInnerTexts()) {
+    expect(cell).not.toMatch(/^₹0\.\d\d$/);
+  }
+  await expect(page.getByTestId("tiny-hops")).toContainText("under ₹1");
+});
+
+test("the proof footer's fingerprint equals sha256 of data/demo.json", async ({ page }) => {
+  const { createHash } = await import("node:crypto");
+  const sha = createHash("sha256").update(readFileSync(new URL("../data/demo.json", import.meta.url))).digest("hex");
+  await page.goto("/memo");
+  await expect(page.getByTestId("sha")).toHaveText(sha);
+});

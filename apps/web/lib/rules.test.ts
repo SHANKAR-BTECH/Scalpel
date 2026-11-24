@@ -18,10 +18,10 @@ describe("citations", () => {
 
 describe("badges come from the engine", () => {
   for (const m of demo.memo.cases) {
-    it(`${m.account}: three badges, pass/fail exactly as the engine said`, () => {
+    it(`${m.account}: three badges, green/amber/red exactly as the engine said`, () => {
       const b = badgesFor(m);
       expect(b.map((x) => x.key)).toEqual(["allowed", "sized", "timed"]);
-      expect(b.map((x) => x.pass)).toEqual([m.badges.allowed, m.badges.sized, m.badges.timed]);
+      expect(b.map((x) => x.state)).toEqual([m.badgeStates.allowed, m.badgeStates.sized, m.badgeStates.timed]);
       expect(b.find((x) => x.key === "sized")!.items.some((i) => i.id === "R1")).toBe(true);
     });
     it(`${m.account}: a rule with only unverified sources is listed as still being checked`, () => {

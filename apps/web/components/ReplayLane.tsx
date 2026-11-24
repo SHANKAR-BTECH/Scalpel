@@ -24,7 +24,8 @@ export function ReplayLane({ id, lane, hour, total }: { id: LaneKey; lane: Lane;
         inputs={[
           ["where all victim money ended up by hour 72", ""],
           ["secured", formatRupees(b.securedPaise)],
-          ["belonged to victims who never complained", formatRupees(b.neverComplainedPaise)],
+          ["not yet complained about, in an account this lane held (only a whole freeze reaches it)", formatRupees(b.neverComplainedHeldAccountPaise)],
+          ["not yet complained about, in an account no complaint leads to (nobody can reach it)", formatRupees(b.neverComplainedNoTracePaise)],
           ["reported, but left before the hold", formatRupees(b.reportedGoneBeforeHoldPaise)],
           ["reported, but account not reached or not traced", formatRupees(b.reportedNotReachedOrNotTracedPaise)],
           ["total (adds up exactly)", formatRupees(total)],

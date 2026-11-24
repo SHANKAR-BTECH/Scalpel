@@ -14,6 +14,7 @@ def grade_holds(rows: list[dict], truth: dict) -> dict:
     real = truth["victimMoneyAtCutoff"]
     roles = truth["roles"]
     held = {r["account"]: r["held"] for r in rows if r["held"] > 0}
+    reported = sum(r.get("traced", 0) for r in rows)  # victim money traced from complaints made so far
     total_real = sum(real.values())
     total_held = sum(held.values())
     accounts = set(real) | set(held)
@@ -24,6 +25,8 @@ def grade_holds(rows: list[dict], truth: dict) -> dict:
         "held": total_held,
         "victimMoney": total_real,
         "freezeRatio": (total_held / total_real) if total_real else ("no-trace" if total_held else 0),
+        "reportedMoney": reported,
+        "reportedRatio": (total_held / reported) if reported else 0,
         "victimMoneyMissed": missed,
         "recoveryRate": (total_real - missed) / total_real if total_real else "no-trace",
         "innocentHeld": innocent,
@@ -70,6 +73,16 @@ def oracle_order(held: dict[str, int], truth: dict, k: int, drain_ratio: float |
     value = by_hour[:, [j // k for j in range(n)]]
     rows, cols = linear_sum_assignment(value, maximize=True)
     return [accts[r] for r, _ in sorted(zip(rows, cols), key=lambda x: x[1])]
+
+
+def ceiling_order(held: dict[str, int], truth: dict, drain_ratio: float | None = None) -> list[str]:
+    """Scalpel's own formula (amount x money lost per hour) fed the TRUE roles: score 1 for mules, 0 for everyone else.
+    It is the best any mule-score model could do with this ordering rule. If even this barely beats 'biggest first',
+    no model can earn a margin."""
+    p = truth["muleDrainPerHour"]
+    ratio = truth["drainRatio"] if drain_ratio is None else drain_ratio
+    rate = lambda a: p if truth["roles"].get(a) == "mule" else p / ratio
+    return sorted(held, key=lambda a: (-held[a] * rate(a), -held[a], a))
 
 
 def top_mules(order: list[str], truth: dict, n: int = 10) -> int:

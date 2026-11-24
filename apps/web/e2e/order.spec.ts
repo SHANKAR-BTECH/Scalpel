@@ -24,3 +24,10 @@ test("phone width: who-first does not scroll sideways", async ({ page }) => {
   const [sw, cw] = await page.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.clientWidth]);
   expect(sw).toBeLessThanOrEqual(cw);
 });
+
+test("who-first shows the perfect-knowledge ceiling, so 'not earned' is explained", async ({ page }) => {
+  await page.goto("/order");
+  await expect(page.getByTestId("ceiling-v2")).toContainText("perfect knowledge");
+  await expect(page.getByTestId("v3-table")).toContainText("Perfect knowledge of who is a mule (ceiling)");
+  await expect(page.getByTestId("v3-verdict")).toContainText("no model could have passed this bar");
+});

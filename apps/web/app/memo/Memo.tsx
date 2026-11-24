@@ -9,7 +9,8 @@ import { ClockTable } from "@/components/ClockTable";
 type Role = "officer" | "supervisor";
 type Approval = { proposed: boolean; approved: boolean };
 
-const TITLES: Record<string, string> = { D00191: "A shop's current account", D09001: "The story mule account" };
+const TITLES: Record<string, string> = { D00191: "A business current account", D09001: "The story mule account" };
+const TINY = 100; // paise: hops carrying under Rs 1 of traced money are summed, not listed
 
 export function Memo({ memo }: { memo: DemoData["memo"] }) {
   const [account, setAccount] = useState(memo.cases[0]!.account);
@@ -52,6 +53,7 @@ function MemoBody({ m, memo, role, ap, set }: { m: MemoCase; memo: DemoData["mem
   const pendingSources = memo.sources.filter((s) => s.verified !== true);
   const checked = memo.sources.filter((s) => s.verified === true).length;
   const free = m.balancePaise - m.heldPaise;
+  const tiny = m.hops.filter((h) => h.taintPaise < TINY);
   const whole = ap.approved;
   return (
     <article className="memo card p-4 mt-4 relative" data-testid="memo">
@@ -76,7 +78,7 @@ function MemoBody({ m, memo, role, ap, set }: { m: MemoCase; memo: DemoData["mem
         <div className="overflow-x-auto">
           <table className="w-full text-sm" data-testid="hops">
             <thead><tr className="text-left muted"><th className="py-1 pr-2">Ref (UTR)</th><th className="pr-2">Date</th><th className="pr-2">From</th><th className="pr-2">Layer</th><th className="pr-2">Credit</th><th>Of it, traced fraud money</th></tr></thead>
-            <tbody>{m.hops.map((h) => (
+            <tbody>{m.hops.filter((h) => h.taintPaise >= TINY).map((h) => (
               <tr key={h.utr} className="border-t" style={{ borderColor: "var(--line)" }}>
                 <td className="py-1 pr-2 font-mono text-xs">{h.utr}</td><td className="pr-2">{istDate(h.at)}</td><td className="pr-2 font-mono text-xs">{maskAccount(h.from)}</td>
                 <td className="pr-2">{h.layer ?? "-"}</td><td className="pr-2">{formatRupees(h.amountPaise)}</td><td>{formatRupees(h.taintPaise)}</td>
@@ -84,23 +86,31 @@ function MemoBody({ m, memo, role, ap, set }: { m: MemoCase; memo: DemoData["mem
             </tbody>
           </table>
         </div>
+        {tiny.length > 0 && <p className="text-xs muted mt-1" data-testid="tiny-hops">+ {tiny.length} more credits each carrying under ₹1 of traced money ({formatRupees(tiny.reduce((s, h) => s + h.taintPaise, 0))} in all), from deep layers where the money was spread thin.</p>}
       </section>
 
       <section className="mt-4"><Badges badges={badges} sources={memo.sources} /></section>
 
+      <section className="mt-3 card p-3 text-sm" data-testid="whole-compare">
+        <h3 className="font-semibold">If the whole account were frozen instead</h3>
+        <p>It would lock {formatRupees(m.wholeFreeze.heldPaise)}, which is {formatRupees(m.wholeFreeze.overTracedPaise)} more than the traced money.
+          {" "}Right size? <b style={{ color: m.wholeFreeze.sized === "fail" ? "var(--bad)" : "var(--good)" }} data-testid="whole-sized">{m.wholeFreeze.sized === "fail" ? "✕ No" : "✓ Yes"}</b></p>
+        {m.wholeFreeze.risks.length > 0 && <p className="text-xs mt-1">Grounds a court could quash it on: {m.wholeFreeze.risks.map((r) => `${r.id} ${r.ground}`).join("; ")}.</p>}
+      </section>
+
       <section className="mt-4">
         <h3 className="font-semibold text-sm">Deadlines for this hold (from the engine)</h3>
         <ClockTable m={m} />
-        <p className="text-xs muted mt-1">For holds a bank places on its own suspicion, RBI's draft directions (released 11 Sep 2026, proposed from 1 Apr 2027) would cap the hold at 60 days. That draft is not yet in force.</p>
+        <p className="text-xs muted mt-1 no-print">For holds a bank places on its own suspicion, RBI's draft directions (released 11 Sep 2026, proposed from 1 Apr 2027) would cap the hold at 60 days. That draft is not yet in force.</p>
       </section>
 
       <section className="mt-4 grid gap-3 md:grid-cols-2">
         <div>
           <h3 className="font-semibold text-sm">Why this account (the mule-score model)</h3>
-          <p className="text-sm">Mule score {m.muleScore.toFixed(2)}. Its 3 reasons:</p>
+          <p className="text-sm">Mule score {m.muleScore.toFixed(2)}. {m.muleScore < 0.5 ? "The 3 strongest reasons it looks like an ordinary account:" : "Its 3 reasons:"}</p>
           <ol className="list-decimal ml-5 text-sm">{m.reasons.map((r) => <li key={r}>{r}</li>)}</ol>
           {m.signals.length > 0 && <p className="text-xs muted mt-1">Warning signs: {m.signals.join(", ")}. Phone signs are a simulated stand-in for telecom feeds such as DoT's FRI and MNRL.</p>}
-          <p className="text-xs muted mt-1">The model only orders the to-do list and gives reasons. It cannot place or approve a hold.</p>
+          <p className="text-xs muted mt-1">The mule score orders the to-do list and gives reasons. It is also one of the conditions (R2) before an officer may <i>propose</i> a whole-account freeze, which a supervisor must approve. It never sets the hold amount.</p>
         </div>
         <div>
           <h3 className="font-semibold text-sm">What the account holder is told, and how to contest</h3>
@@ -133,7 +143,7 @@ function MemoBody({ m, memo, role, ap, set }: { m: MemoCase; memo: DemoData["mem
 
       <section className="mt-4">
         <h3 className="font-semibold text-sm">Still being checked</h3>
-        <p className="text-xs muted">Rules and sources not yet checked against the original text. They are never used as a badge's citation.</p>
+        <p className="text-xs muted no-print">Rules and sources not yet checked against the original text. They are never used as a badge's citation.</p>
         <ul className="text-sm list-disc ml-5" data-testid="pending">
           {pending.map((p) => <li key={p.id}><span className="font-mono text-xs">{p.id}</span> {p.plain} <span className="tag">unverified</span></li>)}
           {pendingSources.map((s) => <li key={s.id}>{sourceLabel(s)} <span className="tag">unverified</span></li>)}

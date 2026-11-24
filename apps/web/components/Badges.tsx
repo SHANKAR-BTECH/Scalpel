@@ -1,5 +1,7 @@
 import type { Source } from "@/lib/demo-schema";
-import { citeable, sourceLabel, type Badge } from "@/lib/rules";
+import { citeable, sourceLabel, STATE_MARK, STATE_WORD, type Badge } from "@/lib/rules";
+
+const COLOR = { pass: "var(--good)", caution: "var(--warn)", fail: "var(--bad)" } as const;
 
 export function Badges({ badges, sources }: { badges: Badge[]; sources: Source[] }) {
   return (
@@ -7,12 +9,13 @@ export function Badges({ badges, sources }: { badges: Badge[]; sources: Source[]
       {badges.map((b) => {
         const { cited, uncited } = citeable(b.items.flatMap((i) => i.sources), sources);
         return (
-          <section key={b.key} className="card p-3" data-testid={`badge-${b.key}`}>
+          <section key={b.key} className="card p-3" data-testid={`badge-${b.key}`} data-state={b.state}>
             <h3 className="font-semibold flex items-center gap-2">
               <span aria-hidden className="inline-block w-5 h-5 rounded-full text-center text-white text-xs leading-5"
-                style={{ background: b.pass ? "var(--good)" : "var(--bad)" }}>{b.pass ? "✓" : "✕"}</span>
-              {b.title} <span className="text-sm font-normal">{b.pass ? "Yes" : "No"}</span>
+                style={{ background: COLOR[b.state] }}>{STATE_MARK[b.state]}</span>
+              {b.title} <span className="text-sm font-normal">{STATE_WORD[b.state]}</span>
             </h3>
+            {b.reasons.length > 0 && <ul className="mt-1 text-xs" data-testid="badge-reasons">{b.reasons.map((r) => <li key={r}>{r}</li>)}</ul>}
             <ul className="mt-2 text-sm space-y-1">
               {b.items.map((i) => (
                 <li key={i.id}><span className="font-mono text-xs muted">{i.id}</span> {i.ok ? "✓" : "✕"} {i.plain}</li>

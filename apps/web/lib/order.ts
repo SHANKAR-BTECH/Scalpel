@@ -7,6 +7,7 @@ export const ORDER_LABEL = {
   fcfs: "First come, first served",
   oracle: "Best possible (knows the answers)",
   biggestcase: "Biggest case first",
+  ceiling: "Perfect knowledge of who is a mule (ceiling)",
 } as const;
 
 /** Colour follows the order, never its rank. The oracle is a dashed neutral reference line. */

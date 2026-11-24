@@ -13,6 +13,8 @@
  "headline": {
   "none": {
    "freezeRatio": 0.0,
+   "reportedRatio": 0.0,
+   "reportedMoneyPaise": 27003100,
    "heldPaise": 0,
    "victimMoneyPaise": 61408398,
    "victimMoneyMissedPaise": 61408398,
@@ -22,6 +24,8 @@
   },
   "axe": {
    "freezeRatio": 8.965775674525819,
+   "reportedRatio": 20.389285711640515,
+   "reportedMoneyPaise": 27003100,
    "heldPaise": 550573921,
    "victimMoneyPaise": 61408398,
    "victimMoneyMissedPaise": 30588700,
@@ -31,6 +35,8 @@
   },
   "ruler": {
    "freezeRatio": 0.43972975813503556,
+   "reportedRatio": 1.0,
+   "reportedMoneyPaise": 27003100,
    "heldPaise": 27003100,
    "victimMoneyPaise": 61408398,
    "victimMoneyMissedPaise": 34405298,
@@ -40,6 +46,8 @@
   },
   "scalpel": {
    "freezeRatio": 0.43972975813503556,
+   "reportedRatio": 1.0,
+   "reportedMoneyPaise": 27003100,
    "heldPaise": 27003100,
    "victimMoneyPaise": 61408398,
    "victimMoneyMissedPaise": 34405298,
@@ -54,28 +62,32 @@
    "victimMoneyMissedPaise": 2528161429,
    "victimMoneyPaise": 2528161429,
    "innocentHeldPaise": 0,
-   "peopleWronglyRestricted": 0
+   "peopleWronglyRestricted": 0,
+   "reportedRatio": 0.0
   },
   "axe": {
    "freezeRatio": 15.22132169670088,
    "victimMoneyMissedPaise": 164878328,
    "victimMoneyPaise": 2528161429,
    "innocentHeldPaise": 36118675311,
-   "peopleWronglyRestricted": 2058
+   "peopleWronglyRestricted": 2058,
+   "reportedRatio": 34.57361119115061
   },
   "ruler": {
    "freezeRatio": 0.4402583696723268,
    "victimMoneyMissedPaise": 1415117200,
    "victimMoneyPaise": 2528161429,
    "innocentHeldPaise": 0,
-   "peopleWronglyRestricted": 0
+   "peopleWronglyRestricted": 0,
+   "reportedRatio": 1.0
   },
   "scalpel": {
    "freezeRatio": 0.4402583696723268,
    "victimMoneyMissedPaise": 1415117200,
    "victimMoneyPaise": 2528161429,
    "innocentHeldPaise": 0,
-   "peopleWronglyRestricted": 0
+   "peopleWronglyRestricted": 0,
+   "reportedRatio": 1.0
   }
  },
  "replay": {
@@ -612,7 +624,8 @@
     ],
     "buckets": {
      "securedPaise": 0,
-     "neverComplainedPaise": 34405298,
+     "neverComplainedHeldAccountPaise": 0,
+     "neverComplainedNoTracePaise": 34405298,
      "reportedGoneBeforeHoldPaise": 0,
      "reportedNotReachedOrNotTracedPaise": 27003100
     }
@@ -995,7 +1008,8 @@
     ],
     "buckets": {
      "securedPaise": 30782836,
-     "neverComplainedPaise": 30619132,
+     "neverComplainedHeldAccountPaise": 30432,
+     "neverComplainedNoTracePaise": 30588700,
      "reportedGoneBeforeHoldPaise": 6430,
      "reportedNotReachedOrNotTracedPaise": 0
     }
@@ -1378,7 +1392,8 @@
     ],
     "buckets": {
      "securedPaise": 26996670,
-     "neverComplainedPaise": 34405298,
+     "neverComplainedHeldAccountPaise": 3816598,
+     "neverComplainedNoTracePaise": 30588700,
      "reportedGoneBeforeHoldPaise": 6430,
      "reportedNotReachedOrNotTracedPaise": 0
     }
@@ -1761,7 +1776,8 @@
     ],
     "buckets": {
      "securedPaise": 26996670,
-     "neverComplainedPaise": 34405298,
+     "neverComplainedHeldAccountPaise": 3816598,
+     "neverComplainedNoTracePaise": 30588700,
      "reportedGoneBeforeHoldPaise": 6430,
      "reportedNotReachedOrNotTracedPaise": 0
     }
@@ -9133,16 +9149,19 @@
   ],
   "v3": {
    "verdict": "not earned",
-   "sentence": "Split-payment world (locked in advance; high phone-signal noise, K=10, 3 seeds): the mule-score model's order got 97.1% of the best possible, against 96.7% for biggest amount first and 42.2% for biggest case first. That is +0.3 points against the better simple rule; the pass mark was +2, so the model's order has not earned its place in this world.",
+   "sentence": "Split-payment world (locked in advance; high phone-signal noise, K=10, 3 seeds): the mule-score model's order got 97.1% of the best possible, against 96.7% for biggest amount first and 42.2% for biggest case first. That is +0.3 points against the better simple rule; the pass mark was +2, so the model's order has not earned its place in this world. Even perfect knowledge of who is a mule would only reach 97.1% (+0.4 points), so no model could have passed this bar: in this world the amount already gives away who the mules are.",
    "marginPoints": 0.32,
    "passMarkPoints": 2.0,
    "headline": {
     "biggest": 96.73,
     "biggestcase": 42.18,
+    "ceiling": 97.14,
     "fcfs": 13.88,
     "scalpel": 97.05,
     "signrule": 75.27
    },
+   "ceilingMarginPoints": 0.41,
+   "barReachable": false,
    "high": {
     "10": {
      "biggest": [
@@ -9154,6 +9173,11 @@
       42.18,
       28.41,
       52.69
+     ],
+     "ceiling": [
+      97.14,
+      96.52,
+      97.51
      ],
      "fcfs": [
       13.88,
@@ -9182,6 +9206,11 @@
       44.98,
       75.49
      ],
+     "ceiling": [
+      99.0,
+      98.56,
+      99.42
+     ],
      "fcfs": [
       26.8,
       20.89,
@@ -9209,6 +9238,11 @@
       22.29,
       38.26
      ],
+     "ceiling": [
+      95.63,
+      94.24,
+      97.05
+     ],
      "fcfs": [
       9.79,
       7.81,
@@ -9227,6 +9261,11 @@
     }
    },
    "lock": "pipeline/configs/v3_split.lock"
+  },
+  "ceilingV2": {
+   "biggest": 98.06,
+   "ceiling": 98.09,
+   "scalpel": 97.82
   }
  },
  "worst": [
@@ -9569,7 +9608,7 @@
      {
       "rule": "R4",
       "ok": true,
-      "note": "Under ₹50,000: fast restoration path, no court needed",
+      "note": "Hold under ₹50,000: victims may be repaid through the fast refund route without a court order (victim refund, not a release for the holder)",
       "sources": [
        "mha-sop-2026-01"
       ],
@@ -9593,6 +9632,34 @@
      "allowed": true,
      "sized": true,
      "timed": true
+    },
+    "badgeStates": {
+     "allowed": "pass",
+     "sized": "pass",
+     "timed": "caution"
+    },
+    "badgeReasons": {
+     "allowed": [],
+     "sized": [],
+     "timed": [
+      "3 of 3 deadlines rest on a source still being checked or on our own reading"
+     ]
+    },
+    "asOf": 1798569000000,
+    "wholeFreeze": {
+     "heldPaise": 3750000,
+     "overTracedPaise": 750000,
+     "sized": "fail",
+     "risks": [
+      {
+       "id": "Q1",
+       "ground": "Whole account frozen instead of the traced amount"
+      },
+      {
+       "id": "Q2",
+       "ground": "Holds ₹7,500 more than the traced victim money"
+      }
+     ]
     },
     "wholeFreezeChecks": [
      {
@@ -9619,7 +9686,7 @@
      {
       "rule": "R4",
       "ok": true,
-      "note": "Under ₹50,000: fast restoration path, no court needed",
+      "note": "Hold under ₹50,000: victims may be repaid through the fast refund route without a court order (victim refund, not a release for the holder)",
       "sources": [
        "mha-sop-2026-01"
       ],
@@ -9642,12 +9709,13 @@
     "clocks": [
      {
       "id": "grm_upload",
-      "label": "Upload to the I4C grievance module",
+      "label": "Bank uploads the holder's grievance to the grievance module",
       "days": 7,
-      "startsOn": "HOLD_PLACED",
-      "dueAt": 1799260199999,
+      "startsOn": "REPLY_RECEIVED",
+      "dueAt": null,
       "onExpiry": "OVERDUE",
       "status": null,
+      "state": "NOT_STARTED",
       "sources": [
        "mha-sop-2026-01"
       ],
@@ -9657,12 +9725,13 @@
      },
      {
       "id": "io_decision",
-      "label": "Investigating officer decides",
+      "label": "IO releases or records reasons, else District Grievance Officer",
       "days": 15,
-      "startsOn": "HOLD_PLACED",
-      "dueAt": 1799951399999,
+      "startsOn": "GRM_UPLOADED",
+      "dueAt": null,
       "onExpiry": "ESCALATE",
       "status": null,
+      "state": "NOT_STARTED",
       "sources": [
        "mha-sop-2026-01"
       ],
@@ -9678,6 +9747,7 @@
       "dueAt": 1806431399999,
       "onExpiry": "DECIDE",
       "status": "assumed",
+      "state": "RUNNING",
       "sources": [
        "mha-sop-2026-01"
       ],
@@ -9781,7 +9851,7 @@
     "muleScore": 0,
     "reasons": [
      "Business current account with regular trade",
-     "Few senders (51)",
+     "Money came from 51 different senders",
      "Money left within 94 minutes of arriving"
     ],
     "signals": [
@@ -9872,7 +9942,7 @@
      {
       "rule": "R4",
       "ok": true,
-      "note": "Under ₹50,000: fast restoration path, no court needed",
+      "note": "Hold under ₹50,000: victims may be repaid through the fast refund route without a court order (victim refund, not a release for the holder)",
       "sources": [
        "mha-sop-2026-01"
       ],
@@ -9897,16 +9967,53 @@
      "sized": true,
      "timed": true
     },
+    "badgeStates": {
+     "allowed": "pass",
+     "sized": "pass",
+     "timed": "caution"
+    },
+    "badgeReasons": {
+     "allowed": [],
+     "sized": [],
+     "timed": [
+      "3 of 3 deadlines rest on a source still being checked or on our own reading"
+     ]
+    },
+    "asOf": 1798569000000,
+    "wholeFreeze": {
+     "heldPaise": 32867911,
+     "overTracedPaise": 32172870,
+     "sized": "fail",
+     "risks": [
+      {
+       "id": "Q1",
+       "ground": "Whole account frozen instead of the traced amount"
+      },
+      {
+       "id": "Q2",
+       "ground": "Holds ₹3,21,728.70 more than the traced victim money"
+      },
+      {
+       "id": "Q8",
+       "ground": "Likely innocent recipient fully frozen"
+      },
+      {
+       "id": "Q9",
+       "ground": "Business account fully frozen: livelihood harm"
+      }
+     ]
+    },
     "wholeFreezeChecks": null,
     "clocks": [
      {
       "id": "grm_upload",
-      "label": "Upload to the I4C grievance module",
+      "label": "Bank uploads the holder's grievance to the grievance module",
       "days": 7,
-      "startsOn": "HOLD_PLACED",
-      "dueAt": 1799260199999,
+      "startsOn": "REPLY_RECEIVED",
+      "dueAt": null,
       "onExpiry": "OVERDUE",
       "status": null,
+      "state": "NOT_STARTED",
       "sources": [
        "mha-sop-2026-01"
       ],
@@ -9916,12 +10023,13 @@
      },
      {
       "id": "io_decision",
-      "label": "Investigating officer decides",
+      "label": "IO releases or records reasons, else District Grievance Officer",
       "days": 15,
-      "startsOn": "HOLD_PLACED",
-      "dueAt": 1799951399999,
+      "startsOn": "GRM_UPLOADED",
+      "dueAt": null,
       "onExpiry": "ESCALATE",
       "status": null,
+      "state": "NOT_STARTED",
       "sources": [
        "mha-sop-2026-01"
       ],
@@ -9937,6 +10045,7 @@
       "dueAt": 1806431399999,
       "onExpiry": "DECIDE",
       "status": "assumed",
+      "state": "RUNNING",
       "sources": [
        "mha-sop-2026-01"
       ],
@@ -9953,9 +10062,8 @@
   ]
  },
  "provenance": {
-  "commit": "1f11d52",
-  "demoSha256": "196a762ebf8c7247abdd6293437a2659c7aa0a8abedeb4e628f00734b146d95f",
+  "commit": "2cd9d90",
   "policyId": "scalpel-2026-12",
-  "generatedAt": "2026-11-24T09:32:44Z"
+  "generatedAt": "2026-11-24T12:25:06Z"
  }
 }
