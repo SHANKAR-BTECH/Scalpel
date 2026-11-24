@@ -7,3 +7,9 @@ coverage
 __pycache__
 *.pyc
 .vercel
+
+# Python pipeline
+pipeline/.venv/
+pipeline/out/
+.superpowers/
+.handoff/

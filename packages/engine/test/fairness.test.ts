@@ -29,14 +29,14 @@ describe("fairness report", () => {
       { account: "S2", held: rupees(10_000), traced: rupees(10_000), group: "SAVINGS" },
       { account: "C1", held: rupees(2_00_000), traced: rupees(25_000), group: "CURRENT" },
     ]);
-    expect(r.byGroup.SAVINGS).toEqual({ held: rupees(60_000), traced: rupees(30_000), freezeRatio: 2, innocentHeld: rupees(30_000), accounts: 2 });
-    expect(r.byGroup.CURRENT).toEqual({ held: rupees(2_00_000), traced: rupees(25_000), freezeRatio: 8, innocentHeld: rupees(1_75_000), accounts: 1 });
-    expect(r.overall).toEqual({ held: rupees(2_60_000), traced: rupees(55_000), freezeRatio: 260 / 55, innocentHeld: rupees(2_05_000), accounts: 3 });
+    expect(r.byGroup.SAVINGS).toEqual({ held: rupees(60_000), traced: rupees(30_000), freezeRatio: 2, innocentHeld: rupees(30_000), victimMoneyNotHeld: 0, recoveryRate: 1, accounts: 2 });
+    expect(r.byGroup.CURRENT).toEqual({ held: rupees(2_00_000), traced: rupees(25_000), freezeRatio: 8, innocentHeld: rupees(1_75_000), victimMoneyNotHeld: 0, recoveryRate: 1, accounts: 1 });
+    expect(r.overall).toEqual({ held: rupees(2_60_000), traced: rupees(55_000), freezeRatio: 260 / 55, innocentHeld: rupees(2_05_000), victimMoneyNotHeld: 0, recoveryRate: 1, accounts: 3 });
   });
 
   it("nothing traced and nothing held: ratio 0, not an error; empty list is fine too", () => {
     expect(fairnessReport([{ account: "N1", held: 0, traced: 0, group: "SAVINGS" }]).overall.freezeRatio).toBe(0);
-    expect(fairnessReport([])).toEqual({ overall: { held: 0, traced: 0, freezeRatio: 0, innocentHeld: 0, accounts: 0 }, byGroup: {} });
+    expect(fairnessReport([])).toEqual({ overall: { held: 0, traced: 0, freezeRatio: 0, innocentHeld: 0, victimMoneyNotHeld: 0, recoveryRate: "no-trace", accounts: 0 }, byGroup: {} });
   });
 
   it("rejects bad amounts", () => {
@@ -54,5 +54,35 @@ describe("fairness report", () => {
       expect(gs.reduce((s, g) => s + g.accounts, 0)).toBe(rows.length);
       expect(r.overall.innocentHeld).toBeLessThanOrEqual(r.overall.held);
     }), { numRuns: 1000 });
+  });
+});
+
+describe("fairness report: money missed and recovery (phase 2 fixes)", () => {
+  it("holding nothing no longer looks perfect: ₹30,000 traced, nothing held", () => {
+    const r = fairnessReport([{ account: "M1", held: 0, traced: rupees(30_000), group: "SAVINGS" }]);
+    expect(r.overall.freezeRatio).toBe(0);
+    expect(r.overall.victimMoneyNotHeld).toBe(rupees(30_000));
+    expect(r.overall.recoveryRate).toBe(0);
+  });
+
+  it("phase 1 story: 15.12x whole freeze misses nothing and recovers 100%", () => {
+    const r = fairnessReport([{ account: "M1", held: rupees(453_600), traced: rupees(30_000), group: "SAVINGS" }]);
+    expect(r.overall.victimMoneyNotHeld).toBe(0);
+    expect(r.overall.recoveryRate).toBe(1);
+  });
+
+  it("money held but nothing traced is reported as 'no-trace', and survives JSON", () => {
+    const r = fairnessReport([{ account: "X", held: rupees(10_000), traced: 0, group: "SAVINGS" }]);
+    expect(r.overall.freezeRatio).toBe("no-trace");
+    expect(JSON.parse(JSON.stringify(r)).overall.freezeRatio).toBe("no-trace");
+  });
+
+  it("money missed is counted per account: over-holding one account never hides a miss on another", () => {
+    const r = fairnessReport([
+      { account: "A", held: rupees(50_000), traced: rupees(10_000), group: "G" },
+      { account: "B", held: 0, traced: rupees(20_000), group: "G" },
+    ]);
+    expect(r.overall.victimMoneyNotHeld).toBe(rupees(20_000));
+    expect(r.overall.recoveryRate).toBeCloseTo(10_000 / 30_000, 10);
   });
 });
