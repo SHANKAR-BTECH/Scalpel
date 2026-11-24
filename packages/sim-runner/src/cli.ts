@@ -1,5 +1,6 @@
 /**
  * Usage: tsx src/cli.ts <worldDir> --policy 0|A|B|C --out <decisions.json> [--assessments <file in worldDir>]
+ *        tsx src/cli.ts <worldDir> --memo <memo.json> --accounts D09001,D00191
  * The world folder holds world.json (and optionally signals.json and assessments*.json). Nothing else.
  */
 import { writeFileSync, mkdirSync } from "node:fs";
@@ -8,6 +9,7 @@ import { HoldPolicy } from "./schema";
 import { firstSeen, loadWorldDir, readOptional, runHolds, traceWorld } from "./run";
 import { runScalpel } from "./scalpel";
 import { buildQueues } from "./queue";
+import { buildMemo } from "./memo";
 import { parseAssessments, parseSignals } from "./schema";
 
 function arg(name: string): string | undefined {
@@ -17,6 +19,16 @@ function arg(name: string): string | undefined {
 
 const dir = process.argv[2];
 if (!dir || dir.startsWith("--")) throw new Error("usage: cli.ts <worldDir> --policy 0|A|B|C --out <file>  |  cli.ts <worldDir> --queues <file> [--assessments f]");
+const memoOut = arg("memo");
+if (memoOut) {
+  const accounts = (arg("accounts") ?? "").split(",").filter(Boolean);
+  if (!accounts.length) throw new Error("--memo needs --accounts a,b");
+  const world = loadWorldDir(dir);
+  mkdirSync(dirname(memoOut), { recursive: true });
+  writeFileSync(memoOut, JSON.stringify({ world: world.name, cases: buildMemo(world, dir, accounts) }) + "\n");
+  console.log(`${world.name}: memo for ${accounts.join(", ")} -> ${memoOut}`);
+  process.exit(0);
+}
 const queuesOut = arg("queues");
 if (queuesOut) {
   const world = loadWorldDir(dir);

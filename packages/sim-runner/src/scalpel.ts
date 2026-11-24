@@ -14,7 +14,7 @@ import { readOptional, traceWorld } from "./run";
 
 const POLICY_DIR = fileURLToPath(new URL("../../../policies", import.meta.url));
 let cached: { P: PolicySet; overlays: Overlay[] } | undefined;
-function policy() {
+export function policy() {
   if (!cached) {
     const { policies, overlays } = loadPolicies(POLICY_DIR);
     cached = { P: policies.find((p) => p.id === "scalpel-2026-12")!, overlays };
@@ -23,7 +23,7 @@ function policy() {
 }
 
 /** A valid police request (Karnataka: police may freeze), made from the complaints. */
-function requisition(world: World, account: string, amount: number): Requisition {
+export function requisition(world: World, account: string, amount: number): Requisition {
   const linked = world.complaints.map((c) => c.txnId);
   return {
     id: `REQ-${account}`, receivedAt: world.cutoff, basis: "BNSS_106",
