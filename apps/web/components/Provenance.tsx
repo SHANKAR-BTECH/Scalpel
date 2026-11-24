@@ -11,7 +11,8 @@ function fingerprint(): string {
 export function Provenance() {
   const p = demo.provenance;
   return (
-    <footer className="mt-10 border-t pt-3 text-xs muted" style={{ borderColor: "var(--line)" }}>
+    <footer className="mt-16 border-t pt-5 text-xs muted leading-relaxed" style={{ borderColor: "var(--line)" }}>
+      <div className="eyebrow mb-1.5 no-print">Where these numbers come from</div>
       <p>
         Data built from code at commit <span className="font-mono">{p.commit}</span> · rules <span className="font-mono">{p.policyId}</span> · sha256 of data/demo.json{" "}
         <span className="font-mono break-all" data-testid="sha">{fingerprint()}</span> · generated {p.generatedAt}

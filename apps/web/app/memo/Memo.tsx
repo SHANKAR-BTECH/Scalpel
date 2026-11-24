@@ -5,6 +5,9 @@ import { formatRupees } from "@/lib/money";
 import { badgesFor, istDate, maskAccount, sourceLabel, stillBeingChecked } from "@/lib/rules";
 import { Badges } from "@/components/Badges";
 import { ClockTable } from "@/components/ClockTable";
+import { Segmented } from "@/components/ui/Segmented";
+import { Button } from "@/components/ui/Button";
+import { ROLES } from "@/components/Roles";
 
 type Role = "officer" | "supervisor";
 type Approval = { proposed: boolean; approved: boolean };
@@ -26,22 +29,23 @@ export function Memo({ memo }: { memo: DemoData["memo"] }) {
 
   return (
     <>
-      <div className="no-print flex flex-wrap gap-2 items-center mt-4">
-        {memo.cases.map((c) => (
-          <button key={c.account} type="button" onClick={() => setAccount(c.account)} aria-pressed={c.account === account}
-            className="rounded-md px-3 py-1.5 border text-sm" style={{ borderColor: "var(--line)", background: c.account === account ? "var(--card)" : "transparent", fontWeight: c.account === account ? 600 : 400 }}>
-            {TITLES[c.account] ?? c.account}
-          </button>
-        ))}
-        <span className="ml-auto text-sm flex items-center gap-2">
-          <label htmlFor="role">Acting as</label>
-          <select id="role" value={role} onChange={(e) => setRole(e.target.value as Role)} className="border rounded-md px-2 py-1" style={{ borderColor: "var(--line)", background: "var(--card)" }}>
-            <option value="officer">Officer</option><option value="supervisor">Supervisor</option>
-          </select>
-          <span className="tag">demo roles, not real login</span>
-        </span>
-        <button type="button" onClick={() => window.print()} className="rounded-md px-3 py-1.5 text-white text-sm" style={{ background: "var(--s1)" }}>Print memo</button>
+      <div className="no-print card p-4 mt-6 flex flex-wrap gap-4 items-center justify-between">
+        <div className="flex flex-col gap-1.5">
+          <span className="eyebrow">Pick an account</span>
+          <Segmented label="Account" value={account} onChange={setAccount}
+            options={memo.cases.map((c) => ({ value: c.account, label: TITLES[c.account] ?? c.account }))} />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <span className="eyebrow">Acting as <span className="normal-case tracking-normal font-normal">(demo roles, not real login)</span></span>
+          <Segmented label="Acting as" value={role} onChange={setRole} size="sm"
+            options={[{ value: "officer", label: "Officer", testid: "role-officer" }, { value: "supervisor", label: "Supervisor", testid: "role-supervisor" }]} />
+        </div>
+        <Button variant="primary" onClick={() => window.print()}>
+          <svg width="15" height="15" viewBox="0 0 16 16" aria-hidden fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"><path d="M4 6V1.8h8V6M4 12H2.5V6.5h11V12H12M4.5 9.5h7v5h-7z" /></svg>
+          Print memo
+        </Button>
       </div>
+      <RoleNow role={role} />
       <MemoBody m={m} memo={memo} role={role} ap={ap} set={set} />
     </>
   );
@@ -56,11 +60,12 @@ function MemoBody({ m, memo, role, ap, set }: { m: MemoCase; memo: DemoData["mem
   const tiny = m.hops.filter((h) => h.taintPaise < TINY);
   const whole = ap.approved;
   return (
-    <article className="memo card p-4 mt-4 relative" data-testid="memo">
+    <article className="memo card p-5 sm:p-8 mt-5 relative" data-testid="memo" style={{ borderTop: "4px solid var(--accent)" }}>
       <p className="watermark" aria-hidden>SIMULATION – NOT AN OFFICIAL ORDER</p>
       <header className="flex flex-wrap justify-between gap-2 border-b pb-2" style={{ borderColor: "var(--line)" }}>
         <div>
-          <h2 className="text-lg font-semibold">Hold memo · Bharat Demo Bank</h2>
+          <p className="eyebrow no-print">Police-requested lien record</p>
+          <h2 className="serif text-[22px] font-semibold">Hold memo · Bharat Demo Bank</h2>
           <p className="text-sm muted">{m.regimeLabel} · request {m.requisitionBasis.replace("_", " s.")} · {m.requisitionStatus.toLowerCase()} · rules {memo.policyId} ({memo.policyStatus})</p>
         </div>
         <div className="text-sm text-right">
@@ -70,7 +75,7 @@ function MemoBody({ m, memo, role, ap, set }: { m: MemoCase; memo: DemoData["mem
       </header>
 
       <section className="mt-3">
-        <p className="text-xl font-semibold" data-testid="hold-line">
+        <p className="text-xl font-semibold" data-testid="hold-line" style={{ color: whole ? "var(--freeze)" : "var(--accent-ink)" }}>
           {whole ? <>Whole account frozen: {formatRupees(m.balancePaise)}</> : <>Hold {formatRupees(m.heldPaise)} of {formatRupees(m.balancePaise)}. The other {formatRupees(free)} stays usable.</>}
         </p>
         <p className="text-sm muted">Traced from the complaints: {formatRupees(m.tracedPaise)}. A whole freeze would have locked {formatRupees(m.balancePaise)}.</p>
@@ -84,10 +89,10 @@ function MemoBody({ m, memo, role, ap, set }: { m: MemoCase; memo: DemoData["mem
         </p>
         <h3 className="mt-3 font-semibold text-sm">Money trail into this account</h3>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm" data-testid="hops">
-            <thead><tr className="text-left muted"><th className="py-1 pr-2">Ref (UTR)</th><th className="pr-2">Date</th><th className="pr-2">From</th><th className="pr-2">Layer</th><th className="pr-2">Credit</th><th>Of it, traced fraud money</th></tr></thead>
+          <table className="data-table text-sm" data-testid="hops">
+            <thead><tr><th>Ref (UTR)</th><th className="pr-2">Date</th><th className="pr-2">From</th><th className="pr-2">Layer</th><th className="pr-2">Credit</th><th>Of it, traced fraud money</th></tr></thead>
             <tbody>{m.hops.filter((h) => h.taintPaise >= TINY).map((h) => (
-              <tr key={h.utr} className="border-t" style={{ borderColor: "var(--line)" }}>
+              <tr key={h.utr}>
                 <td className="py-1 pr-2 font-mono text-xs">{h.utr}</td><td className="pr-2">{istDate(h.at)}</td><td className="pr-2 font-mono text-xs">{maskAccount(h.from)}</td>
                 <td className="pr-2">{h.layer ?? "-"}</td><td className="pr-2">{formatRupees(h.amountPaise)}</td><td>{formatRupees(h.taintPaise)}</td>
               </tr>))}
@@ -97,9 +102,17 @@ function MemoBody({ m, memo, role, ap, set }: { m: MemoCase; memo: DemoData["mem
         {tiny.length > 0 && <p className="text-xs muted mt-1" data-testid="tiny-hops">+ {tiny.length} more credits each carrying under ₹1 of traced money ({formatRupees(tiny.reduce((s, h) => s + h.taintPaise, 0))} in all), from deep layers where the money was spread thin.</p>}
       </section>
 
-      <section className="mt-4"><Badges badges={badges} sources={memo.sources} /></section>
+      <section className="mt-6">
+        <h3 className="font-semibold text-sm">The three checks</h3>
+        <div className="no-print mt-2 mb-4 rounded-xl p-4 text-[14.5px] leading-relaxed" style={{ background: "var(--bg)", border: "1px solid var(--line)" }} data-testid="why-sources">
+          <b>Why are there links under each check?</b> Each check rests on a law, an RBI or police rule, or a court judgment. The link opens that original document,
+          so a bank manager, a lawyer or a judge can check the hold for themselves instead of trusting this page. Only sources we have read against the original are
+          linked here; anything not yet checked is listed under &ldquo;Still being checked&rdquo; at the bottom and never counts towards a green tick.
+        </div>
+        <Badges badges={badges} sources={memo.sources} />
+      </section>
 
-      <section className="mt-3 card p-3 text-sm" data-testid="whole-compare">
+      <section className="mt-4 card-flat p-4 text-sm" data-testid="whole-compare" style={{ background: "var(--freeze-tint)", borderColor: "transparent" }}>
         <h3 className="font-semibold">If the whole account were frozen instead</h3>
         <p>It would lock {formatRupees(m.wholeFreeze.heldPaise)}, which is {formatRupees(m.wholeFreeze.overTracedPaise)} more than the traced money.
           {" "}Right size? <b style={{ color: m.wholeFreeze.sized === "fail" ? "var(--bad)" : "var(--good)" }} data-testid="whole-sized">{m.wholeFreeze.sized === "fail" ? "✕ No" : "✓ Yes"}</b></p>
@@ -132,17 +145,15 @@ function MemoBody({ m, memo, role, ap, set }: { m: MemoCase; memo: DemoData["mem
         </div>
       </section>
 
-      <section className="mt-4 card p-3" data-testid="approvals">
+      <section className="mt-4 card-flat p-4" data-testid="approvals">
         <h3 className="font-semibold text-sm">Approvals</h3>
         <p className="text-sm">Exact hold: proposed by Officer · approved by Supervisor <span className="tag">demo roles</span></p>
         {m.suggestedWholeFreeze ? (
           <div className="mt-2 text-sm">
             <p>The rules would also allow a <b>whole-account freeze</b> here (R2: high mule score, several warning signs). It needs two people.</p>
             <div className="no-print flex flex-wrap gap-2 mt-2">
-              <button type="button" data-testid="propose" disabled={role !== "officer" || ap.proposed} onClick={() => set({ proposed: true })}
-                className="rounded-md px-3 py-1 border disabled:opacity-40" style={{ borderColor: "var(--line)" }}>Officer: propose whole freeze</button>
-              <button type="button" data-testid="approve" disabled={role !== "supervisor" || !ap.proposed || ap.approved} onClick={() => set({ approved: true })}
-                className="rounded-md px-3 py-1 border disabled:opacity-40" style={{ borderColor: "var(--line)" }}>Supervisor: approve</button>
+              <Button data-testid="propose" className="!py-1.5 !text-sm" disabled={role !== "officer" || ap.proposed} onClick={() => set({ proposed: true })}>Officer: propose whole freeze</Button>
+              <Button data-testid="approve" className="!py-1.5 !text-sm" disabled={role !== "supervisor" || !ap.proposed || ap.approved} onClick={() => set({ approved: true })}>Supervisor: approve</Button>
             </div>
             <p className="mt-1" data-testid="wf-status">{ap.approved ? "Whole freeze proposed by Officer and approved by Supervisor." : ap.proposed ? "Proposed by Officer. Waiting for Supervisor." : "Not proposed. The exact hold stands."}</p>
           </div>
@@ -159,5 +170,27 @@ function MemoBody({ m, memo, role, ap, set }: { m: MemoCase; memo: DemoData["mem
         <p className="text-xs muted mt-2">How I checked my sources: {checked} of {memo.sources.length} sources read against the original judgment or document. One rule was corrected after the check showed its press summary was wrong.</p>
       </section>
     </article>
+  );
+}
+
+/** What the person at the keyboard may do right now, in plain words. Changes with the Officer / Supervisor switch. */
+function RoleNow({ role }: { role: Role }) {
+  const r = ROLES[role];
+  return (
+    <section className="no-print mt-4 rounded-2xl p-5 grid gap-4 md:grid-cols-[1fr_1fr_1fr]" style={{ background: "var(--accent-tint)", border: "1px solid var(--accent-line)" }} data-testid="role-now">
+      <div>
+        <p className="eyebrow" style={{ color: "var(--accent-ink)" }}>You are acting as</p>
+        <p className="font-semibold text-[20px] mt-1">{r.title}</p>
+        <p className="text-[14.5px] muted mt-1">{r.who} Two people are enough to run every hold: one officer and one supervisor.</p>
+      </div>
+      <div>
+        <p className="eyebrow" style={{ color: "var(--good)" }}>You can</p>
+        <ul className="mt-1.5 text-[15px] space-y-1 list-disc ml-5">{r.can.map((x) => <li key={x}>{x}</li>)}</ul>
+      </div>
+      <div>
+        <p className="eyebrow" style={{ color: "var(--bad)" }}>You cannot</p>
+        <ul className="mt-1.5 text-[15px] space-y-1 list-disc ml-5">{r.cannot.map((x) => <li key={x}>{x}</li>)}</ul>
+      </div>
+    </section>
   );
 }

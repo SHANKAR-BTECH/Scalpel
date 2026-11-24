@@ -53,7 +53,7 @@ test("whole freeze needs two people: Officer proposes, Supervisor approves", asy
   await expect(page.getByTestId("approve")).toBeDisabled();
   await page.getByTestId("propose").click();
   await expect(page.getByTestId("approve")).toBeDisabled();
-  await page.getByLabel("Acting as").selectOption("supervisor");
+  await page.getByTestId("role-supervisor").click();
   await expect(page.getByTestId("propose")).toBeDisabled();
   await page.getByTestId("approve").click();
   await expect(page.getByTestId("wf-status")).toHaveText("Whole freeze proposed by Officer and approved by Supervisor.");

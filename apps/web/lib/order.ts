@@ -36,4 +36,5 @@ export function atAction(c: Curves, name: (typeof DRAWN)[number], action: number
   return c[name].mean[best]!;
 }
 
-export const pct = (v: number) => `${v.toFixed(1)}%`;
+/** One decimal, halves rounded up (97.05 -> 97.1), matching the sentences the grader exports. */
+export const pct = (v: number) => `${(Math.round(v * 10 + 1e-6) / 10).toFixed(1)}%`;

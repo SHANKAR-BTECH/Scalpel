@@ -11,7 +11,7 @@ export function HeadlineCards({ headline }: { headline: DemoData["headline"] }) 
       {POLICY_KEYS.map((k) => {
         const h = headline[k];
         return (
-          <section key={k} className="card p-4" data-testid={`card-${k}`}>
+          <section key={k} className="card-flat p-4" data-testid={`card-${k}`} style={k === "scalpel" ? { borderColor: "var(--accent-line)", background: "var(--accent-tint)" } : undefined}>
             <h3 className="font-semibold">{POLICY_LABEL[k]}</h3>
             <p className="text-xs muted mt-1 min-h-8">{POLICY_NOTE[k]}</p>
             <dl className="mt-3 grid grid-cols-2 gap-2">

@@ -2,6 +2,7 @@ import type { Source } from "@/lib/demo-schema";
 import { citeable, sourceLabel, STATE_MARK, STATE_WORD, type Badge } from "@/lib/rules";
 
 const COLOR = { pass: "var(--good)", caution: "var(--warn)", fail: "var(--bad)" } as const;
+const TINT = { pass: "var(--good-tint)", caution: "var(--warn-tint)", fail: "var(--freeze-tint)" } as const;
 
 export function Badges({ badges, sources }: { badges: Badge[]; sources: Source[] }) {
   return (
@@ -9,11 +10,11 @@ export function Badges({ badges, sources }: { badges: Badge[]; sources: Source[]
       {badges.map((b) => {
         const { cited, uncited } = citeable(b.items.flatMap((i) => i.sources), sources);
         return (
-          <section key={b.key} className="card p-3" data-testid={`badge-${b.key}`} data-state={b.state}>
+          <section key={b.key} className="card p-4" data-testid={`badge-${b.key}`} data-state={b.state} style={{ borderTop: `3px solid ${COLOR[b.state]}` }}>
             <h3 className="font-semibold flex items-center gap-2">
-              <span aria-hidden className="inline-block w-5 h-5 rounded-full text-center text-white text-xs leading-5"
+              <span aria-hidden className="inline-block w-5 h-5 rounded-full text-center text-white text-xs leading-5 shrink-0"
                 style={{ background: COLOR[b.state] }}>{STATE_MARK[b.state]}</span>
-              {b.title} <span className="text-sm font-normal">{STATE_WORD[b.state]}</span>
+              {b.title} <span className="text-[12.5px] font-semibold rounded-full px-2 py-0.5 ml-auto" style={{ color: COLOR[b.state], background: TINT[b.state] }}>{STATE_WORD[b.state]}</span>
             </h3>
             {b.reasons.length > 0 && <ul className="mt-1 text-xs" data-testid="badge-reasons">{b.reasons.map((r) => <li key={r}>{r}</li>)}</ul>}
             <ul className="mt-2 text-sm space-y-1">
@@ -25,7 +26,7 @@ export function Badges({ badges, sources }: { badges: Badge[]; sources: Source[]
               <span className="muted">Sources (checked against the original):</span>
               {cited.length ? (
                 <ul className="list-disc ml-4">
-                  {cited.map((s) => <li key={s.id}>{s.url ? <a href={s.url} className="underline">{sourceLabel(s)}</a> : sourceLabel(s)}</li>)}
+                  {cited.map((s) => <li key={s.id}>{s.url ? <a href={s.url} className="link" target="_blank" rel="noreferrer">{sourceLabel(s)}</a> : sourceLabel(s)}</li>)}
                 </ul>
               ) : <p>none yet</p>}
               {uncited.length > 0 && <p className="mt-1"><span className="tag">source being checked</span> {uncited.length} more, listed below</p>}

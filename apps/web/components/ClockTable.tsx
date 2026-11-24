@@ -14,11 +14,11 @@ const START: Record<string, string> = { HOLD_PLACED: "hold placed", REPLY_RECEIV
 export function ClockTable({ m }: { m: MemoCase }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm" data-testid="clocks">
-        <thead><tr className="text-left muted"><th className="py-1 pr-2">Deadline</th><th className="pr-2">Days</th><th className="pr-2">Starts at</th><th className="pr-2">Due</th><th className="pr-2">If missed</th><th className="pr-2">Now</th><th>Source</th></tr></thead>
+      <table className="data-table text-sm" data-testid="clocks">
+        <thead><tr><th>Deadline</th><th className="pr-2">Days</th><th className="pr-2">Starts at</th><th className="pr-2">Due</th><th className="pr-2">If missed</th><th className="pr-2">Now</th><th>Source</th></tr></thead>
         <tbody>
           {m.clocks.map((c) => (
-            <tr key={c.id} className="border-t" style={{ borderColor: "var(--line)" }}>
+            <tr key={c.id}>
               <td className="py-1 pr-2">{c.label}</td><td className="pr-2">{c.days}</td><td className="pr-2">{START[c.startsOn] ?? c.startsOn}</td><td className="pr-2">{istDate(c.dueAt)}</td>
               <td className="pr-2">{EXPIRY[c.onExpiry] ?? c.onExpiry}</td>
               <td className="pr-2" data-testid={`clock-${c.id}`}>{STATE[c.state] ?? c.state}</td>
