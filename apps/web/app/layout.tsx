@@ -22,8 +22,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <DeskProvider>
             <Banner />
             <Nav />
-            <main className="relative z-[1] lg:pl-[268px]">
-              <div className="mx-auto max-w-[1240px] px-4 sm:px-6 lg:px-8 pb-12">{children}</div>
+            <main className="relative z-[1]">
+              <div className="mx-auto max-w-[1260px] px-4 sm:px-6 lg:px-9 pb-14">{children}</div>
             </main>
           </DeskProvider>
         </MotionProvider>

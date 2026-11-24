@@ -5,9 +5,9 @@ import { PageHead } from "@/components/ui/Explain";
 export default function InboxPage() {
   return (
     <>
-      <PageHead title="Inbox"
-        purpose={<>Police requests to hold scam money land here. Open one to see what happened, how much Scalpel suggests holding, and whether the hold passes the rules. Then act on it.</>}
-        how={<>Start as <b>Officer</b> and propose the hold, then switch to <b>Supervisor</b> with the <b>Working as</b> switch to approve it. New to this? Open <b>How this desk works</b> at the bottom of the list.</>} />
+      <PageHead eyebrow="Police hold requests · BNSS s.106" title={<>Hold the scam money,<br />not <em className="not-italic" style={{ color: "var(--accent)" }}>the whole account.</em></>}
+        purpose={<>Open a request, check the suggested hold, and act on it. Officers propose, supervisors approve.</>}
+        how={<>Switch between <b>Officer</b> and <b>Supervisor</b> at the top right. New here? Open <b>How this desk works</b> in the list.</>} />
       <Inbox />
       <Provenance />
     </>

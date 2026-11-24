@@ -7,7 +7,7 @@ import { FullData, PageHead } from "@/components/ui/Explain";
 import { Replay } from "./Replay";
 import { formatRupees } from "@/lib/money";
 
-export const metadata = { title: "72 hours · Scalpel" };
+export const metadata = { title: "72-hour replay · Scalpel" };
 
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 
@@ -16,9 +16,9 @@ export default function ReplayPage() {
   const a = demo.headlineV2.axe, s = demo.headlineV2.scalpel;
   return (
     <>
-      <PageHead title="72 hours"
-        purpose={<>Choose the hold policy the bank should run. We replay one invented scam month in the demo bank and show, hour by hour after the bank decides, how much victim money each policy saves and how many innocent people it hurts.</>}
-        how={<>Pick a policy, then press play or drag the slider. Compare it with <b>Whole freeze</b>: that is what many banks do today.</>} />
+      <PageHead eyebrow="Choose the bank's hold policy" title="72-hour replay"
+        purpose={<>Replay one invented scam month and see, hour by hour, how much victim money each policy saves and who it hurts.</>}
+        how={<>Pick a policy, then press play. <b>Whole freeze</b> is what many banks do today.</>} />
       <Replay replay={demo.replay} total={total} />
       <section className="mt-12" data-testid="v2-tradeoff">
         <h2 className="title text-[24px] sm:text-[28px] max-w-3xl">The same choice on 5 bigger test worlds</h2>

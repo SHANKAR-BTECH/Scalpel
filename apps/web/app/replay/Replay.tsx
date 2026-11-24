@@ -1,12 +1,11 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import * as m from "motion/react-m";
 import type { DemoData } from "@/lib/demo-schema";
 import { LANE_KEYS } from "@/lib/demo-schema";
 import { LAST_HOUR, LANE_LABEL, hourIndex, valuesAt } from "@/lib/replay";
-import { formatRupees, shortRupees } from "@/lib/money";
+import { formatRupees } from "@/lib/money";
 import { ReplayLane, LANE_COLOR } from "@/components/ReplayLane";
 import { Button } from "@/components/ui/Button";
 import { Segmented } from "@/components/ui/Segmented";
@@ -31,15 +30,11 @@ export function Replay({ replay, total }: { replay: DemoData["replay"]; total: n
     return () => { if (timer.current) clearInterval(timer.current); };
   }, [playing]);
 
-  const rows = useMemo(() => Array.from({ length: LAST_HOUR + 1 }, (_, h) => {
-    const r: Record<string, number> = { h };
-    for (const k of LANE_KEYS) r[k] = replay.lanes[k].securedPaise[h]!;
-    return r;
-  }), [replay]);
 
   const chosen = valuesAt(replay.lanes[pick], hour);
   const axe = valuesAt(replay.lanes.axe, hour);
   const fill = `${(hour / LAST_HOUR) * 100}%`;
+  const scaleMax = useMemo(() => Math.max(1, ...LANE_KEYS.flatMap((k) => { const v = valuesAt(replay.lanes[k], LAST_HOUR); return [v.secured, v.innocentLocked]; })), [replay]);
 
   return (
     <>
@@ -58,21 +53,31 @@ export function Replay({ replay, total }: { replay: DemoData["replay"]; total: n
           <Stat label="People wrongly restricted" value={String(chosen.people)} sub={`of them shopkeepers: ${chosen.shops}`} color={chosen.people > 0 ? "var(--freeze)" : "var(--good)"} />
         </div>
 
-        <div className="h-64 -mx-2" data-testid="replay-chart">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={rows} margin={{ top: 8, right: 16, bottom: 0, left: 8 }}>
-              <CartesianGrid stroke="var(--line)" vertical={false} />
-              <XAxis dataKey="h" type="number" domain={[0, LAST_HOUR]} ticks={[0, 12, 24, 36, 48, 60, 72]} stroke="var(--muted)" fontSize={11} tickFormatter={(v) => `${v}h`} />
-              <YAxis tickFormatter={shortRupees} stroke="var(--muted)" fontSize={11} width={64} />
-              <Tooltip formatter={(v, n) => [formatRupees(Number(v)), LANE_LABEL[n as LaneKey] ?? String(n)]} labelFormatter={(h) => `Hour ${h}`} />
-              {LANE_KEYS.map((k) => (
-                <Line key={k} dataKey={k} dot={false} isAnimationActive={false} stroke={LANE_COLOR[k]} strokeWidth={k === pick ? 3 : 1.5} strokeOpacity={k === pick ? 1 : 0.35} />
-              ))}
-              <ReferenceLine x={hour} stroke="var(--fg)" strokeDasharray="4 3" />
-            </LineChart>
-          </ResponsiveContainer>
+        <div className="grid gap-3" data-testid="replay-chart" aria-label={`Money at hour ${hour}, by policy`}>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-[12.5px] muted">
+            <span className="inline-flex items-center gap-1.5"><i className="inline-block w-3 h-2 rounded-sm" style={{ background: "var(--accent)" }} />Victim money secured</span>
+            <span className="inline-flex items-center gap-1.5"><i className="inline-block w-3 h-2 rounded-sm" style={{ background: "repeating-linear-gradient(135deg, var(--freeze) 0 3px, #e9b7b0 3px 6px)" }} />Innocent money locked</span>
+            <span className="ml-auto num">Hour {hour} of {LAST_HOUR}</span>
+          </div>
+          {LANE_KEYS.map((k) => {
+            const v = valuesAt(replay.lanes[k], hour);
+            const on = k === pick;
+            return (
+              <button key={k} type="button" onClick={() => setPick(k)} aria-pressed={on}
+                className="group grid grid-cols-[minmax(0,140px)_minmax(0,1fr)] sm:grid-cols-[180px_minmax(0,1fr)] items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-[var(--bg)]"
+                style={on ? { background: "var(--accent-tint)", boxShadow: "inset 3px 0 0 var(--accent)" } : undefined}>
+                <span className={`text-[14px] ${on ? "font-semibold" : "font-medium"}`}>{LANE_LABEL[k]}</span>
+                <span className="grid gap-1.5">
+                  <Bar value={v.secured} max={scaleMax} color={LANE_COLOR[k]} label={formatRupees(v.secured)} />
+                  <Bar value={v.innocentLocked} max={scaleMax} color="repeating-linear-gradient(135deg, var(--freeze) 0 3px, #e9b7b0 3px 6px)" label={v.innocentLocked ? `${formatRupees(v.innocentLocked)} innocent` : "₹0 innocent"} muted={!v.innocentLocked} />
+                </span>
+              </button>
+            );
+          })}
         </div>
-        <p className="text-[12.5px] muted -mt-2">Lines: victim money secured over the 72 hours, one per policy. The bold line is the policy you picked.</p>
+        <p className="text-[12.5px] muted -mt-1">
+          All bars use one scale. In this small month most holds land in the first hour, so the policies differ less in speed than in <b>who they hurt</b>.
+        </p>
 
         <div className="flex flex-wrap items-center gap-4">
           <Button variant="primary" className="min-w-28" onClick={() => { if (hour >= LAST_HOUR) setHour(0); setPlaying((p) => !p); }}>
@@ -100,7 +105,7 @@ export function Replay({ replay, total }: { replay: DemoData["replay"]; total: n
       <p className="mt-5 text-[15px] leading-relaxed max-w-3xl">
         Read it in pairs. <b>Whole freeze vs Exact hold, biggest first:</b> same order, only the hold size differs.{" "}
         <b>Exact hold, biggest first vs Scalpel:</b> same hold sizes, only the order differs. In this small world both orders reach every
-        account within a few hours, so they end level; <Link href="/order" className="link">Who first?</Link> compares orders on the 5 bigger test worlds.
+        account within a few hours, so they end level; <Link href="/order" className="link">Work order</Link> compares orders on the 5 bigger test worlds.
         The whole freeze secures more victim money because it also catches money from victims who had not complained yet, at the cost of the innocent money it locks.
       </p>
       <p className="mt-3 text-[15px]"><Link href="/memo?a=D00191" className="link font-medium" data-testid="to-memo">See the hold memo for one shop in this world</Link></p>
@@ -122,4 +127,16 @@ function PlayIcon({ playing }: { playing: boolean }) {
   return playing
     ? <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden><rect x="2" y="1.5" width="2.8" height="9" rx="0.8" fill="currentColor" /><rect x="7.2" y="1.5" width="2.8" height="9" rx="0.8" fill="currentColor" /></svg>
     : <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden><path d="M3 1.6v8.8a.6.6 0 0 0 .9.5l7-4.4a.6.6 0 0 0 0-1L3.9 1.1a.6.6 0 0 0-.9.5Z" fill="currentColor" /></svg>;
+}
+
+function Bar({ value, max, color, label, muted }: { value: number; max: number; color: string; label: string; muted?: boolean }) {
+  const w = Math.max(value > 0 ? 0.6 : 0, (value / max) * 100);
+  return (
+    <span className="flex items-center gap-2.5 min-w-0">
+      <span className="relative h-2.5 flex-1 rounded-full overflow-hidden" style={{ background: "var(--bg-2)" }}>
+        <m.span className="absolute inset-y-0 left-0 rounded-full" style={{ background: color }} initial={false} animate={{ width: `${w}%` }} transition={SPRING} />
+      </span>
+      <span className={`num text-[12.5px] w-[150px] shrink-0 truncate ${muted ? "muted" : "font-semibold"}`}>{label}</span>
+    </span>
+  );
 }

@@ -8,9 +8,9 @@ export const metadata = { title: "Hold memo · Scalpel" };
 export default function MemoPage() {
   return (
     <>
-      <PageHead title="Hold memo"
-        purpose={<>The official record of one hold: how much, under which rule, until when, and who approved it. Approve the hold here, preview the notice to the account holder, and print the page for the police or a court.</>}
-        how={<>Green means the check passed with a source we have read in the original. Amber means it passed with a caution. Red means it fails. Every source is linked so anyone can check it.</>} />
+      <PageHead eyebrow="The record of one hold" title="Hold memo"
+        purpose={<>How much is held, under which rule, until when, and who approved it. Approve it, preview the notice to the holder, and print it on one A4 page.</>}
+        how={<>Every rule check links to its source, so the police, a court or the holder can check it themselves.</>} />
       <Memo memo={demo.memo} />
       <Provenance />
     </>

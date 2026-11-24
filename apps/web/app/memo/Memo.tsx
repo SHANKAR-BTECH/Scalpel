@@ -79,10 +79,10 @@ function NoticeDialog({ open, onClose, m, sent }: { open: boolean; onClose: () =
           <motion.div role="dialog" aria-modal="true" aria-label="Notice to the account holder" data-testid="notice-dialog"
             className="glass rounded-2xl w-full max-w-lg p-6" initial={{ opacity: 0, y: 16, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, scale: 0.98 }}
             transition={SPRING} onClick={(e) => e.stopPropagation()}>
-            <p className="text-[13px] muted">Notice to the holder of account <span className="mono">{maskAccount(m.account)}</span> · {sent ? "sent" : "not sent yet"}</p>
+            <p className="text-[13px] muted">Notice to the holder of account <span className="font-mono">{maskAccount(m.account)}</span> · {sent ? "sent" : "not sent yet"}</p>
             <h2 className="title text-[22px] mt-1">Part of your account is on hold</h2>
             <div className="mt-3 text-[15px] leading-relaxed grid gap-2">
-              <p>Following a police request linked to cybercrime complaint <span className="mono">{m.ncrpAck}</span>, we have held <b className="mono">{formatRupees(m.heldPaise)}</b> in your account.</p>
+              <p>Following a police request linked to cybercrime complaint <span className="font-mono">{m.ncrpAck}</span>, we have held <b className="mono">{formatRupees(m.heldPaise)}</b> in your account.</p>
               <p>The rest of your balance, <b className="mono">{formatRupees(m.balancePaise - m.heldPaise)}</b>, is free to use as normal.</p>
               <p>If you believe this is wrong, visit your branch with an explanation. We will file it for the investigating officer, who must decide or record reasons. You may also approach the District Grievance Officer or a court.</p>
             </div>

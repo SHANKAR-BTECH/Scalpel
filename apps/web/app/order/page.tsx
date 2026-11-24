@@ -6,7 +6,7 @@ import { Provenance } from "@/components/Provenance";
 import { FullData, PageHead } from "@/components/ui/Explain";
 import { QueueSettings } from "@/components/QueueSettings";
 
-export const metadata = { title: "Who first? · Scalpel" };
+export const metadata = { title: "Work order · Scalpel" };
 
 const V3_ROWS = ["ceiling", "scalpel", "biggest", "biggestcase", "signrule", "fcfs"] as const;
 
@@ -15,9 +15,9 @@ export default function OrderPage() {
   const v3 = o.v3;
   return (
     <>
-      <PageHead title="Who first?"
-        purpose={<>When there are more requests than an officer can handle, the order matters: scam money keeps leaving every hour. Choose how your inbox is sorted. The hold amount never changes, only which account is handled first.</>}
-        how={<>The evidence below explains the recommendation, including the test our AI model did not pass.</>} />
+      <PageHead eyebrow="Who gets handled first" title="Work order"
+        purpose={<>Scam money keeps leaving every hour, so the order of the inbox matters. Choose how it is sorted. Hold amounts never change.</>}
+        how={<>The evidence below includes the test our mule-score model did not pass.</>} />
       <QueueSettings />
       <section className="mt-10">
         <div className="card p-6 sm:p-7" data-testid="v3">
