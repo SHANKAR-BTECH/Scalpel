@@ -1,8 +1,10 @@
-/** Money in data is whole paise. Shown with Indian digit grouping: ₹3,28,679. Paise shown only when non-zero. */
+/** Money in data is whole paise. Shown with Indian digit grouping: ₹3,28,679.
+ *  Paise are shown only for amounts under ₹1,000 (where they matter); larger amounts round to whole rupees. */
 export function formatRupees(paise: number): string {
   if (!Number.isFinite(paise)) throw new Error(`not a money amount: ${paise}`);
   const neg = paise < 0;
-  const p = Math.round(Math.abs(paise));
+  let p = Math.round(Math.abs(paise));
+  if (p >= 100_000) p = Math.round(p / 100) * 100;
   const rupees = Math.floor(p / 100);
   const rem = p % 100;
   const s = String(rupees);

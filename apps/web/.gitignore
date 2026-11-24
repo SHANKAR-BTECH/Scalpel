@@ -2,3 +2,4 @@
 out
 test-results
 playwright-report
+shot*.tmp.mjs

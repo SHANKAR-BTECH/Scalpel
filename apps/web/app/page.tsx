@@ -2,7 +2,6 @@ import Link from "next/link";
 import { demo } from "@/lib/data";
 import { formatRupees } from "@/lib/money";
 import { HeadlineCards } from "@/components/HeadlineCards";
-import { TradeOff } from "@/components/TradeOff";
 import { Provenance } from "@/components/Provenance";
 import { POLICY_KEYS } from "@/lib/demo-schema";
 import { POLICY_LABEL, ratioText } from "@/lib/policies";
@@ -23,7 +22,6 @@ export default function Home() {
       <h2 className="mt-6 mb-3 text-lg font-semibold">Two numbers, always together</h2>
       <HeadlineCards headline={demo.headline} />
 
-      <div className="mt-6"><TradeOff headline={demo.headline} /></div>
 
       <section className="mt-6 card p-4">
         <h2 className="font-semibold">On the 5 unseen test worlds (about 3,000 accounts each)</h2>

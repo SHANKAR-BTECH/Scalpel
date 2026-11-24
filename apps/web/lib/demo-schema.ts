@@ -5,7 +5,7 @@
 import { z } from "zod";
 
 const paise = z.number().int().nonnegative();
-const hours73 = (t: z.ZodTypeAny) => z.array(t).length(73);
+const hours73 = <T extends z.ZodType>(t: T) => z.array(t).length(73);
 
 const Check = z.object({ rule: z.string(), ok: z.boolean(), note: z.string(), sources: z.array(z.string()), unverified: z.array(z.string()) });
 const Clock = z.object({

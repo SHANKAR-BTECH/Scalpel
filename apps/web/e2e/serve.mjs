@@ -9,11 +9,11 @@ const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/cs
 
 createServer(async (req, res) => {
   let p = normalize(decodeURIComponent((req.url ?? "/").split("?")[0])).replace(/^(\.\.[/\\])+/, "");
-  let file = join(ROOT, p);
-  try {
-    if ((await stat(file)).isDirectory()) file = join(file, "index.html");
-  } catch {
-    file = file.endsWith(".html") ? file : file + ".html";
+  const base = join(ROOT, p);
+  const isFile = async (f) => { try { return (await stat(f)).isFile(); } catch { return false; } };
+  let file = base;
+  for (const c of [base, base + ".html", join(base, "index.html")]) {
+    if (await isFile(c)) { file = c; break; }
   }
   try {
     const body = await readFile(file);

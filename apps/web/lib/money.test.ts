@@ -8,9 +8,11 @@ describe("formatRupees", () => {
     expect(formatRupees(32_867_900)).toBe("₹3,28,679");
     expect(formatRupees(36_118_675_300)).toBe("₹36,11,86,753");
   });
-  it("shows paise only when there are some", () => {
+  it("shows paise only under ₹1,000, where they matter", () => {
     expect(formatRupees(150)).toBe("₹1.50");
-    expect(formatRupees(695_041)).toBe("₹6,950.41");
+    expect(formatRupees(56_950)).toBe("₹569.50");
+    expect(formatRupees(695_041)).toBe("₹6,950");
+    expect(formatRupees(695_061)).toBe("₹6,951");
   });
   it("never prints NaN or exponents", () => {
     expect(() => formatRupees(Number.NaN)).toThrow();
