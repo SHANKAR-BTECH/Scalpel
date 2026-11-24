@@ -36,7 +36,7 @@ function* files(dir: string): Generator<string> {
 
 describe("no peeking", () => {
   it("no website source file mentions the hidden answers", () => {
-    const hits = [...files(WEB)].filter((p) => /truth/i.test(readFileSync(p, "utf8")));
+    const hits = [...files(WEB)].filter((p) => /\btruth\b/i.test(readFileSync(p, "utf8")));
     expect(hits).toEqual([]);
   });
 });

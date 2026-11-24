@@ -1,15 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #f7f7f5; --fg: #16181d; --muted: #5d6470; --card: #ffffff; --line: #dfe1e5;
+  --bg: #fcfcfb; --fg: #16181d; --muted: #5d6470; --card: #ffffff; --line: #dfe1e5;
   --good: #1f7a4d; --bad: #b42318; --warn: #a15c07; --accent: #2b59c3;
-  --lane-none: #8a8f98; --lane-axe: #b42318; --lane-biggest: #a15c07; --lane-scalpel: #1f7a4d;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s-neutral: #8a8f98;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #111317; --fg: #e8eaed; --muted: #9aa1ab; --card: #1a1d23; --line: #2c3038;
+    --bg: #1a1a19; --fg: #e8eaed; --muted: #9aa1ab; --card: #1a1d23; --line: #2c3038;
     --good: #4cc38a; --bad: #f07167; --warn: #e3a64b; --accent: #7aa2f7;
-    --lane-none: #9aa1ab; --lane-axe: #f07167; --lane-biggest: #e3a64b; --lane-scalpel: #4cc38a;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s-neutral: #9aa1ab;
   }
 }
 html, body { background: var(--bg); color: var(--fg); }
