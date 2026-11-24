@@ -352,9 +352,19 @@ def render(s: dict) -> str:
             h = v4["headline/high"]
             L.append(f"| {names[n]} | {h['2'][n]:.1f}% | {h['5'][n]:.1f}% | {h['10'][n]:.1f}% | {v4['noSpeedHint/high']['10'][n]:.1f}% | {v4['direct25/high']['10'][n]:.1f}% |")
         L += ["", f"Mule score accuracy (Brier score, lower is better): {v4['brier/high']:.3f} vs {v4['brierBaseline/high']:.3f} for always guessing the average.", "",
-              "What it means: how fast an account moved money before is the useful clue for the to-do order (+2 to +3.5 points over biggest first). "
-              "The mule score adds almost nothing on top, because the amount and account age already give most mules away. "
-              "The score's value is in naming who is likely a mule and why (memo reasons, the whole-freeze condition R2), not in the order.", ""]
+              *( [f"Added after the lock (nothing re-tuned): 90% interval for the headline margin {v4['afterLock']['marginInterval90'][0]:+.2f} to "
+                   f"{v4['afterLock']['marginInterval90'][1]:+.2f} points; share of the possible gain the full order closes "
+                   f"{v4['afterLock']['gapClosedInterval90'][0]:.0%} to {v4['afterLock']['gapClosedInterval90'][1]:.0%} "
+                   f"({v4['afterLock']['resamples']} resamples of accounts).", ""] if v4.get("afterLock") else []),
+              "What it means, with its limits:",
+              "- In THIS world, how fast an account moved money before is the most useful clue for the to-do order (+2 to +3.5 points over biggest first). "
+              "That is true because the world was built so past speed hints at future speed; there is no Indian data on this.",
+              "- When past speed tells nothing, the speed rule falls below biggest first, and the mule score alone is the best of the orders (+0.5). "
+              "So the score adds a little, and a speed rule can hurt if the hint is false.",
+              "- The amount alone already spots most mules here (AUC about 0.98, above the 0.75 the plan aimed for), so this world was easy to rank by money. "
+              "The pre-lock check said the test could not be passed; it was run anyway and reported as is.",
+              "- The score's clearer value is in naming who is likely a mule and why (memo reasons, the whole-freeze condition R2). Phone-signal noise made no difference.",
+              "- Not done from the plan: a reliability curve, the 0% shop and current-account sweeps, the model hash in the lock, and mules with no past history.", ""]
 
     L += ["## 7. Assumptions (change these and the numbers change)", "",
           "- The worlds are invented. v2 changes criminal habits on purpose: older rented mule accounts, slower mules, twice as many innocent shops, more digital-arrest scams.",

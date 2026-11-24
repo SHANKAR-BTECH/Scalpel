@@ -5156,6 +5156,17 @@
   ]
  },
  "v4": {
+  "afterLock": {
+   "gapClosedInterval90": [
+    -0.3,
+    0.7
+   ],
+   "marginInterval90": [
+    -0.21,
+    0.54
+   ],
+   "resamples": 200
+  },
   "brier/high": 0.0217,
   "brier/low": 0.0204,
   "brierBaseline/high": 0.1029,

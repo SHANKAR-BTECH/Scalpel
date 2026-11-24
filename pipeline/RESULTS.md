@@ -124,7 +124,14 @@ Settings, the speed formula, the no-model orders and the pass mark (+2 points ov
 
 Mule score accuracy (Brier score, lower is better): 0.022 vs 0.103 for always guessing the average.
 
-What it means: how fast an account moved money before is the useful clue for the to-do order (+2 to +3.5 points over biggest first). The mule score adds almost nothing on top, because the amount and account age already give most mules away. The score's value is in naming who is likely a mule and why (memo reasons, the whole-freeze condition R2), not in the order.
+Added after the lock (nothing re-tuned): 90% interval for the headline margin -0.21 to +0.54 points; share of the possible gain the full order closes -30% to 70% (200 resamples of accounts).
+
+What it means, with its limits:
+- In THIS world, how fast an account moved money before is the most useful clue for the to-do order (+2 to +3.5 points over biggest first). That is true because the world was built so past speed hints at future speed; there is no Indian data on this.
+- When past speed tells nothing, the speed rule falls below biggest first, and the mule score alone is the best of the orders (+0.5). So the score adds a little, and a speed rule can hurt if the hint is false.
+- The amount alone already spots most mules here (AUC about 0.98, above the 0.75 the plan aimed for), so this world was easy to rank by money. The pre-lock check said the test could not be passed; it was run anyway and reported as is.
+- The score's clearer value is in naming who is likely a mule and why (memo reasons, the whole-freeze condition R2). Phone-signal noise made no difference.
+- Not done from the plan: a reliability curve, the 0% shop and current-account sweeps, the model hash in the lock, and mules with no past history.
 
 ## 7. Assumptions (change these and the numbers change)
 

@@ -47,6 +47,45 @@ def run_set(model, cfgs, ks=(2, 5, 10)) -> dict:
     return out, worlds
 
 
+def margin_interval(model, cfgs, k: int, n: int = 200, seed: int = 11) -> dict:
+    """Bootstrap over accounts holding traced money (pooled over the test worlds): full Scalpel minus the best
+    no-model order, in points of the best possible; also the share of the possible gain the full order closes."""
+    from .grade import ceiling_order, oracle_order, rescue
+    rng = np.random.default_rng(seed)
+    per = []
+    for c in cfgs:
+        w, t = make_world(c)
+        X = build_features(w, compute_signals(w))
+        held, od = v4.orders(w, dict(zip(X.index, model.mule_score(X))))
+        od["ceiling"] = ceiling_order(held, t)
+        per.append((w, t, held, od))
+    margins, closed = [], []
+    for _ in range(n):
+        tot = {m: 0.0 for m in ("biggest", "biggestcase", "biggestspeed", "scalpel", "ceiling")}
+        best = 0.0
+        for w, t, held, od in per:
+            accts = sorted(held)
+            pick = rng.choice(len(accts), size=len(accts), replace=True)
+            # duplicates become separate copies so the resample keeps its size
+            hb = {f"{accts[i]}#{j}": held[accts[i]] for j, i in enumerate(pick)}
+            tb = dict(t, victimMoneyAtCutoff={**t["victimMoneyAtCutoff"], **{a: t["victimMoneyAtCutoff"].get(a.split("#")[0], 0) for a in hb}},
+                      drainPerHour={**t["drainPerHour"], **{a: t["drainPerHour"][a.split("#")[0]] for a in hb if a.split("#")[0] in t["drainPerHour"]}},
+                      settle={**t["settle"], **{a: t["settle"][a.split("#")[0]] for a in hb if a.split("#")[0] in t["settle"]}})
+            pos = {a: i for i, a in enumerate(accts)}
+            best += rescue(oracle_order(hb, tb, k), hb, tb, k)
+            for m in tot:
+                rank = {a: r for r, a in enumerate(od[m])}
+                order = sorted(hb, key=lambda a: (rank[a.split("#")[0]], a))
+                tot[m] += rescue(order, hb, tb, k)
+            _ = pos
+        pct = {m: 100 * v / best for m, v in tot.items()}
+        nm = max(pct["biggest"], pct["biggestcase"], pct["biggestspeed"])
+        margins.append(pct["scalpel"] - nm)
+        closed.append((pct["scalpel"] - nm) / (pct["ceiling"] - nm) if pct["ceiling"] > nm else 0.0)
+    q = lambda xs: [round(float(np.percentile(xs, 5)), 2), round(float(np.percentile(xs, 95)), 2)]
+    return {"marginInterval90": q(margins), "gapClosedInterval90": q(closed), "resamples": n}
+
+
 def main() -> None:
     lock = json.loads((Path(C.__file__).with_suffix(".lock")).read_text())
     assert lock["fingerprint"] == C.fingerprint(), "settings changed after the lock"
@@ -62,6 +101,8 @@ def main() -> None:
                 res[f"brier/{noise}"] = round(brier(model, worlds), 4)
                 base = np.mean([np.mean([t["roles"][a] == "mule" for a in build_features(w, compute_signals(w)).index]) for w, t in worlds])
                 res[f"brierBaseline/{noise}"] = round(float(base * (1 - base)), 4)
+    # Added AFTER the lock (no setting changed): a 90% interval for the headline margin, by resampling accounts.
+    res["afterLock"] = margin_interval(model, [C.v4_config(s, "high") for s in C.V4_SEEDS], C.HEADLINE["k"])
     h = res["headline/high"][str(C.HEADLINE["k"])]
     best_nm = max(h[n] for n in C.NO_MODEL_RULES)
     res["verdict"] = C.verdict(h["scalpel"], best_nm)

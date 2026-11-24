@@ -2,7 +2,7 @@
 
 All orders here use only what the bank can see (world.json + the model's scores), except 'ceiling' and 'oracle',
 which use the hidden answers. The no-model orders and score-only order repeat sim-runner/queue.ts in Python
-(a test checks they agree on biggest and score-only).
+(tests/test_v4.py checks the score-only constants match queue.ts).
 """
 from __future__ import annotations
 

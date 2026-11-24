@@ -36,3 +36,11 @@ def test_v4_world_has_its_changes():
 def test_speed_formula_is_the_pre_registered_one():
     assert v4.speed_from_dwell(60) == min(0.40, max(0.03, 0.6931471805599453 / 4))
     assert v4.speed_from_dwell(1) == 0.40 and v4.speed_from_dwell(1440) == 0.03
+
+
+def test_score_only_order_uses_the_same_numbers_as_queue_ts():
+    import re
+    ts = (Path(__file__).resolve().parents[2] / "packages/sim-runner/src/queue.ts").read_text()
+    mule = float(re.search(r"MULE_DRAIN_PER_HOUR = ([0-9.]+)", ts).group(1))
+    ratio = float(re.search(r"ASSUMED_DRAIN_RATIO = ([0-9.]+)", ts).group(1))
+    assert v4.MULE_DRAIN == mule and abs(v4.SHOP_DRAIN - mule / ratio) < 1e-12
