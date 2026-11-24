@@ -32,7 +32,7 @@
 
 ## 1. What Scalpel is
 
-When a cyber-fraud complaint or a police request reaches a bank or a telecom company, staff must decide quickly **what to freeze, how much, under which rule, and for how long**. Today the common answer is "freeze the whole account", which hurts innocent people (for example a shopkeeper who unknowingly received scam money) and often holds about 15 times more money than was actually stolen.
+When a cyber-fraud complaint or a police request reaches a bank or a telecom company, staff must decide quickly **what to freeze, how much, under which rule, and for how long**. Today the common answer is "freeze the whole account", which hurts innocent people (for example a shopkeeper who unknowingly received scam money) and can hold many times more money than was actually stolen (in our own simulated worlds, about 15 times; no industry figure is quoted).
 
 Scalpel is a decision and tracking tool for those staff. For every case it:
 
@@ -42,7 +42,7 @@ Scalpel is a decision and tracking tool for those staff. For every case it:
    - ✅ **Right size?** Is the hold no bigger than the stolen money actually traced to this account?
    - ✅ **On time?** Are all legal deadlines being met?
 3. **Tracks deadlines** for every hold and releases or escalates automatically.
-4. **Lets the account holder respond** through a plain-language portal (English and Hindi).
+4. **Tells the account holder** how much is held, why, and how to contest it (the hold memo's contest section; the portal and Hindi were cut in phase 3).
 5. **Proves** to auditors and courts that each step was lawful and proportionate, with a tamper-proof record.
 
 The headline number is the **Freeze Ratio**: money held ÷ money actually traced. Scalpel aims for about 1×. We quote only ratios measured in our own simulation; no industry-wide figure is cited because none has a public source.
@@ -192,12 +192,15 @@ Runs offline and loads its output into the database.
 
 ### D. Web app (`apps/web`, Next.js) — eight areas
 
+> **Phase 3 (24 Nov) built the proof screens first:** Headline (two-number headline + show-the-math), "Same 30 days, four ways" replay, the printable Hold memo (engine badges, clocks, contest section, Officer proposes / Supervisor approves) and "Who first?" (order chart + locked split-payment world). They are a static site built from one data file, `apps/web/data/demo.json`.
+> **Cut (screens only, no rules removed):** the Account-holder Portal, Hindi, the Telco console and real login. Rules R5–R7, the 6 phone clues, the TRAI clock and their tests stay. Login is replaced by **demo roles** that keep two-person approval for a whole freeze. Areas 1–4 and 7–8 below are later phases.
+
 1. **Inbox:** new complaints and police requests, grouped into campaigns, sorted by golden-hour urgency, each request marked valid / defective.
 2. **Case & Trace:** money-flow graph; for each account, how much stolen money is really there and whose it is; a comparator showing what each tracing method would freeze.
 3. **Decide:** the decision card with the three badges; every rule check with its source; court-objection risks before and after; money saved vs harm; the officer proposes, the supervisor approves; overrides need a written reason.
 4. **Holds:** the Clock Board with every hold's deadlines, alerts, automatic releases, extension requests and notices.
-5. **Account-holder Portal (English + Hindi):** plain-language notice, amount, reason and end date; upload an explanation; see status.
-6. **Telco console:** number and handset block requests, checked by the protected-number, spoofing and two-signal rules, plus the TRAI clock.
+5. ~~Account-holder Portal (English + Hindi)~~ **cut in phase 3.** The hold memo carries the notice and how to contest.
+6. ~~Telco console~~ **cut in phase 3 (screen only).** The telecom rules and the TRAI clock stay in the engine with their tests.
 7. **Assure (for auditors):** Freeze Ratio dashboard; fairness report; rule versions and simulator; rule-change diff; Court Replay results; audit log; one-click evidence pack; the "Where Scalpel loses" page; regulator CSV export.
 8. **Public pages:** landing story; **/verify** (drop in an evidence pack and your own browser checks it); API docs.
 
@@ -227,7 +230,7 @@ See [section 6](#6-data-model).
 
 ### I. Security and privacy
 
-- Login with roles; two-person approval for big actions.
+- Demo roles (Officer, Supervisor), not real login; two-person approval for a whole freeze stays.
 - Account and phone numbers masked; "reveal with reason" is logged.
 - Input checks on everything.
 - Data-retention job, with "deletion deferred: legal obligation" for records under legal hold (DPDP Act).
@@ -352,8 +355,7 @@ erDiagram
 | Web | **Next.js 14 + Tailwind** | Screens and API in one project; free hosting on Vercel |
 | Database | **Postgres (Neon) + Prisma** | Free, reliable, and database access is typed |
 | Money-flow graph | **Cytoscape.js** | Good for drawing account-to-account flows |
-| Languages | **next-intl** | English + Hindi portal |
-| Login | **iron-session** | Simple, secure sessions with roles |
+| Login | none (demo roles) | Cut in phase 3; the two-person rule is kept in the screens |
 | Validation and API docs | **zod + OpenAPI + Redoc** | One schema checks input *and* generates the docs |
 | Rule files | **js-yaml** | Readable rulebook files |
 | Tests | **Vitest, fast-check, Playwright** | Unit tests, "random world" tests, and real-browser tests |
@@ -421,7 +423,7 @@ A robot (Playwright) opens the real website in a browser, clicks through it like
 
 1. Complaint arrives → traced → exact hold placed.
 2. Defective police request → memo back to the officer.
-3. Hold → account holder replies in the portal → hold released.
+3. Hold → the memo shows how the holder contests → the engine's lifecycle tests cover review and release (the portal screen was cut).
 4. Deadline passes → automatic release (using time travel).
 5. Evidence pack downloaded → checked on /verify → then one byte is changed and /verify must say **tampered**.
 
@@ -467,9 +469,9 @@ Work starts on **24 Nov 2026**, with the research walkthrough and learning first
 | 24 Nov | **P0 Research walkthrough + plan approval** | Decisions locked; draft code pushed to this repo | You approve this plan and say "start building" |
 | 25–27 Nov | **P1 Engine revision** | Draft engine updated with research results; citations labelled | All engine tests green; restoration and fairness modules added |
 | 28 Nov – 1 Dec | **P2 Simulation + AI** | Fake worlds v1/v2, telecom signals, model + top-3 reasons | Model scored on v2 against the baseline. **1 Dec: check RBI final directions (R4).** |
-| 2–4 Dec | **P3 Database + API + login** | Tables, API with docs, roles, demo data loading | API tests green; demo data loads from the pipeline |
+| 24 Nov | **P3 Proof screens (done)** | Headline, 4-lane replay, hold memo, who-first, locked split-payment world | Web unit + browser tests green; memo prints on one A4 page |
 | 5–11 Dec | **P4 Officer screens** | Inbox, Case & Trace, Decide (3 badges), Holds / Clock Board | Journeys 1, 2 and 4 pass in the browser. **7 Dec: freeze rules (`gate-v1` tag)**, then collect held-out Court Replay cases (R5). |
-| 12–15 Dec | **P5 Portal + Telco** | English/Hindi portal, telco console | Journey 3 passes |
+| — | ~~P5 Portal + Telco~~ | Cut in phase 3 (screens only) | — |
 | **16 Dec** | **MVP** | Full flow works end to end on the live link | Journeys 1–4 pass on the deployed site |
 | 16–21 Dec | **P6 Assure** | Freeze Ratio, fairness, rule diff, evidence pack + /verify, Court Replay, "Where Scalpel loses", CSV export | Journey 5 passes; Court Replay results published |
 | **22 Dec** | **Feature freeze** | No new features after this | — |
@@ -503,8 +505,8 @@ Work starts on **24 Nov 2026**, with the research walkthrough and learning first
 
 | Risk | Plan |
 |---|---|
-| Too much for the time available | Cut in this order: extra P2 items → Hindi → rule-change diff → telco API mocks → tracing comparator. |
-| RBI final rules change the law | Rules are files: update one file and show the rule-change diff as a feature. |
+| Too much for the time available | Already cut in phase 3: Hindi, portal, telco console, real login. Next in line: rule-change diff → telco API mocks → tracing comparator. |
+| RBI final rules change the law | The 2026 mule-account SOP is still a draft (11 Sep 2026; Supreme Court asked for final directions by 30 Nov, in force by 31 Dec 2026). **Watch date: 31 Dec 2026.** Rules are files: update one file and show the rule-change diff. |
 | Mistakes in research citations | R1 check; anything unchecked stays labelled "unverified". |
 | Free hosting limits or outage | Snapshot fallback, nightly reset, backup video. |
 | AI work grows too large | Time-boxed to 1.5 days; the simple exact-hold baseline still works without it. |
