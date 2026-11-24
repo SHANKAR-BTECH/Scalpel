@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["dom", "dom.iterable", "es2022"],
+    "jsx": "react-jsx",
+    "noEmit": true,
+    "declaration": false,
+    "allowJs": false,
+    "isolatedModules": true,
+    "incremental": false,
+    "types": ["node"],
+    "plugins": [{ "name": "next" }],
+    "paths": { "@/*": ["./*"] }
+  },
+  "include": ["app", "components", "lib", "e2e", "next-env.d.ts", "*.ts"],
+  "exclude": ["node_modules", ".next", "out"]
+}

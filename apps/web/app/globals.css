@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #f7f7f5; --fg: #16181d; --muted: #5d6470; --card: #ffffff; --line: #dfe1e5;
+  --good: #1f7a4d; --bad: #b42318; --warn: #a15c07; --accent: #2b59c3;
+  --lane-none: #8a8f98; --lane-axe: #b42318; --lane-biggest: #a15c07; --lane-scalpel: #1f7a4d;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111317; --fg: #e8eaed; --muted: #9aa1ab; --card: #1a1d23; --line: #2c3038;
+    --good: #4cc38a; --bad: #f07167; --warn: #e3a64b; --accent: #7aa2f7;
+    --lane-none: #9aa1ab; --lane-axe: #f07167; --lane-biggest: #e3a64b; --lane-scalpel: #4cc38a;
+  }
+}
+html, body { background: var(--bg); color: var(--fg); }
+body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
+.muted { color: var(--muted); }
+.tag { font-size: 11px; border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; color: var(--muted); white-space: nowrap; }
+@media print {
+  .no-print { display: none !important; }
+  html, body { background: #fff; color: #000; }
+  .card { border-color: #999; }
+}
