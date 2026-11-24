@@ -43,7 +43,7 @@ Scalpel is a decision and tracking tool for those staff. For every case it:
    - ✅ **On time?** Are all legal deadlines being met?
 3. **Tracks deadlines** for every hold and releases or escalates automatically.
 4. **Tells the account holder** how much is held, why, and how to contest it (the hold memo's contest section; the portal and Hindi were cut in phase 3).
-5. **Proves** to auditors and courts that each step was lawful and proportionate, with a tamper-proof record.
+5. **Proves** to auditors and courts that each step was lawful and proportionate, with a tamper-evident record.
 
 The headline number is the **Freeze Ratio**: money held ÷ money actually traced. Scalpel aims for about 1×. We quote only ratios measured in our own simulation; no industry-wide figure is cited because none has a public source.
 
@@ -105,7 +105,7 @@ flowchart TB
   TRUTH -. used only to grade results .-> PIPE
 ```
 
-**In one sentence:** requests and complaints come in, the engine works out what is allowed and how much to hold using the rulebook, people approve, the plugs carry out the action, the clocks keep it on time, and every step is written to a tamper-proof log.
+**In one sentence:** requests and complaints come in, the engine works out what is allowed and how much to hold using the rulebook, people approve, the plugs carry out the action, the clocks keep it on time, and every step is written to a tamper-evident log.
 
 **Key design rules**
 
@@ -133,7 +133,7 @@ Pure TypeScript functions with automatic tests.
 | `gate` | Checks every proposed action (Allowed? Right size? On time?) and can **allow**, **modify** (e.g. whole freeze → exact hold), **route** (to a Magistrate or back to the officer) or **deny** | Done (tested) |
 | `score` | Weighs money saved against harm to innocent people, with one "how cautious" slider | Done (tested) |
 | `lifecycle` | Runs the deadline clocks for every hold: alerts, automatic release, bank-to-police handover, one +90-day extension | Done (tested) |
-| `audit` | Tamper-proof hash chain plus a case fingerprint (Merkle root); the same check runs in the browser | Done (tested) |
+| `audit` | Tamper-evident hash chain plus a case fingerprint (Merkle root); the same check runs in the browser. Not signed yet: someone who edits a record and recomputes every hash would still pass, so phase 4 adds a signature | Done (tested) |
 | `campaign` | Groups complaints that paid the same account and ranks them by "golden hour" urgency | Done (tested) |
 | `restoration` | Splits returned money back to each victim in the right share | Done (phase 1) |
 | `policy-diff` | Compares old and new rules and lists which holds are affected | To add |
@@ -148,7 +148,7 @@ Pure TypeScript functions with automatic tests.
 |---|---|
 | R1 | An exact hold can never be more than the money traced to the account. |
 | R2 | Freezing a whole account is a last resort: mule score ≥ 0.85, at least 2 signals, and an officer confirms. |
-| R3 | A hold lasts at most 60 days unless a court extends it. |
+| R3 | A hold must respect its regime's time limit. Only a bank's own hold under the RBI draft (in force from 1 Apr 2027) has a 60-day cap; police holds follow the MHA SOP review clocks; court holds last as ordered. |
 | R4 | Amounts under ₹50,000 go to fast restoration (unverified: press reports it; R1 did not find it in the SOP text). |
 | R5 | Never block the 140 / 1600 / 1601 number series (official and banking numbers). |
 | R6 | Never block a spoofed displayed number (the real caller is someone else). |
@@ -294,7 +294,7 @@ sequenceDiagram
 6. **Notice:** the account holder gets a plain-language notice. The **20-day** explanation clock starts on the Clock Board.
 7. **Portal:** the account holder (an innocent shopkeeper) uploads invoices. A decision is due within 10 days.
 8. **Release:** the hold is released or kept. Money is split back to victims in the right shares.
-9. **Audit:** every step is in the tamper-proof chain. One click produces the **court evidence pack**, which anyone can check on **/verify**.
+9. **Audit:** every step is in the tamper-evident chain. One click produces the **court evidence pack**, which anyone can check on **/verify**.
 10. **Assure:** the Freeze Ratio and fairness report update automatically.
 
 ### 5.2 Where each kind of data goes

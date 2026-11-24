@@ -24,13 +24,13 @@ Fictional "Bharat Demo Bank" + "Telco-A". Solo student project (Tech Mahindra in
   - Requisition checker (Allahabad 5-point):
     - DEFECTIVE plus strong own signals → bank-initiated exact hold under RBI, and a memo to the IO;
     - DEFECTIVE plus weak signals → memo only.
-- **Right size:** Rolling Charge tracing (proportional, lowest-balance, per-victim, multi-hop). Headline KPI: Freeze Ratio = held ÷ traced (1× is right-sized; we quote only our own simulated ratios).
+- **Right size:** tracing per victim and per hop. Default is pro-rata (rolling charge) because nobody is guilty yet; if the police name the holder as accused, `by_role` applies Re Hallett (own money spent first). Both obey the lowest-balance cap: a later clean credit never refills victim money. Who is a wrongdoer comes from the case record, never from the mule score. Headline KPI: Freeze Ratio = held ÷ traced (1× is right-sized; we quote only our own simulated ratios).
 - **On time:** a multi-clock engine with regimes RBI_BANK, MHA_POLICE, NPCI_CHARGEBACK, DIGITAL_SUSPENSION, COURT_ORDER and TRAI_UCC. Clocks are YAML data.
 
 ## Gate rules R1–R9
 - R1: exact hold ≤ traced.
 - R2: whole account only as a last resort (mule ≥0.85, ≥2 signals, officer confirmation).
-- R3: ≤60-day cap.
+- R3: the regime's own time limit. Only the RBI_BANK regime (a bank's own hold, RBI draft, in force from 1 Apr 2027) has a 60-day cap. Police holds follow the MHA SOP review clocks; court holds last as ordered.
 - R4: <₹50k victim fast restoration, shown unverified (press reports it; R1 didn't find it in the SOP text; the SOP's 90-day lift has no ₹50k limit).
 - R5: never block 140/1600/1601 series.
 - R6: never block a spoofed displayed number.
@@ -41,7 +41,7 @@ Fictional "Bharat Demo Bank" + "Telco-A". Solo student project (Tech Mahindra in
 Also: a quash-risk checklist, with citations.
 
 ## Assure
-- §63 BSA evidence pack (SHA-256 + Merkle root) and an in-browser `/verify` page.
+- §63 BSA evidence pack (SHA-256 + Merkle root) and an in-browser `/verify` page. Certificate template: docs/templates/bsa-s63-certificate.md (draft, to be checked against the Act's Schedule).
 - Fairness report.
 - Effective-dated, versioned policies with a rule-change diff.
 - Court Replay: 8 dev / 10 held-out, outcome-blind, held-out NOT from rulings seen in the reports.
