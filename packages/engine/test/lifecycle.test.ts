@@ -35,7 +35,14 @@ describe("multi-clock lifecycle", () => {
     const { hold } = settle(h, P, day(27));
     expect(hold.regime).toBe("MHA_POLICE");
     expect(hold.state).toBe("ACTIVE");
-    expect(formatIST(view(hold, day(27), "grm_upload").dueAt!)).toBe("2027-01-21 23:59 IST");
+    // MHA SOP: the 7-day grievance upload starts when the holder raises a grievance, and the IO's 15 days start at upload.
+    expect(view(hold, day(27), "grm_upload").state).toBe("NOT_STARTED");
+    const g = applyEvent(hold, { type: "REPLY_RECEIVED", at: day(28), by: "holder" }, P);
+    expect(view(g, day(30), "grm_upload").state).toBe("RUNNING");
+    expect(formatIST(view(g, day(30), "grm_upload").dueAt!)).toBe("2027-01-24 23:59 IST"); // grievance on 17 Jan + 7 days
+    expect(view(g, day(30), "io_decision").state).toBe("NOT_STARTED");
+    const u = applyEvent(g, { type: "GRM_UPLOADED", at: day(31), by: "bank" }, P);
+    expect(view(u, day(32), "io_decision").state).toBe("RUNNING");
     expect(view(hold, day(27), "release_90").state).toBe("RUNNING");
   });
   it("police hold: bank must decide at 90 days unless extended, one +90 extension only (MHA SOP)", () => {
