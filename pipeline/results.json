@@ -5278,6 +5278,59 @@
   "lockPassable": false,
   "marginPoints": 0.07,
   "meanCeilingGapDev": 0.63,
+  "modelHash": "26713557bc992f77200a375327ee62f4b65ad6dbb3216de2dc2bf064e84bda4f",
+  "noCurrent/high": {
+   "10": {
+    "biggest": 95.87,
+    "biggestcase": 52.32,
+    "biggestspeed": 97.95,
+    "ceiling": 98.75,
+    "scalpel": 98.05,
+    "scoreonly": 96.95
+   },
+   "2": {
+    "biggest": 86.68,
+    "biggestcase": 31.68,
+    "biggestspeed": 88.69,
+    "ceiling": 90.92,
+    "scalpel": 88.87,
+    "scoreonly": 87.54
+   },
+   "5": {
+    "biggest": 91.37,
+    "biggestcase": 38.65,
+    "biggestspeed": 94.87,
+    "ceiling": 97.32,
+    "scalpel": 95.42,
+    "scoreonly": 92.28
+   }
+  },
+  "noShops/high": {
+   "10": {
+    "biggest": 94.78,
+    "biggestcase": 59.49,
+    "biggestspeed": 97.44,
+    "ceiling": 98.56,
+    "scalpel": 97.55,
+    "scoreonly": 96.24
+   },
+   "2": {
+    "biggest": 85.91,
+    "biggestcase": 36.97,
+    "biggestspeed": 85.72,
+    "ceiling": 89.37,
+    "scalpel": 85.17,
+    "scoreonly": 84.93
+   },
+   "5": {
+    "biggest": 89.92,
+    "biggestcase": 47.59,
+    "biggestspeed": 93.86,
+    "ceiling": 96.71,
+    "scalpel": 94.64,
+    "scoreonly": 92.37
+   }
+  },
   "noSpeedHint/high": {
    "10": {
     "biggest": 96.66,
@@ -5304,6 +5357,130 @@
     "scoreonly": 91.4
    }
   },
+  "reliability/high": [
+   {
+    "accounts": 1301,
+    "band": "0.0-0.1",
+    "meanScore": 0.002,
+    "shareMules": 0.002
+   },
+   {
+    "accounts": 20,
+    "band": "0.1-0.2",
+    "meanScore": 0.146,
+    "shareMules": 0.25
+   },
+   {
+    "accounts": 16,
+    "band": "0.2-0.3",
+    "meanScore": 0.247,
+    "shareMules": 0.688
+   },
+   {
+    "accounts": 16,
+    "band": "0.3-0.4",
+    "meanScore": 0.351,
+    "shareMules": 0.438
+   },
+   {
+    "accounts": 4,
+    "band": "0.4-0.5",
+    "meanScore": 0.447,
+    "shareMules": 0.5
+   },
+   {
+    "accounts": 8,
+    "band": "0.5-0.6",
+    "meanScore": 0.547,
+    "shareMules": 0.25
+   },
+   {
+    "accounts": 8,
+    "band": "0.6-0.7",
+    "meanScore": 0.645,
+    "shareMules": 0.5
+   },
+   {
+    "accounts": 13,
+    "band": "0.7-0.8",
+    "meanScore": 0.741,
+    "shareMules": 0.538
+   },
+   {
+    "accounts": 15,
+    "band": "0.8-0.9",
+    "meanScore": 0.852,
+    "shareMules": 0.667
+   },
+   {
+    "accounts": 133,
+    "band": "0.9-1.0",
+    "meanScore": 0.991,
+    "shareMules": 0.97
+   }
+  ],
+  "reliability/low": [
+   {
+    "accounts": 1301,
+    "band": "0.0-0.1",
+    "meanScore": 0.002,
+    "shareMules": 0.002
+   },
+   {
+    "accounts": 21,
+    "band": "0.1-0.2",
+    "meanScore": 0.145,
+    "shareMules": 0.238
+   },
+   {
+    "accounts": 16,
+    "band": "0.2-0.3",
+    "meanScore": 0.247,
+    "shareMules": 0.688
+   },
+   {
+    "accounts": 14,
+    "band": "0.3-0.4",
+    "meanScore": 0.348,
+    "shareMules": 0.357
+   },
+   {
+    "accounts": 5,
+    "band": "0.4-0.5",
+    "meanScore": 0.456,
+    "shareMules": 0.6
+   },
+   {
+    "accounts": 10,
+    "band": "0.5-0.6",
+    "meanScore": 0.546,
+    "shareMules": 0.3
+   },
+   {
+    "accounts": 10,
+    "band": "0.6-0.7",
+    "meanScore": 0.645,
+    "shareMules": 0.5
+   },
+   {
+    "accounts": 13,
+    "band": "0.7-0.8",
+    "meanScore": 0.745,
+    "shareMules": 0.462
+   },
+   {
+    "accounts": 15,
+    "band": "0.8-0.9",
+    "meanScore": 0.845,
+    "shareMules": 0.8
+   },
+   {
+    "accounts": 129,
+    "band": "0.9-1.0",
+    "meanScore": 0.99,
+    "shareMules": 0.984
+   }
+  ],
   "verdict": "not earned"
  },
  "verdict": "beats",

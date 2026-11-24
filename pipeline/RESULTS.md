@@ -131,7 +131,11 @@ What it means, with its limits:
 - When past speed tells nothing, the speed rule falls below biggest first, and the mule score alone is the best of the orders (+0.5). So the score adds a little, and a speed rule can hurt if the hint is false.
 - The amount alone already spots most mules here (AUC about 0.98, above the 0.75 the plan aimed for), so this world was easy to rank by money. The pre-lock check said the test could not be passed; it was run anyway and reported as is.
 - The score's clearer value is in naming who is likely a mule and why (memo reasons, the whole-freeze condition R2). Phone-signal noise made no difference.
-- Not done from the plan: a reliability curve, the 0% shop and current-account sweeps, the model hash in the lock, and mules with no past history.
+- After the lock, with no shops at all: full 97.55% vs best no-model order 97.44% (+0.11 points). Same answer as the headline.
+- After the lock, with no current-account mules: full 98.05% vs best no-model order 97.95% (+0.10 points). Same answer as the headline.
+- Reliability curve (score band -> share that really are mules): 0.0-0.1: 0.00 -> 0.00 (n=1301); 0.1-0.2: 0.15 -> 0.25 (n=20); 0.2-0.3: 0.25 -> 0.69 (n=16); 0.3-0.4: 0.35 -> 0.44 (n=16); 0.4-0.5: 0.45 -> 0.50 (n=4); 0.5-0.6: 0.55 -> 0.25 (n=8); 0.6-0.7: 0.65 -> 0.50 (n=8); 0.7-0.8: 0.74 -> 0.54 (n=13); 0.8-0.9: 0.85 -> 0.67 (n=15); 0.9-1.0: 0.99 -> 0.97 (n=133). Scores near 0 and near 1 are honest; the 100 accounts (7%) in between are too few to trust band by band.
+- Model hash `26713557bc992f77...` recorded in `configs/v4_fair.model-hash` after the lock (the model is fixed by the locked training seed); every rerun checks it.
+- Not done from the plan: mules with no past history (left for the next-stop work).
 
 ## 7. Assumptions (change these and the numbers change)
 

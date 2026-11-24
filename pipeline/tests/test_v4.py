@@ -44,3 +44,27 @@ def test_score_only_order_uses_the_same_numbers_as_queue_ts():
     mule = float(re.search(r"MULE_DRAIN_PER_HOUR = ([0-9.]+)", ts).group(1))
     ratio = float(re.search(r"ASSUMED_DRAIN_RATIO = ([0-9.]+)", ts).group(1))
     assert v4.MULE_DRAIN == mule and abs(v4.SHOP_DRAIN - mule / ratio) < 1e-12
+
+
+def test_model_hash_file_is_recorded():
+    from pathlib import Path
+    from scalpel_sim.configs import v4_fair as C
+    h = Path(C.__file__).with_suffix(".model-hash").read_text().strip()
+    assert len(h) == 64 and all(c in "0123456789abcdef" for c in h)
+
+
+def test_reliability_bands_cover_all_accounts():
+    import numpy as np
+    from scalpel_grade.v4_run import reliability
+
+    class M:
+        def mule_score(self, X):
+            return np.linspace(0, 1, len(X))
+    from scalpel_sim.configs import v4_fair as C
+    from scalpel_sim.world import make_world
+    from scalpel_model.features import build_features
+    from scalpel_sim.signals import compute_signals
+    w = make_world(C.v4_config(C.V4_DEV_SEEDS[0]))
+    n = len(build_features(w[0], compute_signals(w[0])))
+    rel = reliability(M(), [w])
+    assert sum(b["accounts"] for b in rel) == n

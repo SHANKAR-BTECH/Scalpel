@@ -1,6 +1,7 @@
 """python -m scalpel_grade.v4_run : the pre-registered v4 test (after the lock). Writes out/v4-results.json."""
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -28,6 +29,34 @@ def brier(model, worlds) -> float:
         y = np.array([t["roles"][a] == "mule" for a in X.index], dtype=float)
         errs.append((s - y) ** 2)
     return float(np.concatenate(errs).mean())
+
+
+def model_hash(model) -> str:
+    """Fingerprint of the trained mule-score model: every learned number, rounded so it is stable across machines."""
+    sc, lr = model.clf.named_steps["standardscaler"], model.clf.named_steps["logisticregression"]
+    parts = [sc.mean_, sc.scale_, lr.coef_, lr.intercept_, model.calib.lr.coef_, model.calib.lr.intercept_]
+    nums = [round(float(x), 8) for a in parts for x in np.ravel(a)]
+    return hashlib.sha256(json.dumps(nums).encode()).hexdigest()
+
+
+def reliability(model, worlds, bins: int = 10) -> list[dict]:
+    """Reliability curve: in each score band, the average score vs the share that really are mules."""
+    s_all, y_all = [], []
+    for w, t in worlds:
+        X = build_features(w, compute_signals(w))
+        if X.empty:
+            continue
+        s_all.append(model.mule_score(X))
+        y_all.append(np.array([t["roles"][a] == "mule" for a in X.index], dtype=float))
+    s, y = np.concatenate(s_all), np.concatenate(y_all)
+    out = []
+    for i in range(bins):
+        lo, hi = i / bins, (i + 1) / bins
+        m = (s >= lo) & ((s < hi) if i < bins - 1 else (s <= hi))
+        if m.sum():
+            out.append({"band": f"{lo:.1f}-{hi:.1f}", "accounts": int(m.sum()),
+                        "meanScore": round(float(s[m].mean()), 3), "shareMules": round(float(y[m].mean()), 3)})
+    return out
 
 
 def run_set(model, cfgs, ks=(2, 5, 10)) -> dict:
@@ -91,14 +120,25 @@ def main() -> None:
     assert lock["fingerprint"] == C.fingerprint(), "settings changed after the lock"
     train = [make_world(C.v4_config(C.V4_TRAIN_SEED, n)) for n in ("high", "low")]
     model = train_models(train)["logistic"]
-    res = {"lockPassable": lock["passable"], "meanCeilingGapDev": lock["meanCeilingGapPoints"]}
+    # Added AFTER the lock: the model is fixed by the locked training seed; its hash is recorded once and then
+    # checked on every rerun, so the model can't change silently.
+    mh, hfile = model_hash(model), Path(C.__file__).with_suffix(".model-hash")
+    if hfile.exists():
+        assert hfile.read_text().strip() == mh, "mule-score model changed since its hash was recorded"
+    else:
+        hfile.write_text(mh + "\n")
+    res = {"lockPassable": lock["passable"], "meanCeilingGapDev": lock["meanCeilingGapPoints"], "modelHash": mh}
     for label, over in [("headline", {}), ("noSpeedHint", {"dwell_pro": (2, 240), "dwell_rented": (2, 240)}),
-                        ("direct15", {"direct_merchant_share": 0.15}), ("direct25", {"direct_merchant_share": 0.25})]:
+                        ("direct15", {"direct_merchant_share": 0.15}), ("direct25", {"direct_merchant_share": 0.25}),
+                        # Added after the lock: 0% sweeps (no shops at all; no current-account mules)
+                        ("noShops", {"direct_merchant_share": 0.0, "merchant_buy_prob": 0.0}),
+                        ("noCurrent", {"mule_current_share": 0.0})]:
         for noise in (("high", "low") if label == "headline" else ("high",)):
             r, worlds = run_set(model, [C.v4_config(s, noise, **over) for s in C.V4_SEEDS])
             res[f"{label}/{noise}"] = r
             if label == "headline":
                 res[f"brier/{noise}"] = round(brier(model, worlds), 4)
+                res[f"reliability/{noise}"] = reliability(model, worlds)
                 base = np.mean([np.mean([t["roles"][a] == "mule" for a in build_features(w, compute_signals(w)).index]) for w, t in worlds])
                 res[f"brierBaseline/{noise}"] = round(float(base * (1 - base)), 4)
     # Added AFTER the lock (no setting changed): a 90% interval for the headline margin, by resampling accounts.

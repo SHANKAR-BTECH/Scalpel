@@ -364,7 +364,8 @@ def render(s: dict) -> str:
               "- The amount alone already spots most mules here (AUC about 0.98, above the 0.75 the plan aimed for), so this world was easy to rank by money. "
               "The pre-lock check said the test could not be passed; it was run anyway and reported as is.",
               "- The score's clearer value is in naming who is likely a mule and why (memo reasons, the whole-freeze condition R2). Phone-signal noise made no difference.",
-              "- Not done from the plan: a reliability curve, the 0% shop and current-account sweeps, the model hash in the lock, and mules with no past history.", ""]
+              *(_v4_after_lock(v4)),
+              "- Not done from the plan: mules with no past history (left for the next-stop work).", ""]
 
     L += ["## 7. Assumptions (change these and the numbers change)", "",
           "- The worlds are invented. v2 changes criminal habits on purpose: older rented mule accounts, slower mules, twice as many innocent shops, more digital-arrest scams.",
@@ -377,6 +378,31 @@ def render(s: dict) -> str:
           "- v2's settings were locked before training and re-locked once, openly, when shared world-realism fields were added (no v2 result had been looked at).",
           "- v1 is easy for the AI (near-perfect on an unseen v1 seed). The v1 column is graded on v1 seed 101, which the AI trained on.", ""]
     return "\n".join(L)
+
+
+
+def _v4_after_lock(v4: dict) -> list[str]:
+    """Checks added after the lock (nothing re-tuned): 0% sweeps, reliability curve, model hash."""
+    if "noShops/high" not in v4:
+        return []
+    nm = ("biggest", "biggestcase", "biggestspeed")
+    L = []
+    for key, label in (("noShops/high", "no shops at all"), ("noCurrent/high", "no current-account mules")):
+        r = v4[key]["10"]
+        L.append(f"- After the lock, with {label}: full {r['scalpel']:.2f}% vs best no-model order {max(r[n] for n in nm):.2f}% "
+                 f"({r['scalpel'] - max(r[n] for n in nm):+.2f} points). Same answer as the headline.")
+    rel = v4.get("reliability/high", [])
+    if rel:
+        ends = [b for b in rel if b["band"] in ("0.0-0.1", "0.9-1.0")]
+        mid = sum(b["accounts"] for b in rel if b not in ends)
+        tot = sum(b["accounts"] for b in rel)
+        L.append("- Reliability curve (score band -> share that really are mules): " +
+                 "; ".join(f"{b['band']}: {b['meanScore']:.2f} -> {b['shareMules']:.2f} (n={b['accounts']})" for b in rel) + ". "
+                 f"Scores near 0 and near 1 are honest; the {mid} accounts ({mid / tot:.0%}) in between are too few to trust band by band.")
+    if v4.get("modelHash"):
+        L.append(f"- Model hash `{v4['modelHash'][:16]}...` recorded in `configs/v4_fair.model-hash` after the lock (the model is fixed by the "
+                 "locked training seed); every rerun checks it.")
+    return L
 
 
 def main(run_engine: bool = True) -> None:
@@ -400,3 +426,4 @@ def main(run_engine: bool = True) -> None:
 
 if __name__ == "__main__":
     main()
+
