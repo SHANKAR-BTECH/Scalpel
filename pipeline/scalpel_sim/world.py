@@ -144,6 +144,7 @@ def make_world(cfg: WorldConfig) -> tuple[dict, dict]:
                 events.append((at, "pay", (rng.choice(normals), a, rng.randint(200, 5_000) * 100, "UPI")))
 
     # Scam campaigns: chains of mules, hop 1 takes victim money.
+    split = cfg.extra or None  # v3 only: mules pass money on in small pieces (configs/v3_split.py)
     free_mules = mules[:]
     rng.shuffle(free_mules)
     campaigns = []
@@ -154,7 +155,7 @@ def make_world(cfg: WorldConfig) -> tuple[dict, dict]:
         hops = rng.randint(*cfg.hops)
         chain = []
         for h in range(hops):
-            width = 2 if h == 0 and len(free_mules) > 4 else 1
+            width = 2 if h == 0 and len(free_mules) > 4 else (rng.randint(*split["split_width"]) if split and h > 0 else 1)
             level = [free_mules.pop() for _ in range(min(width, len(free_mules)))]
             if not level:
                 break
@@ -232,13 +233,32 @@ def make_world(cfg: WorldConfig) -> tuple[dict, dict]:
             fwd = amount * rng.randint(*cfg.mule_forward_share) // 100
             if rng.random() < 0.5:
                 book.pay(mule, rng.choice(shields), amount * rng.randint(*cfg.shop_spend_share) // 100, at, "UPI")
-            if h + 1 < len(camp["chain"]):
+            if split and h + 1 < len(camp["chain"]):
+                if h == 0:
+                    cash = fwd * rng.randint(*split["cashout_leak_l1"]) // 100
+                    book.pay(mule, "EXT-ATM", cash, at, "ATM_CASH")
+                    fwd -= cash
+                i = 0
+                while fwd > 0:
+                    piece = min(fwd, rng.randint(*split["piece_rupees"]) * 100)
+                    amt = piece
+                    if rng.random() < split["mixed_share"]:
+                        amt = min(piece + rng.randint(*split["mixed_topup_rupees"]) * 100, 999_900)
+                    i += 1
+                    push(at + i * rng.randint(1, 4) * MIN, "piece", (c, h, mule, rng.choice(camp["chain"][h + 1]), amt))
+                    fwd -= piece
+            elif h + 1 < len(camp["chain"]):
                 nxt = rng.choice(camp["chain"][h + 1])
                 t = book.pay(mule, nxt, fwd, at, "IMPS")
                 if t:
                     push(at + rng.randint(*cfg.mule_dwell_minutes) * MIN, "hop", (c, h + 1, nxt, t["amount"]))
             else:
                 book.pay(mule, rng.choice(EXITS), fwd, at, rng.choice(["ATM_CASH", "CRYPTO", "GOLD"]))
+        elif kind == "piece":
+            c, h, mule, nxt, amt = payload
+            t = book.pay(mule, nxt, amt, at, "UPI")
+            if t:
+                push(at + rng.randint(*cfg.mule_dwell_minutes) * MIN, "hop", (c, h + 1, nxt, t["amount"]))
 
     visible = [t for t in book.txns if t["at"] <= cutoff]
     accts = sorted(accounts.values(), key=lambda a: a["id"])
