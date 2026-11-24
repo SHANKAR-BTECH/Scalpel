@@ -22,7 +22,8 @@ RATES = {
 }
 
 
-def make_telecom(seed: int, account_ids: list[str], roles: dict[str, str], cutoff: int, noise: str = "low"):
+def make_telecom(seed: int, account_ids: list[str], roles: dict[str, str], cutoff: int, noise: str = "low", soft: set[str] | None = None):
+    """soft (v4): mules that are old rented accounts on the owner's own phone show signs only 3x as often as normal people."""
     rng = random.Random(seed * 7919 + 1)
     mule_f, other_f = (1.0, 1.0) if noise == "low" else (0.6, 2.0)
     used: set[str] = set()
@@ -42,7 +43,10 @@ def make_telecom(seed: int, account_ids: list[str], roles: dict[str, str], cutof
     phones, swaps, forwarding, mnrl, fri, simbox = [], [], [], [], {}, []
     for a in account_ids:
         is_mule = roles[a] == "mule"
-        p = lambda k: RATES[k][0] * mule_f if is_mule else RATES[k][1] * other_f
+        if soft and a in soft:
+            p = lambda k: min(RATES[k][0] * mule_f, RATES[k][1] * other_f * 3)
+        else:
+            p = lambda k: RATES[k][0] * mule_f if is_mule else RATES[k][1] * other_f
         m = msisdn()
         handset = rng.choice(farms) if rng.random() < p("farm") else imei()
         phones.append({"account": a, "msisdn": m, "imei": handset})

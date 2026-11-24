@@ -80,6 +80,7 @@ def make_world(cfg: WorldConfig) -> tuple[dict, dict]:
 
     accounts, opened, opening = {}, {}, {}
     rented: set[str] = set()  # old accounts whose owners still use them day to day
+    v4 = (cfg.extra or {}).get("v4")  # v4 only (configs/v4_fair.py): fair-test changes, all labelled assumptions
     for a in ids:
         kyc = None
         if roles[a] == "mule":
@@ -89,6 +90,8 @@ def make_world(cfg: WorldConfig) -> tuple[dict, dict]:
             else:
                 age = rng.randint(*cfg.mule_age_days)
             typ, bal = "SAVINGS", rng.randint(0, 3_000) * 100
+            if v4 and rng.random() < v4["mule_current_share"]:
+                typ = "CURRENT"  # a rented firm account / shop QR
             if rng.random() < cfg.mule_kyc_change_share:
                 kyc = cutoff - rng.randint(1, 25) * DAY
         elif roles[a] == "shield":
@@ -128,8 +131,11 @@ def make_world(cfg: WorldConfig) -> tuple[dict, dict]:
                     events.append((at, "pay", (a, "EXT-MERCHANT", rng.randint(500, 30_000) * 100, "CARD")))
 
     # Shops settle the day's takings every evening; some people pass money on within hours.
+    instant_shops: set[str] = set()
     for a in shields:
         instant = rng.random() < cfg.shield_instant_share
+        if instant:
+            instant_shops.add(a)
         for d in range(cfg.days):
             times = [h * 60 + rng.randint(0, 59) for h in range(8, 23)] if instant else [rng.randint(21 * 60, 23 * 60 + 30)]
             for m in times:
@@ -144,7 +150,20 @@ def make_world(cfg: WorldConfig) -> tuple[dict, dict]:
                 events.append((at, "pay", (rng.choice(normals), a, rng.randint(200, 5_000) * 100, "UPI")))
 
     # Scam campaigns: chains of mules, hop 1 takes victim money.
-    split = cfg.extra or None  # v3 only: mules pass money on in small pieces (configs/v3_split.py)
+    split = cfg.extra if cfg.extra and "split_width" in cfg.extra else None  # v3 only: pieces (configs/v3_split.py)
+    # v4: each mule's own speed comes from its type (assumption): "pro" mules move money fast, "rented" ones slowly.
+    # Past forwarding delay is drawn from the type too, with overlap, so the bank sees speed only roughly.
+    speed: dict[str, float] = {}
+    dwell_range: dict[str, tuple[int, int]] = {}
+    if v4:
+        import math
+        vr = random.Random(cfg.seed * 104_729 + 4)
+        for m in mules:
+            kind = "rented" if m in rented else "pro"
+            lo, hi = v4["speed_" + kind]
+            speed[m] = math.exp(vr.uniform(math.log(lo), math.log(hi)))
+            dwell_range[m] = v4["dwell_" + kind]
+    mule_dwell = lambda m: rng.randint(*dwell_range.get(m, cfg.mule_dwell_minutes))
     free_mules = mules[:]
     rng.shuffle(free_mules)
     campaigns = []
@@ -211,6 +230,9 @@ def make_world(cfg: WorldConfig) -> tuple[dict, dict]:
             c, victim, amount = payload
             camp = campaigns[c]
             mule = rng.choice(camp["chain"][0])
+            direct = bool(v4) and rng.random() < v4["direct_merchant_share"]
+            if direct:
+                mule = rng.choice(shields)  # victim told to "pay" a real shop for goods the fraudster collects
             if at > cutoff:
                 # Hidden future: victim money still arriving after the decision moment.
                 hour = (at - cutoff) // HOUR
@@ -226,13 +248,20 @@ def make_world(cfg: WorldConfig) -> tuple[dict, dict]:
                 rep = at + rng.randint(cfg.report_delay_hours[0] * 60, cfg.report_delay_hours[1] * 60) * MIN
                 if rep <= cutoff:
                     complaints.append({"id": f"C{len(complaints) + 1:05d}", "victim": victim, "txnId": t["id"], "reportedAt": rep})
-            push(at + rng.randint(*cfg.mule_dwell_minutes) * MIN, "hop", (c, 0, mule, amount))
+            if not direct:
+                push(at + mule_dwell(mule) * MIN, "hop", (c, 0, mule, amount))
         elif kind == "hop":
             c, h, mule, amount = payload
             camp = campaigns[c]
             fwd = amount * rng.randint(*cfg.mule_forward_share) // 100
             if rng.random() < 0.5:
                 book.pay(mule, rng.choice(shields), amount * rng.randint(*cfg.shop_spend_share) // 100, at, "UPI")
+            if v4 and rng.random() < v4["merchant_buy_prob"]:
+                # the mule buys goods (gold, phones) from a real shop with a big part of the money
+                buy = fwd * rng.randint(*v4["merchant_buy_pct"]) // 100
+                t = book.pay(mule, rng.choice(shields), buy, at, "UPI")
+                if t:
+                    fwd -= t["amount"]
             if split and h + 1 < len(camp["chain"]):
                 if h == 0:
                     cash = fwd * rng.randint(*split["cashout_leak_l1"]) // 100
@@ -251,18 +280,19 @@ def make_world(cfg: WorldConfig) -> tuple[dict, dict]:
                 nxt = rng.choice(camp["chain"][h + 1])
                 t = book.pay(mule, nxt, fwd, at, "IMPS")
                 if t:
-                    push(at + rng.randint(*cfg.mule_dwell_minutes) * MIN, "hop", (c, h + 1, nxt, t["amount"]))
+                    push(at + mule_dwell(nxt) * MIN, "hop", (c, h + 1, nxt, t["amount"]))
             else:
                 book.pay(mule, rng.choice(EXITS), fwd, at, rng.choice(["ATM_CASH", "CRYPTO", "GOLD"]))
         elif kind == "piece":
             c, h, mule, nxt, amt = payload
             t = book.pay(mule, nxt, amt, at, "UPI")
             if t:
-                push(at + rng.randint(*cfg.mule_dwell_minutes) * MIN, "hop", (c, h + 1, nxt, t["amount"]))
+                push(at + mule_dwell(nxt) * MIN, "hop", (c, h + 1, nxt, t["amount"]))
 
     visible = [t for t in book.txns if t["at"] <= cutoff]
     accts = sorted(accounts.values(), key=lambda a: a["id"])
-    phones, telecom = make_telecom(cfg.seed, [a["id"] for a in accts], roles, cutoff, cfg.signal_noise)
+    phones, telecom = make_telecom(cfg.seed, [a["id"] for a in accts], roles, cutoff, cfg.signal_noise,
+                                   soft=rented & set(mules) if v4 else None)
     world = {"schema": "scalpel-world/1", "name": cfg.name, "seed": cfg.seed, "cutoff": cutoff,
              "accounts": accts, "txns": visible, "complaints": complaints, "phones": phones, "telecom": telecom}
     traced = trace({a["id"]: a["opening"] for a in accts}, visible, victim_txns, as_of=cutoff)
@@ -276,13 +306,35 @@ def make_world(cfg: WorldConfig) -> tuple[dict, dict]:
         "stats": {"reportRate": reported_n / victims_n if victims_n else 0.0, "victims": victims_n,
                   "victimMoneyPaid": sum(t["amount"] for t in visible if t["id"] in victim_txns)},
     }
+    if v4:
+        # Each account's own speed after the decision moment (grader only). Shops on evening settlement lose a share
+        # once a day (first at about 22:00 IST); shops on instant settlement and normal people drain slowly every hour.
+        vr = random.Random(cfg.seed * 15_485_863 + 9)
+        truth["mulekind"] = {m: ("rented" if m in rented else "pro") for m in mules}
+        truth["drainPerHour"] = {**{a: v4["normal_drain"] for a in at_cutoff}, **{a: speed[a] for a in mules if a in at_cutoff}}
+        truth["settle"] = {}
+        for a in shields:
+            if a not in at_cutoff:
+                continue
+            if a in instant_shops:
+                truth["drainPerHour"][a] = v4["instant_shop_drain"]
+            else:
+                truth["drainPerHour"].pop(a, None)
+                truth["settle"][a] = {"atHour": 22, "share": vr.randint(*cfg.shield_sweep_share) / 100}
     return world, truth
 
 
 def remaining_victim_money(truth: dict, account: str, hour: int, drain_ratio: float | None = None) -> int:
     """Victim money still in `account` `hour` hours after the decision moment, if nobody acts.
-    Mule money drains at muleDrainPerHour; everyone else drains drain_ratio times slower."""
+    Mule money drains at muleDrainPerHour; everyone else drains drain_ratio times slower.
+    v4 worlds (truth has drainPerHour) use each account's own speed, and shops on evening settlement lose a share once a day."""
     v0 = truth["victimMoneyAtCutoff"].get(account, 0)
+    if drain_ratio is None and "drainPerHour" in truth:
+        st = truth["settle"].get(account)
+        if st:
+            settles = 0 if hour <= st["atHour"] else (hour - st["atHour"] - 1) // 24 + 1
+            return int(v0 * (1 - st["share"]) ** settles)
+        return int(v0 * (1 - truth["drainPerHour"].get(account, 0.0)) ** hour)
     ratio = truth["drainRatio"] if drain_ratio is None else drain_ratio
     p = truth["muleDrainPerHour"]
     if truth["roles"].get(account) != "mule":

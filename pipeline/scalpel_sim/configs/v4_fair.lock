@@ -1,0 +1,90 @@
+{
+ "changes": [],
+ "code": {
+  "scalpel_grade/grade.py": "eb418c2d2b4ad3b35cea57a70ff2021f85d6543f4ed89b1e2f8c499966f7242c",
+  "scalpel_grade/v4.py": "5cf5ceed36545b7558e4726f396a1af39a1d3d48f585bdb27b1a291d5dc73dde",
+  "scalpel_model/features.py": "6a0d8ba52730e875aebdfaa775d781c50ef9874c541c3c44dc79d6a0ccf6b15c",
+  "scalpel_model/train.py": "74741b94f511a22cd1d2627dee407392673a52026f6083420f806778b07a0537",
+  "scalpel_sim/configs/v4_fair.py": "c135ecdebd1a75566fdeb15eeb1907ac6c41dd0119f57a94fdedc097d85f7a15",
+  "scalpel_sim/telecom.py": "8c7125d0022d5ac05a3b800ca1d274d4583d92e7d21f2451610aad9dec4b6c47",
+  "scalpel_sim/world.py": "179a721f3d0952124610c17e68baa4d5ca1a34fe5d9476cadc27bb31a312d05b"
+ },
+ "devChecks": [
+  {
+   "amountAuc": 0.974,
+   "biggest": 97.28,
+   "biggestcase": 65.0,
+   "biggestspeed": 97.51,
+   "ceiling": 98.35,
+   "ceilingGap": 0.84,
+   "innocentDirectShareByMoney": 0.094,
+   "maxClue": [
+    "age_days",
+    0.885
+   ],
+   "seed": 490
+  },
+  {
+   "amountAuc": 0.992,
+   "biggest": 94.89,
+   "biggestcase": 54.24,
+   "biggestspeed": 97.14,
+   "ceiling": 97.85,
+   "ceilingGap": 0.71,
+   "innocentDirectShareByMoney": 0.008,
+   "maxClue": [
+    "age_days",
+    0.877
+   ],
+   "seed": 491
+  },
+  {
+   "amountAuc": 0.98,
+   "biggest": 99.41,
+   "biggestcase": 63.51,
+   "biggestspeed": 99.61,
+   "ceiling": 99.68,
+   "ceilingGap": 0.07,
+   "innocentDirectShareByMoney": 0.244,
+   "maxClue": [
+    "age_days",
+    0.842
+   ],
+   "seed": 492
+  },
+  {
+   "amountAuc": 0.986,
+   "biggest": 94.78,
+   "biggestcase": 52.9,
+   "biggestspeed": 97.31,
+   "ceiling": 98.04,
+   "ceilingGap": 0.74,
+   "innocentDirectShareByMoney": 0.002,
+   "maxClue": [
+    "age_days",
+    0.91
+   ],
+   "seed": 493
+  },
+  {
+   "amountAuc": 0.979,
+   "biggest": 95.52,
+   "biggestcase": 57.31,
+   "biggestspeed": 97.85,
+   "ceiling": 98.61,
+   "ceilingGap": 0.77,
+   "innocentDirectShareByMoney": 0.021,
+   "maxClue": [
+    "age_days",
+    0.881
+   ],
+   "seed": 494
+  }
+ ],
+ "fingerprint": "f6b3c71365c3ec404a054a7fd70838efcfe27a71b36b28433650620e039efb9a",
+ "meanCeilingGapPoints": 0.63,
+ "note": "Written before any test seed (401-403) world existed. Settings unchanged from the first draft (no tuning).",
+ "parentCommit": "5bd3e0ea34ac64f12d5270bc82b59b1430ae7825",
+ "passable": false,
+ "passableNeeded": 4.0
+}

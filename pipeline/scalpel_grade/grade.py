@@ -79,6 +79,12 @@ def ceiling_order(held: dict[str, int], truth: dict, drain_ratio: float | None =
     """Scalpel's own formula (amount x money lost per hour) fed the TRUE roles: score 1 for mules, 0 for everyone else.
     It is the best any mule-score model could do with this ordering rule. If even this barely beats 'biggest first',
     no model can earn a margin."""
+    if drain_ratio is None and "drainPerHour" in truth:
+        # v4: each account's true speed; a shop on evening settlement counts as its average hourly loss
+        def rate(a):
+            st = truth["settle"].get(a)
+            return 1 - (1 - st["share"]) ** (1 / 24) if st else truth["drainPerHour"].get(a, 0.0)
+        return sorted(held, key=lambda a: (-held[a] * rate(a), -held[a], a))
     p = truth["muleDrainPerHour"]
     ratio = truth["drainRatio"] if drain_ratio is None else drain_ratio
     rate = lambda a: p if truth["roles"].get(a) == "mule" else p / ratio
