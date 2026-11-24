@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import fc from "fast-check";
-import { trace, compareMethods, type Txn } from "../src/trace";
+import { trace, compareMethods, tracedByRole, type Txn } from "../src/trace";
 import { rupees } from "../src/money";
 
 const k = (n: number) => rupees(n * 1000);
@@ -60,8 +60,39 @@ function build(w: { opening: number[]; steps: { kind: number; a: number; b: numb
   return { opening, txns, victimTxns };
 }
 
+describe("trace by role (Re Hallett for a wrongdoer, pro-rata for everyone else)", () => {
+  // own 40k + stolen 60k, then 50k leaves.
+  const input = () => ({ opening: { M1: k(40), M2: 0 }, txns: [tx("a", "VA", "M1", k(60)), tx("b", "M1", "M2", k(50))], victimTxns: { a: "A" } });
+  it("an innocent holder: the 50k out is 60% victim money, 30k stays traced", () => {
+    expect(trace({ ...input(), method: "by_role" }).accounts.M1!.tainted).toBe(k(30));
+  });
+  it("a holder named as wrongdoer spends his own 40k first: 50k stays traced", () => {
+    const r = trace({ ...input(), method: "by_role", roles: { M1: "wrongdoer" } });
+    expect(r.accounts.M1!.tainted).toBe(k(50));
+    expect(r.accounts.M2!.tainted).toBe(k(10)); // the receiver only got 10k of victim money
+  });
+  it("tracedByRole gives both figures for the memo", () => {
+    expect(tracedByRole(input(), "M1")).toEqual({ balance: k(50), proRata: k(30), ownMoneyFirst: k(50) });
+  });
+  it("own-money-first never holds more than the lowest balance after the money came in", () => {
+    // 60k in, balance falls to 5k, then 95k salary: only 5k can still be victim money.
+    const r = trace({ opening: { M1: 0 }, txns: [tx("a", "VA", "M1", k(60)), tx("b", "M1", "CASH", k(55)), tx("c", "EMP", "M1", k(95))], victimTxns: { a: "A" }, method: "by_role", roles: { M1: "wrongdoer" } });
+    expect(r.accounts.M1!.tainted).toBe(k(5));
+  });
+  it("property: own-money-first stays between 0 and the balance", () => {
+    fc.assert(fc.property(worldArb, (w) => {
+      const i = build(w);
+      for (const acc of Object.keys(i.opening)) {
+        const b = tracedByRole(i, acc);
+        expect(b.ownMoneyFirst).toBeGreaterThanOrEqual(0);
+        expect(b.ownMoneyFirst).toBeLessThanOrEqual(b.balance);
+      }
+    }), { numRuns: 200 });
+  });
+});
+
 describe("tracing invariants (property)", () => {
-  for (const method of ["rolling", "taint_first", "clean_first"] as const) {
+  for (const method of ["rolling", "taint_first", "clean_first", "by_role"] as const) {
     it(`${method}: never holds more than balance; every victim paisa accounted for`, () => {
       fc.assert(fc.property(worldArb, (w) => {
         const input = build(w);

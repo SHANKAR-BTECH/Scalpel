@@ -18,6 +18,16 @@ for (const account of ["D09001", "D00191"]) {
     expect(row.held).toBe(row.traced);
   });
 
+  test(`${account}: shows the pro-rata rule and the accused (Re Hallett) figure from the engine`, async ({ page }) => {
+    const m = demo.memo.cases.find((c: { account: string }) => c.account === account);
+    await page.goto(`/memo?a=${account}`);
+    const line = page.getByTestId("trace-rule");
+    await expect(line).toContainText("pro-rata");
+    await expect(line).toContainText("Re Hallett");
+    if (m.tracedIfAccusedPaise > m.tracedPaise) await expect(line).toContainText(rupees(m.tracedIfAccusedPaise));
+    expect(m.tracedIfAccusedPaise).toBeGreaterThanOrEqual(m.tracedPaise);
+  });
+
   test(`${account}: no unverified source is cited inside a badge`, async ({ page }) => {
     await page.goto(`/memo?a=${account}`);
     const badges = (await page.getByTestId("cited").allInnerTexts()).join("\n");

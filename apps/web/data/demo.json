@@ -9473,6 +9473,7 @@
     "type": "SAVINGS",
     "balancePaise": 3750000,
     "tracedPaise": 3000000,
+    "tracedIfAccusedPaise": 3750000,
     "action": "EXACT_HOLD",
     "heldPaise": 3000000,
     "suggestedWholeFreeze": true,
@@ -9766,6 +9767,7 @@
     "type": "CURRENT",
     "balancePaise": 32867911,
     "tracedPaise": 695041,
+    "tracedIfAccusedPaise": 793833,
     "action": "EXACT_HOLD",
     "heldPaise": 695041,
     "suggestedWholeFreeze": false,
@@ -10062,8 +10064,8 @@
   ]
  },
  "provenance": {
-  "commit": "2cd9d90",
+  "commit": "328b9d6",
   "policyId": "scalpel-2026-12",
-  "generatedAt": "2026-11-24T12:25:06Z"
+  "generatedAt": "2026-11-24T12:33:25Z"
  }
 }

@@ -4,7 +4,7 @@
  * Like the rest of the runner, this only reads the world folder: never the hidden answers.
  */
 import {
-  checkRequisition, clockViews, createHold, planAccount, quashRisks, trace, unverifiedSources,
+  checkRequisition, clockViews, createHold, planAccount, quashRisks, trace, tracedByRole, unverifiedSources,
   type Action, type BadgeKey, type BadgeState, type GateContext, type GateResult, type Instant, type Signal,
 } from "@scalpel/engine";
 import { parseAssessments, parseSignals, type World } from "./schema";
@@ -18,6 +18,8 @@ export interface MemoClock { id: string; label: string; days: number; startsOn: 
 export interface MemoWholeFreeze { heldPaise: number; overTracedPaise: number; sized: BadgeState; risks: { id: string; ground: string }[] }
 export interface MemoCase {
   account: string; type: string; balancePaise: number; tracedPaise: number;
+  /** Traced if the holder were found to be a wrongdoer (own money presumed spent first, Re Hallett). Shown, never held. */
+  tracedIfAccusedPaise: number;
   action: string; heldPaise: number; suggestedWholeFreeze: boolean;
   regime: string | null; regimeLabel: string | null; ncrpAck: string; requisitionBasis: string; layer: number | null;
   hops: MemoHop[]; muleScore: number; reasons: string[]; signals: string[];
@@ -43,6 +45,13 @@ export function buildMemo(world: World, dir: string, accounts: string[], now: In
     txns: world.txns.map((t) => ({ id: t.id, at: t.at, from: t.from, to: t.to, amount: t.amount })),
     victimTxns, asOf: world.cutoff,
   });
+
+  const allVictims = Object.fromEntries(world.complaints.map((c) => [c.txnId, c.victim])); // same inputs as traceWorld
+  const byRoleInput = {
+    opening: Object.fromEntries(world.accounts.map((a) => [a.id, a.opening])),
+    txns: world.txns.map((t) => ({ id: t.id, at: t.at, from: t.from, to: t.to, amount: t.amount })),
+    victimTxns: allVictims, asOf: world.cutoff,
+  };
 
   return accounts.map((account) => {
     const t = traced[account];
@@ -91,6 +100,7 @@ export function buildMemo(world: World, dir: string, accounts: string[], now: In
     };
     return {
       account, type: types[account] ?? "SAVINGS", balancePaise: t.balance, tracedPaise: t.traced,
+      tracedIfAccusedPaise: tracedByRole(byRoleInput, account).ownMoneyFirst,
       action: gate?.action?.kind ?? "NONE", heldPaise: held, suggestedWholeFreeze: suggested,
       regime, regimeLabel: regime ? P.regimes[regime]?.label ?? null : null, ncrpAck: req.ncrpAck ?? "", requisitionBasis: req.basis,
       layer: full.accounts[account]?.hop ?? null, hops, muleScore: a.muleScore, reasons: a.reasons, signals: sig,

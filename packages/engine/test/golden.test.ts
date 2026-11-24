@@ -6,7 +6,7 @@
 import { describe, it, expect } from "vitest";
 import { join } from "node:path";
 import { loadPolicies } from "../src/node";
-import { trace, type Txn } from "../src/trace";
+import { trace, tracedByRole, type Txn } from "../src/trace";
 import { evaluateGate, type GateContext } from "../src/gate";
 import { checkRequisition, type Requisition } from "../src/requisition";
 import { restore } from "../src/restoration";
@@ -113,6 +113,22 @@ describe("golden cases", () => {
     expect(exact.overall.freezeRatio).toBe(1);
     expect(exact.overall.innocentHeld).toBe(0);
   });
+
+  it("6b. Same story, but the police name Mule-1 as accused: own money is presumed spent first (Re Hallett) -> ₹37,500, not ₹30,000", () => {
+    const input = {
+      opening: { M1: rupees(20_000), M2: 0 },
+      txns: [tx("w1", "VICTIM-A", "M1", 60_000), tx("w2", "VICTIM-B", "M1", 15_000), tx("w3", "VICTIM-C", "M1", 5_000), tx("w4", "M1", "M2", 25_000), tx("w5", "M1", "ATM", 37_500)],
+      victimTxns: { w1: "A", w2: "B", w3: "C" },
+    };
+    const both = tracedByRole(input, "M1");
+    expect(both).toEqual({ balance: rupees(37_500), proRata: rupees(30_000), ownMoneyFirst: rupees(37_500) });
+    // His own ₹20,000 went first in the ₹25,000 to Mule-2, so Mule-2 got only ₹5,000 of victim money.
+    expect(trace({ ...input, method: "by_role", roles: { M1: "wrongdoer" } }).accounts.M2!.tainted).toBe(rupees(5_000));
+    // The Gate allows the larger hold only because the traced figure the caller gives it is the accused figure.
+    const r = evaluateGate({ kind: "EXACT_HOLD", account: "M1", amount: rupees(37_500) },
+      ctx(policeReq({ amountRequested: rupees(37_500) }), { account: { id: "M1", type: "SAVINGS", balance: both.balance, traced: both.ownMoneyFirst } }), P);
+    expect(r.action).toEqual({ kind: "EXACT_HOLD", account: "M1", amount: rupees(37_500) });
+  });
 });
 
 /**
@@ -141,6 +157,38 @@ describe("golden cases from real court orders", () => {
     expect(r.checks.find((c) => c.rule === "R1")).toMatchObject({ ok: false, sources: ["himanshu-gupta"], unverified: [] });
   });
 
+  it("7a. Himanshu Gupta rebuilt from the order's own money facts and run through trace(): at most ₹31,221.21 of the ₹82,800 can still be there", () => {
+    // What the order states (paras 3-4): victim lost ₹18,17,882; the petitioner's account was a 3rd-layer account that
+    // received ₹82,800; its balance is ₹31,221.21. It does NOT state dates, the layer 1-2 accounts, or what left the account.
+    // So layers 1-2 and the ₹51,578.79 outflow below are stand-ins chosen only to match those three numbers.
+    let m = 0;
+    const at = (id: string, from: string, to: string, p: number): Txn => ({ id, at: t0 + ++m * 60e3, from, to, amount: p });
+    const input = (ownOpening: number) => ({
+      opening: { L1: 0, L2: 0, HG: ownOpening },
+      txns: [
+        at("v", "VICTIM", "L1", rupees(18_17_882)),
+        at("l1", "L1", "L2", rupees(18_17_882)),
+        at("l2", "L2", "HG", rupees(82_800)),
+        at("out", "HG", "ELSEWHERE", ownOpening + rupees(82_800) - rupees(31_221.21)),
+      ],
+      victimTxns: { v: "V" },
+    });
+    // With no own money in the account, every method agrees: only the balance left can be victim money.
+    const plain = tracedByRole(input(0), "HG");
+    expect(plain).toEqual({ balance: rupees(31_221.21), proRata: rupees(31_221.21), ownMoneyFirst: rupees(31_221.21) });
+    expect(trace(input(0)).accounts.HG!.hop).toBe(3); // third layer, as the order says
+    // The court's ₹82,800 lien is ₹51,578.79 more than any tracing method can find; the rest waits for future credits.
+    expect(rupees(82_800) - plain.ownMoneyFirst).toBe(rupees(51_578.79));
+    // If he also had ₹20,000 of his own (stand-in), the two rules split: innocent pro-rata vs accused own-money-first.
+    const mixed = tracedByRole(input(rupees(20_000)), "HG");
+    expect(mixed.proRata).toBe(Math.round(rupees(31_221.21) * 82_800 / 1_02_800));
+    expect(mixed.ownMoneyFirst).toBe(rupees(31_221.21));
+    // The Gate, fed the traced figure, holds the traced amount and flags the court's larger lien.
+    const r = evaluateGate({ kind: "EXACT_HOLD", account: "HG", amount: rupees(82_800) },
+      ctx(real({ amountRequested: rupees(82_800), account: { id: "HG", branchState: "TN" } }), { account: { id: "HG", type: "SAVINGS", balance: plain.balance, traced: plain.proRata }, assessment: { role: "shield", muleScore: 0.3, signals: [] } }), P);
+    expect(r.action).toEqual({ kind: "EXACT_HOLD", account: "HG", amount: rupees(31_221.21) });
+  });
+
   it("7b. Himanshu Gupta, real states (Chennai police, Pune branch): after Kartik Chatur, police alone can't freeze in Bombay HC's area -> Magistrate", () => {
     const pune = real({ amountRequested: rupees(18_59_181), issuer: { name: "IO", rank: "Inspector", station: "Cyber PS Chennai East", state: "TN" }, account: { id: "HG", branchState: "MH" } });
     const checked = checkRequisition(pune, P, overlays);
@@ -154,8 +202,11 @@ describe("golden cases from real court orders", () => {
     expect(court.flags).toContain("Order exceeds traced amount by ₹17,76,381; tell the court");
   });
 
-  it("8. Navneet Traders (Gujarat HC, 16 Oct 2026): whole current account frozen over ₹18,413.95; court defroze it and kept only that lien", () => {
+  it("8. Navneet Traders (Gujarat HC, 16 Oct 2026): whole current account frozen; court defroze it and kept a ₹18,413.95 lien", () => {
     // The order does not give the account balance; ₹5,00,000 is a stand-in. Gujarat has no s.106 ruling in our rulebook (unsettled).
+    // Honest caveat (para 2.6 vs para 8): the bank's letter calls the ₹18,413.95 "shortfall" charges, while the court calls it
+    // "the disputed amount credited". The order gives no victim, credit date or layer, so this case cannot be rebuilt
+    // through trace(); it tests only the rule "quantify the amount, don't freeze the whole account".
     const acct = { id: "NT", type: "CURRENT" as const, balance: rupees(5_00_000), traced: rupees(18_413.95) };
     const shop = { role: "shield" as const, muleScore: 0.2, signals: [] };
     const valid = real({ asksWholeAccount: true, amountRequested: null, issuer: { name: "IO", rank: "Inspector", station: "Cyber PS", state: "RJ" }, account: { id: "NT", branchState: "GJ" } });

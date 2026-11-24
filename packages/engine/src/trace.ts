@@ -1,10 +1,14 @@
 /**
- * Rolling Charge tracing.
- * Follows each victim's money through mixed accounts in time order.
- *  - Debit: each victim's share leaves in proportion to the account balance (rolling charge).
- *  - Clean credit: raises balance only; never re-taints (lowest intermediate balance rule).
+ * Tracing victim money through mixed accounts, in time order.
+ *  - Default "rolling" (pro-rata): each debit takes victims' money and the holder's own money in proportion
+ *    to the balance. This is the fair rule between innocent people whose money got mixed.
+ *  - "by_role": a holder marked as a wrongdoer is presumed to spend his OWN money first (Re Hallett's Estate),
+ *    so victim money stays in the account longer; everyone else is traced pro-rata.
+ *  - Under every method a later clean credit never refills victim money: what is traced can never exceed the
+ *    lowest balance the account fell to after the money arrived (lowest intermediate balance).
  *  - Money leaving the visible system (cash, other bank not visible, crypto, gold) is an "exit".
- * Alternative allocation methods are kept only for the comparator screen.
+ * Who is a wrongdoer is never guessed here: the caller passes it from the case record (e.g. the police name the
+ * holder as accused). The mule score is never used for it, so the model never sets a hold amount.
  */
 import { type Paise, assertPaise, splitProportional, sum } from "./money";
 import type { Instant } from "./time";
@@ -22,7 +26,8 @@ export interface Txn {
   channel?: Channel;
 }
 
-export type TraceMethod = "rolling" | "taint_first" | "clean_first";
+export type TraceMethod = "rolling" | "taint_first" | "clean_first" | "by_role";
+export type HolderRole = "wrongdoer" | "innocent";
 
 export interface TraceInput {
   /** Accounts the system can see, with balance at the start of the window. Anything else is outside. */
@@ -32,6 +37,8 @@ export interface TraceInput {
   victimTxns: Record<string, VictimId>;
   asOf?: Instant;
   method?: TraceMethod;
+  /** Only for "by_role": holders the case record names as wrongdoers. Anyone not listed is treated as innocent. */
+  roles?: Record<AccountId, HolderRole>;
 }
 
 export interface AccountTrace {
@@ -59,7 +66,7 @@ export interface TraceResult {
 
 const byTime = (a: Txn, b: Txn) => a.at - b.at || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 
-function allocate(method: TraceMethod, amount: Paise, acct: AccountTrace, order: VictimId[]): Record<VictimId, Paise> {
+function allocate(method: Exclude<TraceMethod, "by_role">, amount: Paise, acct: AccountTrace, order: VictimId[]): Record<VictimId, Paise> {
   const tainted = acct.tainted;
   if (tainted === 0 || amount === 0) return {};
   if (method === "rolling") return splitProportional(amount, acct.taint, acct.balance);
@@ -119,7 +126,8 @@ export function trace(input: TraceInput): TraceResult {
         warnings.push(`balance gap on ${t.from} at ${t.id}: added ${t.amount - src.balance} unexplained clean money`);
         src.balance = t.amount;
       }
-      moved = Object.fromEntries(Object.entries(allocate(method, t.amount, src, order[t.from]!)).filter(([, p]) => p > 0));
+      const m = method === "by_role" ? (input.roles?.[t.from] === "wrongdoer" ? "clean_first" : "rolling") : method;
+      moved = Object.fromEntries(Object.entries(allocate(m, t.amount, src, order[t.from]!)).filter(([, p]) => p > 0));
       for (const [v, p] of Object.entries(moved)) {
         src.taint[v] = (src.taint[v] ?? 0) - p;
         if (src.taint[v] === 0) delete src.taint[v];
@@ -164,4 +172,15 @@ export function compareMethods(input: Omit<TraceInput, "method">, account: Accou
     clean_first: r.clean_first!.accounts[account]!.tainted,
     rolling: a.tainted,
   };
+}
+
+/**
+ * The two figures a hold memo shows for one account: traced pro-rata (holder innocent, the default) and traced
+ * own-money-first (holder found to be a wrongdoer). The second is never smaller than the first.
+ */
+export function tracedByRole(input: Omit<TraceInput, "method" | "roles">, account: AccountId) {
+  const pro = trace({ ...input, method: "rolling" }).accounts[account];
+  const own = trace({ ...input, method: "by_role", roles: { [account]: "wrongdoer" } }).accounts[account];
+  if (!pro || !own) throw new RangeError(`unknown account ${account}`);
+  return { balance: pro.balance, proRata: pro.tainted, ownMoneyFirst: own.tainted };
 }

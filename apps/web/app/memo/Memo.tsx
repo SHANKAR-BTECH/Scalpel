@@ -74,6 +74,12 @@ function MemoBody({ m, memo, role, ap, set }: { m: MemoCase; memo: DemoData["mem
           {whole ? <>Whole account frozen: {formatRupees(m.balancePaise)}</> : <>Hold {formatRupees(m.heldPaise)} of {formatRupees(m.balancePaise)}. The other {formatRupees(free)} stays usable.</>}
         </p>
         <p className="text-sm muted">Traced from the complaints: {formatRupees(m.tracedPaise)}. A whole freeze would have locked {formatRupees(m.balancePaise)}.</p>
+        <p className="text-xs muted mt-1" data-testid="trace-rule">
+          Traced pro-rata: each payment out took victim money and the holder&apos;s own money in proportion, because nobody has been found guilty yet.
+          {m.tracedIfAccusedPaise > m.tracedPaise
+            ? <> If the police name the holder as accused, the courts&apos; rule for a wrongdoer (Re Hallett: he spent his own money first) traces <b>{formatRupees(m.tracedIfAccusedPaise)}</b> instead.</>
+            : <> Even if the holder is named as accused (Re Hallett: own money spent first), the figure stays the same.</>}
+        </p>
         <h3 className="mt-3 font-semibold text-sm">Money trail into this account</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm" data-testid="hops">

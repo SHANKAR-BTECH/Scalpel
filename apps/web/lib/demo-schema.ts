@@ -19,7 +19,7 @@ export const Source = z.object({
   url: z.string().optional(), verified: z.boolean().optional(),
 }).passthrough();
 export const MemoCase = z.object({
-  account: z.string(), type: z.string(), balancePaise: paise, tracedPaise: paise, action: z.string(), heldPaise: paise,
+  account: z.string(), type: z.string(), balancePaise: paise, tracedPaise: paise, tracedIfAccusedPaise: paise, action: z.string(), heldPaise: paise,
   suggestedWholeFreeze: z.boolean(), regime: z.string().nullable(), regimeLabel: z.string().nullable(), ncrpAck: z.string(),
   requisitionBasis: z.string(), layer: z.number().nullable(),
   hops: z.array(z.object({ utr: z.string(), at: z.number(), from: z.string(), to: z.string(), amountPaise: paise, taintPaise: paise, layer: z.number().nullable() })),

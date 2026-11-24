@@ -42,7 +42,7 @@ body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
   .watermark { display: block; position: fixed; top: 45%; left: 0; right: 0; text-align: center; transform: rotate(-24deg);
     font-size: 34px; font-weight: 700; color: rgba(180, 35, 24, 0.18); pointer-events: none; z-index: 10; }
   footer { font-size: 7px !important; margin-top: 4px !important; padding-top: 2px !important; }
-  .memo [data-testid="cited"], .memo [data-testid="badge-reasons"] { font-size: 6.5px; line-height: 1.15; }
+  .memo [data-testid="cited"], .memo [data-testid="badge-reasons"], .memo [data-testid="trace-rule"] { font-size: 6.5px; line-height: 1.15; }
   .memo .card ul li { margin-top: 0; }
   footer p + p { display: none; } /* the watermark already says it is simulated */
   .print-banner { display: block !important; }
