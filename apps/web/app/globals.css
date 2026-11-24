@@ -22,3 +22,25 @@ body { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
   html, body { background: #fff; color: #000; }
   .card { border-color: #999; }
 }
+.watermark { display: none; }
+@media print {
+  @page { size: A4; margin: 8mm; }
+  body { font-size: 10px; }
+  nav, [role="note"] { display: none !important; }
+  main { padding: 0 !important; max-width: none !important; }
+  .memo { border: none; padding: 0; margin: 0; }
+  .memo h2 { font-size: 14px; }
+  .memo .text-xl { font-size: 13px; }
+  .memo .text-sm, .memo table { font-size: 8.5px; }
+  .memo .mt-4 { margin-top: 5px; }
+  .memo { line-height: 1.2; }
+  .memo .text-xs { font-size: 7.5px; }
+  .memo .card { padding: 5px; }
+  .memo .grid { gap: 5px; }
+  .memo td, .memo th { padding-top: 1px; padding-bottom: 1px; }
+  .memo .tag { font-size: 7px; padding: 0 3px; }
+  .watermark { display: block; position: fixed; top: 45%; left: 0; right: 0; text-align: center; transform: rotate(-24deg);
+    font-size: 34px; font-weight: 700; color: rgba(180, 35, 24, 0.18); pointer-events: none; z-index: 10; }
+  footer { font-size: 7px !important; margin-top: 4px !important; padding-top: 2px !important; }
+  .print-banner { display: block !important; }
+}
