@@ -4,7 +4,7 @@ import { fairnessReport } from "../src/fairness";
 import { rupees } from "../src/money";
 
 describe("fairness report", () => {
-  it("whole freeze: ₹4,53,600 held for ₹30,000 traced is the 15.12x industry pattern", () => {
+  it("whole freeze: ₹4,53,600 held for ₹30,000 traced gives the story's own ratio of 15.12x", () => {
     const r = fairnessReport([{ account: "M1", held: rupees(453_600), traced: rupees(30_000), group: "SAVINGS" }]);
     expect(r.overall.freezeRatio).toBeCloseTo(15.12, 10);
     expect(r.overall.innocentHeld).toBe(rupees(423_600));
@@ -65,7 +65,7 @@ describe("fairness report: money missed and recovery (phase 2 fixes)", () => {
     expect(r.overall.recoveryRate).toBe(0);
   });
 
-  it("phase 1 story: 15.12x whole freeze misses nothing and recovers 100%", () => {
+  it("phase 1 story: the whole freeze (15.12x its traced money) misses nothing and recovers 100%", () => {
     const r = fairnessReport([{ account: "M1", held: rupees(453_600), traced: rupees(30_000), group: "SAVINGS" }]);
     expect(r.overall.victimMoneyNotHeld).toBe(0);
     expect(r.overall.recoveryRate).toBe(1);

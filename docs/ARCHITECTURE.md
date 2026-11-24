@@ -45,7 +45,7 @@ Scalpel is a decision and tracking tool for those staff. For every case it:
 4. **Lets the account holder respond** through a plain-language portal (English and Hindi).
 5. **Proves** to auditors and courts that each step was lawful and proportionate, with a tamper-proof record.
 
-The headline number is the **Freeze Ratio**: money held ÷ money actually traced. The industry figure we cite is about 15.12×; Scalpel aims for about 1×.
+The headline number is the **Freeze Ratio**: money held ÷ money actually traced. Scalpel aims for about 1×. We quote only ratios measured in our own simulation; no industry-wide figure is cited because none has a public source.
 
 **What Scalpel is not:** it is not connected to any real bank, police or telecom system, and it is not legal advice. Every screen shows the banner *"Simulation with fictional data. Not legal advice."*, and every generated document carries the watermark *"SIMULATION – NOT AN OFFICIAL ORDER"*.
 
@@ -530,7 +530,7 @@ Work starts on **24 Nov 2026**, with the research walkthrough and learning first
 | Term | Meaning |
 |---|---|
 | **Rolling Charge** | Scalpel's tracing method: follows stolen money through mixed accounts and several hops, and splits it per victim |
-| **Freeze Ratio** | Money held ÷ money actually traced. 1× is ideal; the industry figure we cite is about 15.12× |
+| **Freeze Ratio** | Money held ÷ money actually traced. 1× is ideal; whole freezes in our simulation run far above it |
 | **Mule** | An account used knowingly to move stolen money |
 | **Shield** | An innocent account holder who unknowingly received stolen money, e.g. a shopkeeper |
 | **Exact hold** | Holding only the traced amount, instead of freezing the whole account |

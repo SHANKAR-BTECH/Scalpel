@@ -10,7 +10,7 @@ Unseen test worlds: 5 v2 worlds (seeds 201, 202, 203, 204, 205), built and locke
 
 ## 1. Holds: the two-number headline
 
-Freeze Ratio = money held ÷ real victim money (1.00× is exactly right). Victim money missed = real victim money left unheld, including victims who never complained. The Axe ratio here is our own simulated figure; the industry 15.12× is not used.
+Freeze Ratio = money held ÷ real victim money (1.00× is exactly right). Victim money missed = real victim money left unheld, including victims who never complained. The Axe ratio here is our own simulated figure; no industry figure is quoted.
 
 | Policy | Freeze Ratio v2 (range) | Victim money missed v2 | Innocent money held v2 | People wrongly restricted v2 | Future money stopped v2 | Freeze Ratio v1 |
 |---|---|---|---|---|---|---|
