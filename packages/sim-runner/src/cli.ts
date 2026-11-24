@@ -10,6 +10,7 @@ import { firstSeen, loadWorldDir, readOptional, runHolds, traceWorld } from "./r
 import { runScalpel } from "./scalpel";
 import { buildQueues } from "./queue";
 import { buildMemo } from "./memo";
+import { policy as scalpelPolicy } from "./scalpel";
 import { parseAssessments, parseSignals } from "./schema";
 
 function arg(name: string): string | undefined {
@@ -25,7 +26,8 @@ if (memoOut) {
   if (!accounts.length) throw new Error("--memo needs --accounts a,b");
   const world = loadWorldDir(dir);
   mkdirSync(dirname(memoOut), { recursive: true });
-  writeFileSync(memoOut, JSON.stringify({ world: world.name, cases: buildMemo(world, dir, accounts) }) + "\n");
+  const { P } = scalpelPolicy();
+  writeFileSync(memoOut, JSON.stringify({ world: world.name, policyId: P.id, policyStatus: P.status, sources: P.sources, cases: buildMemo(world, dir, accounts) }) + "\n");
   console.log(`${world.name}: memo for ${accounts.join(", ")} -> ${memoOut}`);
   process.exit(0);
 }

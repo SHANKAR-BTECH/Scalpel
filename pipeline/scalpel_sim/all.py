@@ -4,7 +4,8 @@
 2. builds the demo world into demo/
 3. trains the AI on v1 and writes its assessments into every world folder (it never sees v2's answers)
 4. runs the TypeScript engine on every world (holds 0/A/B/C and the officer's to-do orders)
-5. marks everything against the hidden answers and writes RESULTS.md and results.json
+5. marks everything against the hidden answers and writes RESULTS.md and results.json,
+   then the website's data file apps/web/data/demo.json (totals and series only)
 """
 from __future__ import annotations
 
@@ -39,6 +40,8 @@ def main() -> None:
     report.run_engine_all(folders + [PIPE / "demo"])
     print("5/5 marking ...")
     report.main(run_engine=False)
+    from scalpel_grade.demo_export import export_demo
+    print(f"    website data -> {export_demo()}")
 
 
 if __name__ == "__main__":
