@@ -5155,6 +5155,146 @@
    "v3-s303"
   ]
  },
+ "v4": {
+  "brier/high": 0.0217,
+  "brier/low": 0.0204,
+  "brierBaseline/high": 0.1029,
+  "brierBaseline/low": 0.1029,
+  "direct15/high": {
+   "10": {
+    "biggest": 97.09,
+    "biggestcase": 59.12,
+    "biggestspeed": 98.52,
+    "ceiling": 98.61,
+    "scalpel": 98.5,
+    "scoreonly": 97.88
+   },
+   "2": {
+    "biggest": 88.59,
+    "biggestcase": 35.74,
+    "biggestspeed": 90.1,
+    "ceiling": 92.13,
+    "scalpel": 89.93,
+    "scoreonly": 88.37
+   },
+   "5": {
+    "biggest": 91.81,
+    "biggestcase": 44.91,
+    "biggestspeed": 96.19,
+    "ceiling": 97.03,
+    "scalpel": 96.14,
+    "scoreonly": 92.99
+   }
+  },
+  "direct25/high": {
+   "10": {
+    "biggest": 97.88,
+    "biggestcase": 55.26,
+    "biggestspeed": 98.83,
+    "ceiling": 98.85,
+    "scalpel": 98.94,
+    "scoreonly": 98.34
+   },
+   "2": {
+    "biggest": 87.92,
+    "biggestcase": 32.85,
+    "biggestspeed": 91.12,
+    "ceiling": 93.77,
+    "scalpel": 90.62,
+    "scoreonly": 88.57
+   },
+   "5": {
+    "biggest": 93.82,
+    "biggestcase": 40.83,
+    "biggestspeed": 96.3,
+    "ceiling": 97.17,
+    "scalpel": 96.6,
+    "scoreonly": 95.13
+   }
+  },
+  "headline/high": {
+   "10": {
+    "biggest": 95.87,
+    "biggestcase": 52.32,
+    "biggestspeed": 97.95,
+    "ceiling": 98.75,
+    "scalpel": 98.02,
+    "scoreonly": 97.05
+   },
+   "2": {
+    "biggest": 86.68,
+    "biggestcase": 31.68,
+    "biggestspeed": 88.69,
+    "ceiling": 90.92,
+    "scalpel": 88.64,
+    "scoreonly": 87.37
+   },
+   "5": {
+    "biggest": 91.37,
+    "biggestcase": 38.65,
+    "biggestspeed": 94.87,
+    "ceiling": 97.32,
+    "scalpel": 95.28,
+    "scoreonly": 92.51
+   }
+  },
+  "headline/low": {
+   "10": {
+    "biggest": 95.87,
+    "biggestcase": 52.4,
+    "biggestspeed": 97.95,
+    "ceiling": 98.75,
+    "scalpel": 98.02,
+    "scoreonly": 97.04
+   },
+   "2": {
+    "biggest": 86.68,
+    "biggestcase": 31.71,
+    "biggestspeed": 88.69,
+    "ceiling": 90.92,
+    "scalpel": 88.59,
+    "scoreonly": 87.33
+   },
+   "5": {
+    "biggest": 91.37,
+    "biggestcase": 38.64,
+    "biggestspeed": 94.87,
+    "ceiling": 97.32,
+    "scalpel": 95.3,
+    "scoreonly": 92.44
+   }
+  },
+  "lockPassable": false,
+  "marginPoints": 0.07,
+  "meanCeilingGapDev": 0.63,
+  "noSpeedHint/high": {
+   "10": {
+    "biggest": 96.66,
+    "biggestcase": 57.72,
+    "biggestspeed": 95.66,
+    "ceiling": 98.72,
+    "scalpel": 96.23,
+    "scoreonly": 97.2
+   },
+   "2": {
+    "biggest": 85.45,
+    "biggestcase": 30.95,
+    "biggestspeed": 84.09,
+    "ceiling": 91.52,
+    "scalpel": 84.41,
+    "scoreonly": 84.97
+   },
+   "5": {
+    "biggest": 89.98,
+    "biggestcase": 43.35,
+    "biggestspeed": 89.41,
+    "ceiling": 96.84,
+    "scalpel": 89.89,
+    "scoreonly": 91.4
+   }
+  },
+  "verdict": "not earned"
+ },
  "verdict": "beats",
  "verdictVsBiggest": "ties",
  "vsBiggest": [

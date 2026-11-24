@@ -337,6 +337,25 @@ def render(s: dict) -> str:
         L += ["", "Disclosed after grading: the \"mixed credit\" top-up in the v3 generator is taken from money the mule kept back, which is mostly victim "
               "money, not the mule's own. The lock and the result are unchanged.", ""]
 
+    v4 = s.get("v4")
+    if v4:
+        names = {"biggest": "Biggest amount first", "biggestcase": "Biggest case first", "biggestspeed": "Amount x past speed (no model)",
+                 "scoreonly": "Mule score only (today's Scalpel order)", "scalpel": "Mule score x past speed (full)", "ceiling": "Perfect knowledge (true roles and speeds)"}
+        L += ["## 6c. The fair-test world v4 (pre-registered)", "",
+              "Settings, the speed formula, the no-model orders and the pass mark (+2 points over the best no-model order) were locked in "
+              "`configs/v4_fair.lock` before any test world existed. The check on practice worlds, done before the lock, already said the test "
+              f"was **not passable**: perfect knowledge beat the best no-model order by only {v4['meanCeilingGapDev']:.2f} points (needed 4). "
+              "No setting was tuned after that. The model was trained once on v4 seed 400.", "",
+              f"**Result: {v4['verdict']}** (margin {v4['marginPoints']:+.2f} points at K=10, high noise, seeds 401-403 pooled).", "",
+              "| Order | K=2 | K=5 | K=10 | K=10, past speed tells nothing | K=10, 25% paid straight to shops |", "|---|---|---|---|---|---|"]
+        for n in names:
+            h = v4["headline/high"]
+            L.append(f"| {names[n]} | {h['2'][n]:.1f}% | {h['5'][n]:.1f}% | {h['10'][n]:.1f}% | {v4['noSpeedHint/high']['10'][n]:.1f}% | {v4['direct25/high']['10'][n]:.1f}% |")
+        L += ["", f"Mule score accuracy (Brier score, lower is better): {v4['brier/high']:.3f} vs {v4['brierBaseline/high']:.3f} for always guessing the average.", "",
+              "What it means: how fast an account moved money before is the useful clue for the to-do order (+2 to +3.5 points over biggest first). "
+              "The mule score adds almost nothing on top, because the amount and account age already give most mules away. "
+              "The score's value is in naming who is likely a mule and why (memo reasons, the whole-freeze condition R2), not in the order.", ""]
+
     L += ["## 7. Assumptions (change these and the numbers change)", "",
           "- The worlds are invented. v2 changes criminal habits on purpose: older rented mule accounts, slower mules, twice as many innocent shops, more digital-arrest scams.",
           "- Victims complain late or never (40–70% report, up to 72 hours late). Only complaints made before the decision moment are visible.",
@@ -361,6 +380,8 @@ def main(run_engine: bool = True) -> None:
     s = summarise(v1, v2, v2n)
     s["v3"] = summarise_v3([g for n, g in sorted(graded.items()) if n.startswith("v3-s")],
                            [g for n, g in sorted(graded.items()) if n.startswith("v3noisy-s")])
+    v4p = OUT / "v4-results.json"
+    s["v4"] = json.loads(v4p.read_text()) if v4p.exists() else None
     (PIPE / "results.json").write_text(json.dumps(s, indent=1, sort_keys=True, default=float) + "\n", encoding="utf-8")
     (PIPE / "RESULTS.md").write_text(render(s), encoding="utf-8")
     print(s["firstLine"])

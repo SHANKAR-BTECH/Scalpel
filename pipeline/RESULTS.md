@@ -107,6 +107,25 @@ Settings, the stronger simple rule (biggest case first) and the pass mark (+2 po
 
 Disclosed after grading: the "mixed credit" top-up in the v3 generator is taken from money the mule kept back, which is mostly victim money, not the mule's own. The lock and the result are unchanged.
 
+## 6c. The fair-test world v4 (pre-registered)
+
+Settings, the speed formula, the no-model orders and the pass mark (+2 points over the best no-model order) were locked in `configs/v4_fair.lock` before any test world existed. The check on practice worlds, done before the lock, already said the test was **not passable**: perfect knowledge beat the best no-model order by only 0.63 points (needed 4). No setting was tuned after that. The model was trained once on v4 seed 400.
+
+**Result: not earned** (margin +0.07 points at K=10, high noise, seeds 401-403 pooled).
+
+| Order | K=2 | K=5 | K=10 | K=10, past speed tells nothing | K=10, 25% paid straight to shops |
+|---|---|---|---|---|---|
+| Biggest amount first | 86.7% | 91.4% | 95.9% | 96.7% | 97.9% |
+| Biggest case first | 31.7% | 38.6% | 52.3% | 57.7% | 55.3% |
+| Amount x past speed (no model) | 88.7% | 94.9% | 98.0% | 95.7% | 98.8% |
+| Mule score only (today's Scalpel order) | 87.4% | 92.5% | 97.0% | 97.2% | 98.3% |
+| Mule score x past speed (full) | 88.6% | 95.3% | 98.0% | 96.2% | 98.9% |
+| Perfect knowledge (true roles and speeds) | 90.9% | 97.3% | 98.8% | 98.7% | 98.8% |
+
+Mule score accuracy (Brier score, lower is better): 0.022 vs 0.103 for always guessing the average.
+
+What it means: how fast an account moved money before is the useful clue for the to-do order (+2 to +3.5 points over biggest first). The mule score adds almost nothing on top, because the amount and account age already give most mules away. The score's value is in naming who is likely a mule and why (memo reasons, the whole-freeze condition R2), not in the order.
+
 ## 7. Assumptions (change these and the numbers change)
 
 - The worlds are invented. v2 changes criminal habits on purpose: older rented mule accounts, slower mules, twice as many innocent shops, more digital-arrest scams.

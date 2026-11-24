@@ -39,6 +39,8 @@ def main() -> None:
     folders = sorted(p.parent for p in out.glob("v*-s*/world"))
     report.run_engine_all(folders + [PIPE / "demo"])
     print("5/5 marking ...")
+    from scalpel_grade import v4_run
+    v4_run.main()  # the pre-registered fair-test world (configs/v4_fair.lock)
     report.main(run_engine=False)
     from scalpel_grade.demo_export import export_demo
     print(f"    website data -> {export_demo()}")

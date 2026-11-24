@@ -9623,7 +9623,7 @@
      {
       "rule": "R4",
       "ok": true,
-      "note": "Hold under ₹50,000: victims may be repaid through the fast refund route without a court order (victim refund, not a release for the holder)",
+      "note": "2 of 3 victims lost under ₹50,000: they may be repaid through the fast refund route without a court order (victim refund, not a release for the holder)",
       "sources": [
        "mha-sop-2026-01"
       ],
@@ -9701,7 +9701,7 @@
      {
       "rule": "R4",
       "ok": true,
-      "note": "Hold under ₹50,000: victims may be repaid through the fast refund route without a court order (victim refund, not a release for the holder)",
+      "note": "2 of 3 victims lost under ₹50,000: they may be repaid through the fast refund route without a court order (victim refund, not a release for the holder)",
       "sources": [
        "mha-sop-2026-01"
       ],
@@ -9958,7 +9958,7 @@
      {
       "rule": "R4",
       "ok": true,
-      "note": "Hold under ₹50,000: victims may be repaid through the fast refund route without a court order (victim refund, not a release for the holder)",
+      "note": "13 of 14 victims lost under ₹50,000: they may be repaid through the fast refund route without a court order (victim refund, not a release for the holder)",
       "sources": [
        "mha-sop-2026-01"
       ],
@@ -10078,8 +10078,8 @@
   ]
  },
  "provenance": {
-  "commit": "22a02c2",
+  "commit": "81d63eb",
   "policyId": "scalpel-2026-12",
-  "generatedAt": "2026-11-24T12:40:15Z"
+  "generatedAt": "2026-11-24T12:59:07Z"
  }
 }
