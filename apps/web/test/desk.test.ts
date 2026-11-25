@@ -58,6 +58,21 @@ describe("desk on Postgres (PGlite)", () => {
     expect(r.filter((x) => x.status === "fulfilled").length).toBe(1);
     expect((await desk()).holds.length).toBe(1);
   });
+  it("a second server sees new records and a reset made elsewhere", async () => {
+    const db = new PGlite();
+    const q = async (t: string, p?: unknown[]) => (await db.query(t, p as unknown[])).rows as Record<string, unknown>[];
+    const a = new PgStore(q), b = new PgStore(q);
+    const draft = (n: number) => ({ at: n, actor: "priya", type: "NOTE", caseId: "CASE-001", payload: { n } });
+    await a.append([draft(1), draft(2)]);
+    expect((await b.chain()).length).toBe(2);
+    await a.append([draft(3)]);
+    expect((await b.chain()).map((e) => e.at)).toEqual([1, 2, 3]);
+    await a.reset();
+    await a.append([draft(7), draft(8), draft(9)]);
+    const seen = await b.chain();
+    expect(seen.map((e) => e.at)).toEqual([7, 8, 9]);
+    expect((await verifyChain(seen)).ok).toBe(true);
+  });
 });
 
 describe("telecom rules", () => {

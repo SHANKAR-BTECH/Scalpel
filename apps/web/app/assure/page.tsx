@@ -28,14 +28,13 @@ export default async function Assure() {
   const cases = m.cases.map((c) => ({ c, n: d.chain.filter((e) => e.caseId === c.id).length })).filter((x) => x.n > 0);
   return (
     <div>
-      <p className="eyebrow">Assure · compliance and audit</p>
-      <h1 className="mt-1">Is every hold the right size, on time, and on the record?</h1>
+      <h1>Is every hold the right size, on time, and on the record?</h1>
 
-      <section className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4" data-testid="kpis">
-        <div className="card p-4"><p className="text-[13px] muted">Active holds</p><p className="money text-[26px]">{active.length}</p><p className="text-[12.5px] muted">{inr(active.reduce((s, h) => s + h.hold.amount, 0))} held</p></div>
-        <div className="card p-4"><p className="text-[13px] muted">Held ÷ victims&apos; money in those accounts</p><p className={`money text-[26px] ${typeof f.overall.freezeRatio === "number" && f.overall.freezeRatio > 1 ? "text-[var(--bad)]" : ""}`} data-testid="freeze-ratio">{typeof f.overall.freezeRatio === "number" ? `${f.overall.freezeRatio.toFixed(2)}×` : "—"}</p><p className="text-[12.5px] muted">1.00× or less means no innocent money held</p></div>
-        <div className="card p-4"><p className="text-[13px] muted">Whole accounts frozen</p><p className="money text-[26px]">0</p><p className="text-[12.5px] muted">Scalpel only places exact holds</p></div>
-        <div className="card p-4"><p className="text-[13px] muted">Deadlines missed</p><p className={`money text-[26px] ${overdue ? "text-[var(--bad)]" : ""}`}>{overdue}</p><p className="text-[12.5px] muted"><Link className="link" href="/holds">See the clock board</Link></p></div>
+      <section className="card stats mt-5" data-testid="kpis">
+        <div className="stat"><p className="label">Active holds</p><p className="money text-[24px]">{active.length}</p><p className="text-[12.5px] muted">{inr(active.reduce((s, h) => s + h.hold.amount, 0))} held</p></div>
+        <div className="stat"><p className="label">Held ÷ victims&apos; money in those accounts</p><p className={`money text-[24px] ${typeof f.overall.freezeRatio === "number" && f.overall.freezeRatio > 1 ? "text-[var(--bad)]" : ""}`} data-testid="freeze-ratio">{typeof f.overall.freezeRatio === "number" ? `${f.overall.freezeRatio.toFixed(2)}×` : "—"}</p><p className="text-[12.5px] muted">1.00× or less means no innocent money held</p></div>
+        <div className="stat"><p className="label">Whole accounts frozen</p><p className="money text-[24px]">0</p><p className="text-[12.5px] muted">Scalpel only places exact holds</p></div>
+        <div className="stat"><p className="label">Deadlines missed</p><p className={`money text-[24px] ${overdue ? "text-[var(--bad)]" : ""}`}>{overdue}</p><p className="text-[12.5px] muted"><Link className="link" href="/holds">See the clock board</Link></p></div>
       </section>
 
       <section className="mt-6 card p-4" data-testid="ledger">

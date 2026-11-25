@@ -45,14 +45,13 @@ export default async function Mules() {
   const cases = new Set(rows.map((r) => r.caseId)).size;
   return (
     <div>
-      <p className="eyebrow">Mules · {W.bank.name}</p>
-      <h1 className="mt-1">{rows.length} accounts that look rented out to pass scam money</h1>
+      <h1>{rows.length} accounts that look rented out to pass scam money</h1>
       <p className="mt-1 max-w-[860px] muted">The mule-score model gives every account on a trail a score from 0 to 100 using 17 clues. These are the ones above 50, across every case. Pick one to see who sent it money and where the money went next.</p>
-      <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <div className="card p-4"><p className="text-[12.5px] muted">Likely mule accounts</p><p className="money text-[26px]"><CountUp value={rows.length} /></p></div>
-        <div className="card p-4"><p className="text-[12.5px] muted">Victims&apos; money that passed through them</p><p className="money text-[26px]"><CountUp value={through} format="inrShort" /></p></div>
-        <div className="card p-4"><p className="text-[12.5px] muted">Still sitting in them</p><p className="money text-[26px] text-[var(--accent)]"><CountUp value={still} format="inrShort" /></p></div>
-        <div className="card p-4"><p className="text-[12.5px] muted">Cases they appear in</p><p className="money text-[26px]"><CountUp value={cases} /></p></div>
+      <div className="card stats mt-4">
+        <div className="stat"><p className="label">Likely mule accounts</p><p className="money text-[24px]"><CountUp value={rows.length} /></p></div>
+        <div className="stat"><p className="label">Victims&apos; money that passed through them</p><p className="money text-[24px]"><CountUp value={through} format="inrShort" /></p></div>
+        <div className="stat"><p className="label">Still sitting in them</p><p className="money text-[24px] text-[var(--accent)]"><CountUp value={still} format="inrShort" /></p></div>
+        <div className="stat"><p className="label">Cases they appear in</p><p className="money text-[24px]"><CountUp value={cases} /></p></div>
       </div>
       <div className="mt-5"><MuleBoard rows={rows} /></div>
     </div>

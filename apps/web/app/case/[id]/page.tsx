@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/server/auth";
 import { desk, phoneTarget } from "@/lib/server/desk";
@@ -8,7 +9,7 @@ import { TrailGraph } from "@/components/TrailGraph";
 import { AccountRow } from "@/components/AccountRow";
 import { ActForm } from "@/components/ActForm";
 import { CountUp } from "@/components/CountUp";
-import { CaseWork, type PointItem, type ClearItem, type DoneItem } from "@/components/CaseWork";
+import { CaseWork, type PointItem, type ClearItem, type DoneItem, type PhoneHelp } from "@/components/CaseWork";
 import { aiView } from "@/lib/server/judge";
 import { askTelcoAction } from "@/app/actions";
 import { ago, inr, when } from "@/lib/format";
@@ -52,7 +53,19 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
   // Sent-back accounts first, so the supervisor's note is dealt with before anything new.
   points.sort((a, b) => Number(Boolean(b.returned)) - Number(Boolean(a.returned)));
   const heldTotal = withMoney.reduce((s, v) => s + (d.holdByAccount.get(v.a.id)?.hold.amount ?? 0), 0);
+  const tracedTotal = withMoney.reduce((s, v) => s + v.traced, 0);
+  const decidedN = withMoney.filter((v) => d.decisionByAccount.has(v.a.id)).length;
+  const heldN = withMoney.filter((v) => d.holdByAccount.has(v.a.id)).length;
+  const waitingN = withMoney.filter((v) => d.pendingByAccount.has(v.a.id)).length;
   const linked = [...new Set(c.rigs.flatMap((r) => (m.casesOfRig.get(r) ?? []).filter((x) => x !== c.id)))];
+  const lead = c.rigs.map((r) => W.rigs.find((x) => x.id === r)).find(Boolean);
+  const bands = accts.map((v) => v.phone?.fri).filter(Boolean) as string[];
+  const BAND: Record<string, string> = { VERY_HIGH: "Very high", HIGH: "High", MEDIUM: "Medium", LOW: "Low" };
+  const top = ["VERY_HIGH", "HIGH", "MEDIUM", "LOW"].find((b) => bands.includes(b));
+  const phoneHelp: PhoneHelp | null = c.calls.length ? {
+    device: lead ? `${lead.kind === "simbox" ? "SIM box" : "handset"} with ${lead.sims.length} SIMs` : "recently swapped SIM",
+    victims: new Set(c.calls.map((k) => k.to)).size, calls: c.calls.length, band: top ? `${BAND[top]} on the mule phones` : "not rated",
+  } : null;
   const log = d.chain.filter((e) => e.caseId === c.id).reverse();
   const asks = d.asks.filter((a) => a.caseId === c.id);
   const rigTargets = c.rigs.map((r) => {
@@ -61,10 +74,10 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
   });
   return (
     <div>
-      <Link href="/inbox" className="text-[13px] muted hover:underline">← Inbox</Link>
+      <Link href="/inbox" className="inline-flex items-center gap-1 text-[13px] muted hover:text-[var(--fg)]"><ChevronLeft size={15} aria-hidden />Inbox</Link>
       <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="eyebrow"><span className="mono">{c.id}</span> · {c.complaints.length} complaints · first {when(c.firstAt)}</p>
+          <p className="label"><span className="mono">{c.id}</span> · {c.complaints.length} complaints · first {when(c.firstAt)}</p>
           <h1 className="mt-1">{c.scamType}: {c.complaints.length} victims</h1>
           <p className="mt-1 max-w-[720px] muted">&ldquo;{c.complaints[0]!.story}&rdquo;</p>
         </div>
@@ -75,7 +88,7 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
         </dl>
       </div>
 
-      <div className="mt-5"><CaseWork caseId={c.id} graph={g} points={points} clear={clear} done={done} canDecide={u.role === "officer"} /></div>
+      <div className="mt-5"><CaseWork caseId={c.id} graph={g} points={points} clear={clear} done={done} canDecide={u.role === "officer"} phone={phoneHelp} /></div>
 
       <section className="mt-6">
         <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
@@ -87,10 +100,17 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
 
       <section className="mt-6 grid gap-4 lg:grid-cols-[1fr_340px]">
         <div className="min-w-0">
-          <h2>What to hold</h2>
-          <p className="mt-1 text-[14px] muted">Every account the police asked about, with what Scalpel suggests. The hold is never more than the victims' money still in the account.</p>
-          <div id="accounts" className="mt-3 space-y-2.5 scroll-mt-24" data-testid="accounts">
-            {withMoney.map((v) => <AccountRow key={v.a.id} v={v} desk={d} canPropose={u.role === "officer"} />)}
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2>Case board</h2>
+            <p className="text-[13px] muted">{decidedN} of {withMoney.length} decided · {heldN} held · {waitingN} waiting approval</p>
+          </div>
+          <div className="thread mt-2" aria-label={`${inr(heldTotal)} of ${inr(tracedTotal)} victims' money held`}>
+            <span className="thread-fill" style={{ width: `${tracedTotal ? Math.min(100, (heldTotal / tracedTotal) * 100) : 0}%` }} />
+          </div>
+          <p className="mt-1.5 text-[13px] muted"><span className="money text-[var(--fg)]">{inr(heldTotal)}</span> of <span className="money text-[var(--fg)]">{inr(tracedTotal)}</span> victims&apos; money in these accounts is held. A hold is never more than the victims&apos; money in the account.</p>
+          <div id="accounts" className="card board mt-3 scroll-mt-24" data-testid="accounts">
+            <div className="board-head"><span>Account</span><span>Layer</span><span>Mule score</span><span className="text-right">Victims&apos; money</span><span className="text-right">Status</span><span /></div>
+            {withMoney.map((v) => <AccountRow key={v.a.id} v={v} desk={d} />)}
           </div>
           {rest.length > 0 && (
             <details className="mt-3 panel p-3">
@@ -102,7 +122,7 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
 
         <aside className="space-y-3">
           <div className="card p-4" data-testid="phone-panel">
-            <p className="eyebrow text-[var(--phone)]">The phone behind it · Telco-A</p>
+            <h2 className="text-[var(--phone)]">The phone behind it</h2>
             <p className="mt-1 text-[14px]">{c.calls.length} scam calls reached these victims.</p>
             <ul className="mt-3 space-y-3">
               {rigTargets.map(({ rig, t, kind, value }) => {
@@ -134,7 +154,7 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
           </div>
 
           <div className="card p-4">
-            <p className="eyebrow">Activity on this case</p>
+            <h2>Activity on this case</h2>
             {log.length === 0 && <p className="mt-2 text-[13.5px] muted">Nothing done yet.</p>}
             <ol className="mt-2 space-y-2 text-[13px]" data-testid="case-log">
               {log.slice(0, 12).map((e) => (

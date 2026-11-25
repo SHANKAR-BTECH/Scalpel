@@ -48,7 +48,7 @@ export function LiveBell({ signedIn }: { signedIn: boolean }) {
       </button>
       {open && (
         <div className="pop-in glass absolute right-0 z-50 mt-2 w-[min(360px,calc(100vw-32px))] rounded-2xl p-2" data-testid="bell-list">
-          <p className="eyebrow px-2 py-1">Notifications</p>
+          <p className="px-2 py-1 text-[13px] font-semibold">Notifications</p>
           {notes.length === 0 && <p className="px-2 py-3 text-sm muted">Nothing yet.</p>}
           <ul className="max-h-[60vh] overflow-auto">
             {notes.map((n) => (
@@ -63,7 +63,7 @@ export function LiveBell({ signedIn }: { signedIn: boolean }) {
       )}
       {toast && (
         <div role="status" data-testid="toast" className="toast-in glass fixed bottom-4 right-4 z-[60] w-[min(380px,calc(100vw-32px))] rounded-2xl p-3 text-[13.5px]">
-          <p className="eyebrow mb-1 text-[var(--accent)]">New</p>
+          <p className="mb-1 text-[12.5px] font-semibold text-[var(--accent-ink)]">New</p>
           <Link href={toast.link} className="hover:underline" onClick={() => setToast(null)}>{toast.text}</Link>
         </div>
       )}

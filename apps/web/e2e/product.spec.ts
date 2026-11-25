@@ -22,10 +22,21 @@ test("officer proposes, supervisor is notified live and approves, holder explain
   await expect(vikram.getByRole("heading", { name: "Nothing waiting" })).toBeVisible();
 
   await priya.getByTestId("case-row").first().click();
-  await expect(priya.getByTestId("trail-graph")).toBeVisible();
-  const row = priya.getByTestId("account-row").filter({ has: priya.locator("[data-testid^=propose-]") }).first();
-  const acct = await row.getAttribute("data-account");
-  await row.locator("[data-testid^=propose-]").click();
+  await expect(priya.getByTestId("trail-graph").first()).toBeVisible();
+  // Priya works the decision cards with the AI until one suggests a hold, and agrees with it.
+  await priya.getByTestId("start-work").click();
+  let acct: string | null = null;
+  for (let i = 0; i < 10 && !acct; i++) {
+    const card = priya.getByTestId("decision-card");
+    await expect(card).toBeVisible({ timeout: 30_000 });
+    const id = (await card.getAttribute("data-account"))!;
+    const hold = (await card.getByText("Hold the victims' money").count()) > 0;
+    await card.getByTestId(`decide-${id}`).click();
+    await expect(priya.getByTestId("flash")).toBeVisible();
+    await expect(priya.locator(`[data-testid=decision-card][data-account=${id}]`)).toHaveCount(0, { timeout: 10_000 });
+    if (hold) acct = id;
+  }
+  expect(acct).not.toBeNull();
   await expect(priya.locator(`[data-account=${acct}]`).getByTestId("pending-chip")).toBeVisible();
 
   // Vikram's page updates by itself: bell count and the waiting item.
@@ -87,8 +98,11 @@ test("Telco-A blocks the SIM box but refuses the spoofed number", async ({ brows
 test("evidence file downloads and verifies; a changed file is caught", async ({ browser }) => {
   const priya = await as(browser, "priya");
   await priya.getByTestId("case-row").first().click();
-  await priya.locator("[data-testid^=propose-]").first().click();
-  await expect(priya.getByTestId("pending-chip").first()).toBeVisible();
+  await priya.getByTestId("start-work").click();
+  const card = priya.getByTestId("decision-card");
+  await expect(card).toBeVisible({ timeout: 30_000 });
+  await card.getByTestId(`decide-${await card.getAttribute("data-account")}`).click();
+  await expect(priya.getByTestId("decided-chip").first()).toBeVisible({ timeout: 10_000 });
   const meera = await as(browser, "meera");
   const dl = meera.waitForEvent("download");
   await meera.locator("[data-testid^=evidence-CASE]").first().click();
@@ -100,7 +114,7 @@ test("evidence file downloads and verifies; a changed file is caught", async ({ 
   await pub.getByText("or paste the file's text").click();
   await pub.getByTestId("verify-text").fill(text);
   await expect(pub.getByTestId("verify-result")).toContainText("Intact");
-  await pub.getByTestId("verify-text").fill(text.replace(/"amount": (\d+)/, '"amount": 1'));
+  await pub.getByTestId("verify-text").fill(text.replace(/"actor": "priya"/, '"actor": "mallory"'));
   await expect(pub.getByTestId("verify-result")).toContainText("Not intact");
 });
 
@@ -138,10 +152,11 @@ test("officer and AI decide together; an overrule goes to the supervisor, who se
   await expect(priya.getByTestId("flash")).toContainText("supervisor will check");
 
   const vikram = await as(browser, "vikram");
-  const item = vikram.getByTestId("overrule-item").first();
-  await expect(item).toContainText("Don't hold");
-  await item.getByPlaceholder("Why (the officer sees this)").fill("Money left within minutes; hold it");
-  await item.getByTestId("signoff-back").click();
+  await vikram.getByTestId("overrule-item").first().click();
+  const detail = vikram.getByTestId("detail");
+  await expect(detail).toContainText("Don't hold");
+  await detail.getByPlaceholder("Why (the officer sees this)").fill("Money left within minutes; hold it");
+  await detail.getByTestId("signoff-back").click();
   await expect(vikram.getByTestId("flash")).toContainText("Sent back");
 
   await priya.reload();

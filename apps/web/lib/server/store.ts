@@ -69,8 +69,26 @@ export class PgStore implements Store {
   kind = "postgres" as const;
   private ready: Promise<void> | null = null;
   constructor(private q: Q) {}
+  /** The log only grows (until a reset), so keep it here and fetch just the new rows: one small round trip per read. */
+  private cached: AuditEntry[] = [];
   private init() { return (this.ready ??= (async () => { for (const s of SCHEMA) await this.q(s); })()); }
-  async chain() { await this.init(); return (await this.q("select * from audit order by seq")).map(toEntry); }
+  async chain() {
+    await this.init();
+    const after = this.cached.length ? this.cached[this.cached.length - 1]!.seq : -1;
+    const rows = await this.q(
+      "with c as (select count(*)::int as n, (select hash from audit where seq = $1) as tip from audit) select c.n, c.tip, a.* from c left join audit a on a.seq > $1 order by a.seq",
+      [after],
+    );
+    const n = Number(rows[0]?.n ?? 0);
+    const tip = rows[0]?.tip ?? null;
+    const fresh = rows.filter((r) => r.seq !== null && r.seq !== undefined).map(toEntry);
+    // Our copy is good only if the database still has our last record, unchanged, and nothing else went missing.
+    const same = this.cached.length === 0 || tip === this.cached[this.cached.length - 1]!.hash;
+    if (same && n === this.cached.length + fresh.length) this.cached = [...this.cached, ...fresh];
+    // Someone reset the demo, or our copy is out of step: read it all again.
+    else this.cached = (await this.q("select * from audit order by seq")).map(toEntry);
+    return [...this.cached];
+  }
   async append(drafts: Draft[], check?: (chain: AuditEntry[]) => void) {
     await this.init();
     for (let attempt = 0; attempt < 5; attempt++) {
@@ -94,7 +112,9 @@ export class PgStore implements Store {
   }
   async notify(notes: Omit<Note, "id" | "read">[]) {
     await this.init();
-    for (const n of notes) await this.q("insert into notes (at, recipient, text, link) values ($1,$2,$3,$4)", [n.at, n.to, n.text, n.link]);
+    if (!notes.length) return;
+    const rows = notes.map((_, i) => `($${i * 4 + 1},$${i * 4 + 2},$${i * 4 + 3},$${i * 4 + 4})`).join(",");
+    await this.q(`insert into notes (at, recipient, text, link) values ${rows}`, notes.flatMap((n) => [n.at, n.to, n.text, n.link]));
   }
   async notes(to: string, limit = 30) {
     await this.init();
@@ -124,6 +144,7 @@ export class PgStore implements Store {
   async reset() {
     await this.init();
     await this.q("delete from audit");
+    this.cached = [];
     await this.q("delete from notes");
     await this.setClock({ offsetMs: 0, startedAt: Date.now() });
   }

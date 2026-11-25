@@ -10,6 +10,7 @@ import { DecisionCard, type CardAccount } from "./DecisionCard";
 import { ActForm } from "./ActForm";
 import { decideClearAction } from "@/app/actions";
 import { inr, inrShort } from "@/lib/format";
+import { PhoneCall } from "lucide-react";
 
 export interface PointItem { acct: CardAccount; ai: AiView; returned: { by: string; note: string } | null }
 export interface ClearItem { id: string; name: string; suggest: Choice; amount: number; confidence: number }
@@ -19,7 +20,9 @@ interface TraceInfo { ms: number; txnsRead: number; flows: number; hops: { hop: 
 const PACE = 1400;
 const CHOICE: Record<Choice, string> = { HOLD: "Hold", NO_HOLD: "No hold, watch", SEND_BACK: "Sent back to police" };
 
-export function CaseWork({ caseId, graph, points, clear, done, canDecide }: { caseId: string; graph: Graph; points: PointItem[]; clear: ClearItem[]; done: DoneItem[]; canDecide: boolean }) {
+export interface PhoneHelp { device: string; victims: number; calls: number; band: string }
+
+export function CaseWork({ caseId, graph, points, clear, done, canDecide, phone }: { caseId: string; graph: Graph; points: PointItem[]; clear: ClearItem[]; done: DoneItem[]; canDecide: boolean; phone: PhoneHelp | null }) {
   const total = points.length + clear.length + done.length;
   const [phase, setPhase] = useState<"idle" | "tracing" | "work">(done.length > 0 || points.some((p) => p.returned) ? "work" : "idle");
   const [info, setInfo] = useState<TraceInfo | null>(null);
@@ -49,9 +52,14 @@ export function CaseWork({ caseId, graph, points, clear, done, canDecide }: { ca
       <section ref={top} className="card p-5 scroll-mt-24" data-testid="casework">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="eyebrow text-[var(--accent)]">Work this case</p>
-            <h2 className="mt-1">{total} accounts to decide, together with the AI</h2>
+            <h2>{total} accounts to decide, together with the AI</h2>
             <p className="mt-1 text-[14px] muted">The rules engine traces the money now. Then you decide each account: {points.length} need your judgement because the evidence clashes, {clear.length} look clear.</p>
+            {phone && (
+              <p className="mt-3 flex items-start gap-2 rounded-lg bg-[var(--phone-tint)] px-3 py-2 text-[13.5px]" data-testid="telco-help">
+                <PhoneCall size={16} className="mt-0.5 shrink-0 text-[var(--phone)]" aria-hidden />
+                <span>The phone side of this trace comes from <b className="text-[var(--phone)]">Telco-A&apos;s AI</b>: it matched {phone.calls} scam calls to {phone.victims} victims and one {phone.device}. Its risk rating ({phone.band}) reaches the bank through DoT; the call records stay with Telco-A.</span>
+              </p>
+            )}
           </div>
           {canDecide ? <button type="button" className="btn btn-primary" onClick={start} data-testid="start-work">Start the trace</button> : <span className="chip chip-grey">The fraud officer works this case</span>}
         </div>
@@ -73,7 +81,7 @@ export function CaseWork({ caseId, graph, points, clear, done, canDecide }: { ca
           <ol className="panel space-y-2 p-4 text-[13px]" data-testid="trace-log">
             {!info && <li className="muted">Asking the rules engine…</li>}
             {info && <li className="pop-in">Read {info.txnsRead.toLocaleString("en-IN")} payments and followed {info.flows} money movements in <b>{info.ms} ms</b>. Shown slowly so you can follow.</li>}
-            {info && reveal >= 1 && <li className="pop-in">{graph.nodes.filter((n) => n.kind === "phone").length} phone{graph.nodes.filter((n) => n.kind === "phone").length === 1 ? "" : "s"} called {graph.nodes.filter((n) => n.col === 1).length} victims.</li>}
+            {info && reveal >= 1 && <li className="pop-in">{phone ? <>Telco-A&apos;s AI: one {phone.device} called {phone.victims} victims ({phone.calls} calls). Rating shared: <b className="text-[var(--phone)]">{phone.band}</b>.</> : <>{graph.nodes.filter((n) => n.col === 1).length} victims called.</>}</li>}
             {hopsShown.map((h) => <li key={h.hop} className="pop-in">{h.hop === 4 ? "Layer 4+" : h.hop === 1 ? "First accounts" : `Layer ${h.hop}`}: {h.accounts} accounts, <b className="money">{inrShort(h.money)}</b> of victims&apos; money still there.</li>)}
             {info && reveal >= graph.cols.length - 1 && <li className="pop-in">{inrShort(info.movedOut)} already left the bank. <b>{points.length}</b> accounts need your judgement.</li>}
           </ol>
@@ -89,11 +97,10 @@ export function CaseWork({ caseId, graph, points, clear, done, canDecide }: { ca
     <section ref={top} className="card p-5 scroll-mt-24" data-testid="casework">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="eyebrow text-[var(--accent)]">Work this case</p>
-          <h2 className="mt-1">{decided} of {total} accounts decided</h2>
+          <h2>{decided} of {total} accounts decided</h2>
         </div>
         <div className="flex items-center gap-3">
-          <span className="h-2 w-48 overflow-hidden rounded-full bg-[var(--line)]"><span className="block h-full rounded-full bg-[var(--accent)] transition-all duration-700" style={{ width: `${total ? (decided / total) * 100 : 0}%` }} /></span>
+          <span className="thread w-48"><span className="thread-fill" style={{ width: `${total ? (decided / total) * 100 : 0}%` }} /></span>
           <button type="button" className="btn btn-sm" onClick={start}>Replay the trace</button>
         </div>
       </div>
@@ -103,8 +110,7 @@ export function CaseWork({ caseId, graph, points, clear, done, canDecide }: { ca
 
         {!next && clear.length > 0 && canDecide && (
           <div className="card p-5 page-enter" data-testid="clear-group">
-            <p className="eyebrow">These look clear</p>
-            <h3 className="title mt-0.5 text-[20px]">Accept the AI&apos;s suggestion for {clearShown.length} account{clearShown.length === 1 ? "" : "s"}</h3>
+                        <h3 className="text-[19px]">Accept the AI&apos;s suggestion for {clearShown.length} account{clearShown.length === 1 ? "" : "s"}</h3>
             <p className="mt-1 text-[13.5px] muted">No clash in the evidence. Untick any you want to look at yourself; it will come back as its own card.</p>
             <ActForm action={decideClearAction} label={`Accept ${clearShown.length}`} testid="accept-clear" className="mt-3 space-y-3">
               <ul className="grid gap-1.5 md:grid-cols-2">

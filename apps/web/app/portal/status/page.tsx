@@ -21,7 +21,7 @@ export default async function Status() {
   const active = row.hold.state === "ACTIVE";
   return (
     <div className="mx-auto max-w-[760px]">
-      <p className="eyebrow">Hold <span className="mono">{ref}</span> · {W.bank.name}</p>
+      <p className="label">Hold <span className="mono">{ref}</span> · {W.bank.name}</p>
       <h1 className="mt-1">{active ? `${inr(row.hold.amount)} of your money is on hold` : "Your hold has been lifted"}</h1>
       <section className="mt-5 grid gap-3 sm:grid-cols-3">
         <div className="card p-4"><p className="text-[13px] muted">On hold</p><p className="money text-[24px] text-[var(--accent)]" data-testid="held">{active ? inr(row.hold.amount) : "₹0"}</p></div>

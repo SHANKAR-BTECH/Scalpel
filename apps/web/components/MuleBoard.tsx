@@ -71,7 +71,7 @@ export function MuleBoard({ rows }: { rows: MuleRow[] }) {
           <div key={cur.id} className="card page-enter sticky top-20 p-5" data-testid="mule-detail">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="eyebrow">{cur.caseId} · {cur.scamType} · Layer {cur.layer}</p>
+                <p className="label">{cur.caseId} · {cur.scamType} · Layer {cur.layer}</p>
                 <h2 className="mt-1 text-[22px]">{cur.name}</h2>
                 <p className="text-[13px] muted">{cur.type === "CURRENT" ? "Current" : cur.type === "SALARY" ? "Salary" : "Savings"} account <span className="mono">{cur.id}</span> · {cur.city}{cur.phone && <> · phone <span className="mono">{cur.phone}</span></>}</p>
               </div>

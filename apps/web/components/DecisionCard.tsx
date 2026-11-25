@@ -22,8 +22,8 @@ export function DecisionCard({ acct, ai, returned, step }: { acct: CardAccount; 
     <div className="card p-5 page-enter" data-testid="decision-card" data-account={acct.id}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          {step && <p className="eyebrow text-[var(--accent)]">{step}</p>}
-          <h3 className="title mt-0.5 text-[20px]">{acct.name}</h3>
+          {step && <p className="label text-[var(--accent-ink)]">{step}</p>}
+          <h3 className="mt-0.5 text-[20px]">{acct.name}</h3>
           <p className="text-[12.5px] muted"><span className="mono">{acct.id}</span> · {acct.sub} · opened {acct.age}{acct.phone ? <> · phone <span className="mono">{acct.phone}</span></> : null}</p>
         </div>
         <dl className="flex gap-5 text-right">
@@ -36,8 +36,8 @@ export function DecisionCard({ acct, ai, returned, step }: { acct: CardAccount; 
       {returned && <p className="mt-3 rounded-xl border border-[#f3d29b] bg-[var(--warn-tint)] p-3 text-[13.5px] text-[var(--warn)]" data-testid="returned-note">Sent back by {returned.by}: &ldquo;{returned.note}&rdquo;. Please decide again.</p>}
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        <div className="panel p-4">
-          <p className="eyebrow">Scalpel suggests</p>
+        <div className="panel self-start p-4">
+          <h4 className="text-[13px] font-semibold">Scalpel suggests</h4>
           <p className="mt-1 text-[15px] font-semibold">{ai.headline}</p>
           <div className="mt-2 flex items-center gap-2 text-[12.5px]">
             <span className="muted">How sure</span>
@@ -51,7 +51,7 @@ export function DecisionCard({ acct, ai, returned, step }: { acct: CardAccount; 
         </div>
 
         <ActForm action={decideAccountAction} hidden={{ account: acct.id }} label="Record my decision" testid={`decide-${acct.id}`} className="space-y-3">
-          <p className="eyebrow">Your call</p>
+          <h4 className="text-[13px] font-semibold">Your call</h4>
           <div className="grid gap-2">
             {options.map((c) => (
               <label key={c} className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 text-[14px] transition-all duration-300 ${choice === c ? "glass border-[var(--accent)]" : "border-white/70 bg-white/40 hover:bg-white/70"}`}>

@@ -7,6 +7,7 @@ import {
   verifyChain, createHold, applyEvent, clockViews, settle, evaluateGate, formatINR,
   type AuditEntry, type Hold, type ClockView, type HoldEvent, type Signal, type GateResult,
 } from "@scalpel/engine";
+import { cache } from "react";
 import { store, type Store } from "./store";
 import { model, policyNow, START, W, isProtectedNumber, holderName, type AccountView, type WRig } from "./world";
 import type { User } from "@/lib/users";
@@ -139,11 +140,12 @@ export function fold(chain: AuditEntry[], now: number): Desk {
   return { now, chain, decisions: [...decisions.values()], decisionByAccount, returned, proposals: [...proposals.values()], holds: [...holds.values()], asks: [...asks.values()], actions, checks, holdByAccount, pendingByAccount };
 }
 
-export async function desk(): Promise<Desk> {
+/** Read once per page render: the header and the page share it instead of each asking the database. */
+export const desk = cache(async (): Promise<Desk> => {
   const s = await store();
-  const [chain, now] = [await s.chain(), await demoNow(s)];
+  const [chain, now] = await Promise.all([s.chain(), demoNow(s)]);
   return fold(chain, now);
-}
+});
 
 // ---------- telecom ----------
 

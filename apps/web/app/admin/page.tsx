@@ -15,7 +15,6 @@ export default async function Admin() {
   const days = Math.floor((d.now - START) / 86_400_000);
   return (
     <div className="max-w-[900px]">
-      <p className="eyebrow">Admin</p>
       <h1 className="mt-1">Demo controls</h1>
       <section className="mt-5 card p-4" data-testid="db-status">
         <h2>Shared database</h2>

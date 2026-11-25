@@ -29,7 +29,6 @@ export default async function Telco() {
   const shown = [...new Set(W.calls.map((c) => c.shownCaller).filter((n) => m.spoofed.has(n)))];
   return (
     <div>
-      <p className="eyebrow text-[var(--phone)]">Telco-A · fraud console</p>
       <h1 className="mt-1">Find the phone behind the scams</h1>
       <p className="mt-1 max-w-[760px] muted">Our call records show which SIM and handset really made each call. Many cases at the bank lead back to a few devices: block the device, not the number the victim saw.</p>
 
