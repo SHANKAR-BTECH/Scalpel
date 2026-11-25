@@ -7,6 +7,7 @@ import * as D from "@/lib/server/desk";
 import { model } from "@/lib/server/world";
 import { USERS } from "@/lib/users";
 import { store } from "@/lib/server/store";
+import * as L from "@/lib/server/lookup";
 
 export interface Result { ok: boolean; message: string; at?: number }
 
@@ -109,3 +110,12 @@ export async function signoffAction(_: Result | null, f: FormData) {
 export async function tamperAction(_: Result | null, _f: FormData) {
   return run(async () => D.tamperTest(await me()));
 }
+
+/* Telco-A lookup tools for the SIM trace workbench (read only: they never change the record). */
+async function telcoOnly() {
+  const u = await currentUser();
+  if (!u || u.role !== "telco") throw new Error("Only Telco-A staff can use these tools.");
+}
+export async function lookupSubscriber(n: string) { await telcoOnly(); return L.subscriber(n); }
+export async function lookupCalls(n: string, fromDay: number | null, toDay: number | null) { await telcoOnly(); return L.callRecords(n, fromDay, toDay); }
+export async function lookupHandset(imei: string) { await telcoOnly(); return L.handset(imei); }

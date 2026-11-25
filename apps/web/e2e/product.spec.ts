@@ -151,6 +151,8 @@ test("pages fit a phone screen", async ({ browser }) => {
   await fits();
   await p.goto("/telco/RIG-1");
   await fits();
+  await p.goto("/telco/work");
+  await fits();
 });
 
 test("officer and AI decide together; an overrule goes to the supervisor, who sends it back; compliance sees it", async ({ browser }) => {
@@ -186,4 +188,39 @@ test("officer and AI decide together; an overrule goes to the supervisor, who se
   await expect(meera.getByTestId("ledger-row").first()).toContainText("sent back");
   await meera.getByTestId("tamper-test").click();
   await expect(meera.getByTestId("flash")).toContainText("caught it");
+});
+
+test("Telco-A engineer builds a SIM trace by hand; the AI only checks the pins", async ({ browser }) => {
+  const imran = await as(browser, "imran");
+  await imran.goto("/telco/work");
+  await expect(imran.getByTestId("pins-empty")).toBeVisible();
+  await expect(imran.getByTestId("ai-check")).toBeDisabled();
+  // Handset lookup from a lead: the engineer pins the handset, its tower and its SIMs.
+  await imran.getByTestId("lead").filter({ hasText: "RIG-1" }).click();
+  await imran.getByTestId("tool-run").click();
+  await expect(imran.getByTestId("imei-sim").first()).toBeVisible();
+  await imran.getByTestId("result-imei").getByTestId("pin").nth(0).click();
+  await imran.getByTestId("result-imei").getByTestId("pin").nth(1).click();
+  const sims = imran.getByTestId("imei-sim");
+  for (let i = 0; i < 5; i++) await sims.nth(i).getByTestId("pin").click();
+  // A first check: the AI says what is still missing (call records), never fills it in.
+  await imran.getByTestId("ai-check").click();
+  await expect(imran.getByTestId("ai-missing")).toContainText("call");
+  // Subscriber lookup on one SIM, then its call records.
+  const first = (await sims.first().locator("button.link").textContent())!.trim();
+  await sims.first().locator("button.link").click();
+  await imran.getByTestId("tool-run").click();
+  await expect(imran.getByTestId("result-sub")).toContainText("Telco-A subscriber");
+  await imran.getByTestId("tool-cdr").click();
+  await imran.getByTestId("tool-input").fill(first);
+  await imran.getByTestId("tool-run").click();
+  const rows = imran.getByTestId("cdr-row");
+  await expect(rows.first()).toBeVisible();
+  const n = Math.min(5, await rows.count());
+  for (let i = 0; i < n; i++) await rows.nth(i).getByTestId("pin").click();
+  await imran.getByTestId("tick-many").check();
+  await imran.getByTestId("tick-tower").check();
+  await imran.getByTestId("ai-check").click();
+  await expect(imran.getByTestId("ai-result")).toContainText("only your");
+  await expect(imran.getByTestId("trace-step").first()).toBeVisible();
 });
