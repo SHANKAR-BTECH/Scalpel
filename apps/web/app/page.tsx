@@ -27,7 +27,7 @@ export default function Home() {
             <div><dt className="text-[13px] muted">Victims reported</dt><dd className="money text-[26px]"><CountUp value={reported} format="inrShort" /></dd></div>
             <div><dt className="text-[13px] muted">Still in accounts</dt><dd className="money text-[26px] text-[var(--accent)]"><CountUp value={catchable} format="inrShort" /></dd></div>
           </dl>
-          <p className="mt-4 rounded-lg bg-[var(--phone-tint)] p-3 text-[13.5px] text-[var(--phone)]">One SIM box with {rig.sims.length} SIMs made the calls behind {m.casesOfRig.get(rig.id)?.length ?? 0} separate cases.</p>
+          <p className="mt-4 rounded-xl bg-[var(--phone-tint)] p-3 text-[13.5px] text-[var(--phone)]">One SIM box with {rig.sims.length} SIMs made the calls behind {m.casesOfRig.get(rig.id)?.length ?? 0} separate cases.</p>
         </div>
       </section>
       <section className="mt-10">

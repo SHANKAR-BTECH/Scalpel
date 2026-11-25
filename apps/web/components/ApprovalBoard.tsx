@@ -53,7 +53,7 @@ export function ApprovalBoard({ items }: { items: ApprovalItem[] }) {
       </ul>
 
       {cur && (
-        <section key={cur.key} className="card detail-in sticky top-24 p-5" data-testid="detail" aria-live="polite">
+        <section key={cur.key} className="card card-float detail-in sticky top-24 p-5" data-testid="detail" aria-live="polite">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h2 className="text-[21px]">{KIND[cur.kind]} {cur.amountText ? <span className="money">{cur.amountText}</span> : null} on {cur.name}</h2>
@@ -75,7 +75,7 @@ export function ApprovalBoard({ items }: { items: ApprovalItem[] }) {
             {cur.score && <Row k="Mule score">{cur.score}</Row>}
             {cur.rules && <Row k="Rules">{cur.rules}</Row>}
           </dl>
-          {cur.clash && <p className="mt-4 rounded-lg bg-[var(--warn-tint)] px-3 py-2 text-[13.5px] text-[var(--warn)]"><b>Evidence clashes:</b> {cur.clash}</p>}
+          {cur.clash && <p className="mt-4 rounded-xl bg-[var(--warn-tint)] px-3 py-2 text-[13.5px] text-[var(--warn)]"><b>Evidence clashes:</b> {cur.clash}</p>}
 
           <div className="mt-5 border-t border-[var(--line)] pt-4">
             {cur.mine ? <p className="chip chip-warn">You proposed this. Another supervisor must decide.</p>

@@ -53,7 +53,7 @@ export function LiveBell({ signedIn }: { signedIn: boolean }) {
           <ul className="max-h-[60vh] overflow-auto">
             {notes.map((n) => (
               <li key={n.id}>
-                <Link href={n.link} onClick={() => setOpen(false)} className="block rounded-lg px-2 py-2 text-[13.5px] hover:bg-[var(--panel)]">
+                <Link href={n.link} onClick={() => setOpen(false)} className="block rounded-xl px-2 py-2 text-[13.5px] hover:bg-[var(--panel)]">
                   {n.text}<span className="mt-0.5 block text-[11.5px] muted">{ago(n.at, now)}</span>
                 </Link>
               </li>

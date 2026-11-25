@@ -44,7 +44,7 @@ export function NumberTrace({ a, view, labels, reasons, done, packetAt, linked, 
               <span className="flex items-center gap-2 text-[13px] muted"><span className="spinner" />Tracing…</span>
             )}
           </div>
-          <div className="thread mt-4"><div className="thread-fill" style={{ width: `${(step / STEPS) * 100}%`, background: "linear-gradient(90deg, #c2a8ff, var(--phone))" }} /></div>
+          <div className="thread mt-4"><div className="thread-fill" style={{ width: `${(step / STEPS) * 100}%`, background: "linear-gradient(90deg, #a9a7ff, var(--phone))" }} /></div>
 
           <Graph view={view} step={step} />
 
@@ -119,18 +119,18 @@ export function NumberTrace({ a, view, labels, reasons, done, packetAt, linked, 
             <h2>Telco-A&apos;s AI suggests</h2>
             <span className="money text-[15px]">{Math.round(a.ai.confidence * 100)}% sure</span>
           </div>
-          <p className="mt-1 font-semibold text-[var(--phone)]">{labels[a.ai.suggest]}</p>
+          <p className="mt-1 text-[17px] font-semibold text-[var(--phone)]">{labels[a.ai.suggest]}</p>
           <p className="mt-2 text-[13px] muted">Because of: {a.ai.drivers.join("; ")}.</p>
           <p className="mt-2 text-[12.5px] muted">It reads network counters only. It does not see company registrations, police letters or who owned the number before.</p>
         </section>
 
-        <section className={`card p-5 transition-opacity duration-500 ${finished ? "opacity-100" : "opacity-60"}`} data-testid="telco-decide-panel">
+        <section className={`card card-float p-5 transition-opacity duration-500 ${finished ? "opacity-100" : "opacity-60"}`} data-testid="telco-decide-panel">
           <h2>What the records show</h2>
           <ul className="mt-2 space-y-1.5 text-[13.5px]">
             {a.facts.map((f) => <li key={f} className="flex gap-2"><span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[var(--muted)]" />{f}</li>)}
           </ul>
           {finished && a.clash && (
-            <p className="mt-3 flex gap-2 rounded-lg bg-[var(--warn-tint)] px-3 py-2 text-[13.5px] text-[var(--warn)]" data-testid="telco-clash">
+            <p className="mt-3 flex gap-2 rounded-xl bg-[var(--warn-tint)] px-3 py-2 text-[13.5px] text-[var(--warn)]" data-testid="telco-clash">
               <TriangleAlert size={16} className="mt-0.5 shrink-0" aria-hidden /><span><b>Check before acting:</b> {a.clash}</span>
             </p>
           )}
@@ -149,7 +149,7 @@ export function NumberTrace({ a, view, labels, reasons, done, packetAt, linked, 
               <fieldset className="space-y-1.5">
                 <legend className="label mb-1">Your call</legend>
                 {a.options.map((o) => (
-                  <label key={o} className="flex cursor-pointer items-start gap-2 rounded-lg px-2 py-1.5 text-[13.5px] hover:bg-white/70">
+                  <label key={o} className="flex cursor-pointer items-start gap-2.5 rounded-xl px-2.5 py-2 text-[14px] transition-colors hover:bg-white/70 has-[:checked]:bg-[var(--accent-tint)]">
                     <input type="radio" name="action" value={o} defaultChecked={o === a.ai.suggest} className="mt-1 accent-[var(--phone)]" data-testid={`t-option-${o}`} />
                     <span>{labels[o]}{o === a.ai.suggest && <span className="chip chip-phone ml-1.5">AI</span>}</span>
                   </label>
@@ -162,8 +162,8 @@ export function NumberTrace({ a, view, labels, reasons, done, packetAt, linked, 
               </label>
               <input name="note" placeholder="Note (what you checked)" className="input" />
               {a.reportable && linked.length > 0 && (
-                <label className="flex items-start gap-2 rounded-lg bg-[var(--phone-tint)] px-3 py-2 text-[13px]">
-                  <input type="checkbox" name="report" defaultChecked className="mt-0.5 accent-[var(--phone)]" data-testid="t-report" />
+                <label className="flex items-start gap-3 rounded-2xl bg-[var(--phone-tint)] px-3.5 py-3 text-[13px]">
+                  <input type="checkbox" name="report" defaultChecked className="switch mt-0.5" data-testid="t-report" />
                   <span><b>Report to DoT</b> (through DIP). These phones were activated through the same retailer the same week and sit on mule accounts:
                     <span className="mt-1 block mono text-[12px]">{linked.map((l) => `${l.msisdn} (${l.name}, now ${l.band})`).join(" · ")}</span>
                     <span className="mt-1 block muted">DoT can raise their fraud-risk rating to High. Banks see only that rating.</span>

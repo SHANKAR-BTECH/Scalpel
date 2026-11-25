@@ -20,7 +20,7 @@ export function VerifyBox() {
         <textarea rows={6} className="input mt-2 mono text-[12px]" data-testid="verify-text" onChange={(e) => e.target.value.trim() && check(e.target.value)} />
       </details>
       {out && (
-        <div role="status" data-testid="verify-result" className={`mt-4 rounded-lg p-3 text-[14px] ${out.ok ? "bg-[var(--good-tint)] text-[var(--good)]" : "bg-[var(--bad-tint)] text-[var(--bad)]"}`}>
+        <div role="status" data-testid="verify-result" className={`mt-4 rounded-xl p-3 text-[14px] ${out.ok ? "bg-[var(--good-tint)] text-[var(--good)]" : "bg-[var(--bad-tint)] text-[var(--bad)]"}`}>
           {out.ok ? <p className="font-semibold">Intact: all {out.n} records for {out.caseId} match their fingerprints.</p> : <><p className="font-semibold">Not intact</p><ul className="mt-1 list-disc pl-5">{out.problems.map((p) => <li key={p}>{p}</li>)}</ul></>}
         </div>
       )}

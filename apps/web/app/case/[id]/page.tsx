@@ -129,7 +129,7 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
                 const ask = asks.find((a) => a.kind === kind && a.value === value);
                 const done = d.actions.find((a) => a.kind === kind && a.value === value && a.outcome === "BLOCKED");
                 return (
-                  <li key={value} className="rounded-lg bg-[var(--phone-tint)] p-3 text-[13.5px]">
+                  <li key={value} className="rounded-xl bg-[var(--phone-tint)] p-3 text-[13.5px]">
                     <p className="font-semibold text-[var(--phone)]">{rig ? `${rig.kind === "simbox" ? "SIM box" : "One handset"} with ${rig.sims.length} SIMs` : "One SIM, swapped recently"}</p>
                     <p className="mono text-[12px] muted">{kind === "IMEI" ? `IMEI ${value}` : value}</p>
                     {rig && <p className="mt-1 text-[12.5px] muted">Cell {rig.cell}. {rig.kind === "simbox" ? "Calls go out through a gateway route." : ""}</p>}
@@ -145,7 +145,7 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
               })}
             </ul>
             {c.shownCallers.filter((s) => s.spoofed).map((s) => (
-              <div key={s.msisdn} className="mt-3 rounded-lg border border-[#f1b8b1] bg-[var(--bad-tint)] p-3 text-[13px]" data-testid="spoof-note">
+              <div key={s.msisdn} className="mt-3 rounded-xl border border-[#f1b8b1] bg-[var(--bad-tint)] p-3 text-[13px]" data-testid="spoof-note">
                 <p className="font-semibold text-[var(--bad)]">Do not block {s.msisdn}</p>
                 <p className="mt-1">Victims saw this number, but the network shows the calls came from the SIMs above. {s.protected ? "It is a registered 1600-series business number (" + (s.owner ?? "a business") + ")." : `It belongs to an innocent customer${s.owner ? ` (${s.owner})` : ""} whose phone made no such call.`} Blocking it would punish the wrong person.</p>
               </div>

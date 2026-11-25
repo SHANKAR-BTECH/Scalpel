@@ -7,6 +7,7 @@ import { alerts } from "@/lib/server/telco";
 import { logout } from "@/app/actions";
 import { LiveBell } from "./Live";
 import { NavLinks } from "./NavLinks";
+import { GlassSlider, ScrollEdge } from "./GlassControls";
 import { when } from "@/lib/format";
 import type { Role } from "@/lib/users";
 
@@ -29,17 +30,21 @@ export async function Header() {
   if (d && u?.role === "telco") badge["/telco"] = d.asks.filter((a) => !a.done).length + alerts().filter((a) => !d.telcoByAlert.has(a.id)).length;
   const links = (u ? LINKS[u.role] : LINKS.public).map((l) => ({ ...l, badge: badge[l.href] ?? 0 }));
   return (
-    <header className="sticky top-0 z-40 border-b border-white/70 bg-white/60 shadow-[0_1px_0_rgba(10,18,34,0.06)] backdrop-blur-2xl backdrop-saturate-150 no-print">
-      <div className="mx-auto flex w-full max-w-[1760px] flex-wrap items-center gap-x-5 gap-y-2 px-4 py-2.5 sm:px-6 lg:px-10">
+    <>
+    <div className="edge-band no-print" aria-hidden />
+    <ScrollEdge />
+    <header className="sticky top-3 z-40 mx-auto w-full max-w-[1760px] px-3 sm:px-5 lg:px-8 no-print">
+      <div className="glass topbar flex w-full flex-wrap items-center gap-x-5 gap-y-2 px-4 py-2 sm:px-5">
         <Link href={u ? u.home : "/"} className="flex items-center gap-2" aria-label="Scalpel home">
           <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden><rect width="32" height="32" rx="8" fill="var(--accent)" /><path d="M8 22 L22 8 L24 10 L12 22 Z" fill="#fff" /><path d="M8 22 L12 22 L10 24 Z" fill="#fff" opacity=".6" /></svg>
           <span className="title text-[18px]">Scalpel</span>
         </Link>
-        <span className="demo-tag glass -ml-3" title="Fictional people, banks and numbers. Not legal advice." data-testid="demo-tag">Demo</span>
+        <span className="demo-tag -ml-3 bg-[var(--accent-tint)]" title="Fictional people, banks and numbers. Not legal advice." data-testid="demo-tag">Demo</span>
         <NavLinks links={links} />
         <div className="ml-auto flex items-center gap-2.5">
           {d && <span className="hidden items-center gap-1.5 text-[12.5px] muted md:flex" title="Demo clock" data-testid="demo-clock"><span className="live-dot" />{when(d.now)}</span>}
           {s.kind === "memory" && u?.role === "admin" && <span className="chip chip-warn">Memory store</span>}
+          <GlassSlider />
           <LiveBell signedIn={Boolean(u || ref)} />
           {u ? (
             <form action={logout} className="flex items-center gap-2">
@@ -54,5 +59,6 @@ export async function Header() {
         </div>
       </div>
     </header>
+    </>
   );
 }

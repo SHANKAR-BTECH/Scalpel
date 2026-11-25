@@ -55,7 +55,7 @@ export function CaseWork({ caseId, graph, points, clear, done, canDecide, phone 
             <h2>{total} accounts to decide, together with the AI</h2>
             <p className="mt-1 text-[14px] muted">The rules engine traces the money now. Then you decide each account: {points.length} need your judgement because the evidence clashes, {clear.length} look clear.</p>
             {phone && (
-              <p className="mt-3 flex items-start gap-2 rounded-lg bg-[var(--phone-tint)] px-3 py-2 text-[13.5px]" data-testid="telco-help">
+              <p className="mt-3 flex items-start gap-2 rounded-xl bg-[var(--phone-tint)] px-3 py-2 text-[13.5px]" data-testid="telco-help">
                 <PhoneCall size={16} className="mt-0.5 shrink-0 text-[var(--phone)]" aria-hidden />
                 <span>The phone side of this trace comes from <b className="text-[var(--phone)]">Telco-A&apos;s AI</b>: it matched {phone.calls} scam calls to {phone.victims} victims and one {phone.device}. Its risk rating ({phone.band}) reaches the bank through DoT; the call records stay with Telco-A.</span>
               </p>

@@ -52,7 +52,7 @@ export default async function Status() {
       <section className="mt-4 card p-4">
         <h2>Messages</h2>
         <ul className="mt-2 space-y-2 text-[14px]" data-testid="holder-messages">
-          {notes.map((n) => <li key={n.id} className="rounded-lg bg-[var(--panel)] p-3">{n.text}<span className="mt-1 block text-[12px] muted">{when(n.at)}</span></li>)}
+          {notes.map((n) => <li key={n.id} className="rounded-xl bg-[var(--panel)] p-3">{n.text}<span className="mt-1 block text-[12px] muted">{when(n.at)}</span></li>)}
         </ul>
       </section>
       <section className="mt-4 panel p-4 text-[13.5px]">
