@@ -5,7 +5,7 @@ async function as(browser: Browser, who: string): Promise<Page> {
   const p = await ctx.newPage();
   await p.goto("/login");
   await p.getByTestId(`login-${who}`).click();
-  await p.waitForLoadState("networkidle");
+  await p.waitForURL((u) => !u.pathname.startsWith("/login"));
   return p;
 }
 
@@ -115,4 +115,28 @@ test("pages fit a phone screen", async ({ browser }) => {
   await p.getByTestId("case-row").first().click();
   await p.waitForURL("**/case/**");
   await fits();
+  await p.goto("/mules");
+  await fits();
+});
+
+test("the analysis replays on a case, and the Mules tab shows each mule's network", async ({ browser }) => {
+  const priya = await as(browser, "priya");
+  await priya.getByTestId("case-row").first().click();
+  await priya.getByTestId("run-analysis").click();
+  await expect(priya.getByText(/scam calls?, matched to the SIMs/)).toBeVisible({ timeout: 8_000 });
+  await priya.getByTestId("skip-analysis").click();
+  await expect(priya.getByRole("heading", { name: "What Scalpel suggests" })).toBeVisible();
+  await priya.goto("/mules");
+  const rows = priya.getByTestId("mule-row");
+  expect(await rows.count()).toBeGreaterThan(5);
+  const name = (await rows.nth(1).locator("p").first().innerText()).split("\n")[0]!.trim();
+  await rows.nth(1).click();
+  await expect(priya.getByTestId("mule-detail").locator("h2")).toHaveText(name);
+  await priya.goto("/mules");
+  const vikram = await as(browser, "vikram");
+  await vikram.goto("/mules");
+  await expect(vikram.getByTestId("mule-board")).toBeVisible();
+  const imran = await as(browser, "imran");
+  await imran.goto("/mules");
+  await expect(imran).toHaveURL(/login\?denied/);
 });

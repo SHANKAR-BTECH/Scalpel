@@ -8,6 +8,8 @@ import { TrailGraph } from "@/components/TrailGraph";
 import { AccountRow } from "@/components/AccountRow";
 import { ActForm } from "@/components/ActForm";
 import { CountUp } from "@/components/CountUp";
+import { CaseAnalysis } from "@/components/CaseAnalysis";
+import { analyse } from "@/lib/server/analysis";
 import { askTelcoAction } from "@/app/actions";
 import { ago, inr, when } from "@/lib/format";
 import { userById } from "@/lib/users";
@@ -48,7 +50,9 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
         </dl>
       </div>
 
-      <section className="mt-5">
+      <div className="mt-5"><CaseAnalysis a={analyse(c, g)} /></div>
+
+      <section className="mt-6">
         <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
           <h2>Where the calls came from and where the money went</h2>
           <p className="text-[13px] muted">Money usually moves on from the first accounts in about {c.minutesToCashOut} minutes.</p>
@@ -60,7 +64,7 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
         <div className="min-w-0">
           <h2>What to hold</h2>
           <p className="mt-1 text-[14px] muted">Every account the police asked about, with what Scalpel suggests. The hold is never more than the victims' money still in the account.</p>
-          <div className="mt-3 space-y-2.5" data-testid="accounts">
+          <div id="accounts" className="mt-3 space-y-2.5 scroll-mt-24" data-testid="accounts">
             {withMoney.map((v) => <AccountRow key={v.a.id} v={v} desk={d} canPropose={u.role === "officer"} />)}
           </div>
           {rest.length > 0 && (

@@ -10,9 +10,9 @@ import { when } from "@/lib/format";
 import type { Role } from "@/lib/users";
 
 const LINKS: Record<Role | "public", { href: string; label: string }[]> = {
-  officer: [{ href: "/inbox", label: "Inbox" }, { href: "/holds", label: "Holds" }],
-  supervisor: [{ href: "/approvals", label: "Approvals" }, { href: "/holds", label: "Holds" }, { href: "/inbox", label: "Inbox" }],
-  auditor: [{ href: "/assure", label: "Assure" }, { href: "/holds", label: "Holds" }],
+  officer: [{ href: "/inbox", label: "Inbox" }, { href: "/mules", label: "Mules" }, { href: "/holds", label: "Holds" }],
+  supervisor: [{ href: "/approvals", label: "Approvals" }, { href: "/holds", label: "Holds" }, { href: "/inbox", label: "Inbox" }, { href: "/mules", label: "Mules" }],
+  auditor: [{ href: "/assure", label: "Assure" }, { href: "/mules", label: "Mules" }, { href: "/holds", label: "Holds" }],
   telco: [{ href: "/telco", label: "Telco-A console" }],
   admin: [{ href: "/admin", label: "Admin" }],
   public: [{ href: "/portal", label: "Account holder" }, { href: "/verify", label: "Verify a file" }],

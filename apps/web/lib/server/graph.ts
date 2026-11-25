@@ -7,7 +7,7 @@ export interface GNode {
   label: string; sub: string; amount: number; status?: "held" | "pending"; href?: string; tip?: string;
 }
 export interface GEdge { from: string; to: string; amount: number; kind: "money" | "call" | "exit"; calls?: number }
-export interface Graph { nodes: GNode[]; edges: GEdge[]; cols: string[] }
+export interface Graph { nodes: GNode[]; edges: GEdge[]; cols: string[]; chain: string[] }
 
 const inrShort = (p: number) => {
   const r = Math.round(p / 100);
@@ -82,5 +82,25 @@ export function caseGraph(c: CaseView, d: Desk): Graph {
   for (let col = 2; col < exitCol; col++) fold(col, 2, (n) => n.kind === "innocent", (k) => `${k} shops, people`);
   for (let col = 2; col < exitCol; col++) fold(col, 5, (n) => n.kind === "mule", (k) => `${k} more mules`);
   const cols = ["Phones", "Victims", ...Array.from({ length: maxHop }, (_, i) => (i === 0 ? "First accounts" : i === maxHop - 1 && maxHop === 4 ? "Layer 4+" : `Layer ${i + 1}`)), "Left the bank"];
-  return { nodes: [...nodes.values()], edges: edges.filter((e) => nodes.has(e.from) && nodes.has(e.to)), cols };
+  const kept = edges.filter((e) => nodes.has(e.from) && nodes.has(e.to));
+  return { nodes: [...nodes.values()], edges: kept, cols, chain: strongestChain(kept, [...nodes.values()]) };
+}
+
+/** The main road the money took: from the victim who sent the most, keep following the biggest outgoing flow until it leaves the bank. */
+function strongestChain(edges: GEdge[], nodes: GNode[]): string[] {
+  const out = new Map<string, GEdge[]>();
+  for (const e of edges) if (e.kind !== "call") out.set(e.from, [...(out.get(e.from) ?? []), e]);
+  const sent = (id: string) => (out.get(id) ?? []).reduce((s, e) => s + e.amount, 0);
+  const start = nodes.filter((n) => n.kind === "victim").sort((a, b) => sent(b.id) - sent(a.id))[0];
+  if (!start) return [];
+  const caller = edges.find((e) => e.kind === "call" && e.to === start.id)?.from;
+  const chain = caller ? [caller, start.id] : [start.id];
+  let cur = start.id;
+  while (chain.length < 12) {
+    const next = (out.get(cur) ?? []).filter((e) => !chain.includes(e.to)).sort((a, b) => b.amount - a.amount)[0];
+    if (!next) break;
+    chain.push(next.to);
+    cur = next.to;
+  }
+  return chain;
 }
