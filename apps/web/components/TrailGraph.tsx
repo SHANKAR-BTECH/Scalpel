@@ -59,7 +59,7 @@ export function TrailGraph({ g, reveal, pulse = true, showChain = true, legend =
   const pulsed = pulse && !still ? g.edges.filter((e) => e.kind !== "call" && (e.amount >= maxAmt * 0.08 || chainEdges.has(`${e.from}>${e.to}`))).slice(0, 40) : [];
 
   return (
-    <div ref={box} className="overflow-x-auto rounded-2xl border border-[var(--line)] bg-white/90 p-3" data-testid="trail-graph">
+    <div ref={box} className="overflow-x-auto rounded-2xl border border-[var(--line)] bg-white/55 p-3 backdrop-blur-xl" data-testid="trail-graph">
       <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Money and phone trail for this case" className="block">
         <defs>
           <filter id="glow" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="4" /></filter>

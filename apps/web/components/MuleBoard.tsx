@@ -43,7 +43,7 @@ export function MuleBoard({ rows }: { rows: MuleRow[] }) {
             return (
               <li key={r.id} className="pop-in" style={{ animationDelay: `${Math.min(i, 12) * 35}ms` }}>
                 <button type="button" onClick={() => setPick(r.id)} data-testid="mule-row" aria-pressed={on}
-                  className={`lift w-full rounded-2xl border p-3 text-left transition-colors duration-300 ${on ? "border-[var(--accent)] bg-[var(--accent-tint)]" : "border-[var(--line)] bg-white/90"}`}>
+                  className={`lift w-full rounded-2xl border p-3 text-left transition-colors duration-300 ${on ? "border-[var(--accent)] bg-[var(--accent-tint)]" : "border-white/80 bg-white/55"}`}>
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       <p className="truncate font-semibold">{r.name} {r.status === "held" ? <span className="chip chip-blue ml-1">Held</span> : r.status === "pending" ? <span className="chip chip-warn ml-1">Waiting</span> : null}</p>
@@ -122,7 +122,7 @@ function MiniNet({ r }: { r: MuleRow }) {
     </g>
   );
   return (
-    <div className="mt-2 overflow-x-auto rounded-2xl border border-[var(--line)] bg-white/90 p-3">
+    <div className="mt-2 overflow-x-auto rounded-2xl border border-[var(--line)] bg-white/55 p-3">
       <svg width="100%" viewBox={`-4 -4 ${width + 8} ${height + 8}`} style={{ minWidth: 520 }} role="img" aria-label={`Money into and out of ${r.name}`}>
         {L.map(({ it, x, y }, i) => {
           const d = path(x + BW, y + BH / 2, cx, cy + 26);

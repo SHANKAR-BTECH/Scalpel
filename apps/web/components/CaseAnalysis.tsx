@@ -85,7 +85,7 @@ export function CaseAnalysis({ a }: { a: Analysis }) {
           {step === 0 && (
             <div>
               <h3 className="title text-[20px]">Reading {a.complaints.length} complaints and {a.requests.count} police requests</h3>
-              <div className="relative mt-3 rounded-xl border border-[var(--line)] bg-white">
+              <div className="relative mt-3 rounded-xl border border-white/80 bg-white/60">
                 <div className="scan" />
                 <table className="table text-[13.5px]">
                   <thead><tr><th className="!pl-4">Complaint (NCRP)</th><th>Victim</th><th className="!pr-4 text-right">Paid</th></tr></thead>
