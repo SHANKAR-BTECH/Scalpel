@@ -44,7 +44,7 @@ export function NumberTrace({ a, view, labels, reasons, done, packetAt, linked, 
               <span className="flex items-center gap-2 text-[13px] muted"><span className="spinner" />Tracing…</span>
             )}
           </div>
-          <div className="thread mt-4"><div className="thread-fill" style={{ width: `${(step / STEPS) * 100}%`, background: "linear-gradient(90deg, #a9a7ff, var(--phone))" }} /></div>
+          <div className="thread mt-4"><div className="thread-fill" style={{ width: `${(step / STEPS) * 100}%`, background: "#0d0d0d" }} /></div>
 
           <Graph view={view} step={step} />
 
@@ -107,7 +107,7 @@ export function NumberTrace({ a, view, labels, reasons, done, packetAt, linked, 
               <li key={g.label} data-testid="gauge">
                 <div className="flex items-baseline justify-between gap-3 text-[13.5px]"><span>{g.label}</span><span className={`font-medium ${step >= 3 ? "" : "opacity-0"} transition-opacity`}>{g.text}</span></div>
                 <div className="thread mt-1.5" style={{ height: 5 }}>
-                  <div className="thread-fill" style={{ width: step >= 3 ? `${g.level * 100}%` : "0%", transitionDelay: `${i * 120}ms`, background: g.bad ? "linear-gradient(90deg, #f0b37a, var(--warn))" : "linear-gradient(90deg, #8fd3ae, var(--good))" }} />
+                  <div className="thread-fill" style={{ width: step >= 3 ? `${g.level * 100}%` : "0%", transitionDelay: `${i * 120}ms`, background: g.bad ? "var(--warn)" : "var(--good)" }} />
                 </div>
               </li>
             ))}
@@ -124,7 +124,7 @@ export function NumberTrace({ a, view, labels, reasons, done, packetAt, linked, 
           <p className="mt-2 text-[12.5px] muted">It reads network counters only. It does not see company registrations, police letters or who owned the number before.</p>
         </section>
 
-        <section className={`card card-float p-5 transition-opacity duration-500 ${finished ? "opacity-100" : "opacity-60"}`} data-testid="telco-decide-panel">
+        <section className={`card p-5 transition-opacity duration-500 ${finished ? "opacity-100" : "opacity-60"}`} data-testid="telco-decide-panel">
           <h2>What the records show</h2>
           <ul className="mt-2 space-y-1.5 text-[13.5px]">
             {a.facts.map((f) => <li key={f} className="flex gap-2"><span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[var(--muted)]" />{f}</li>)}
@@ -237,8 +237,8 @@ function Graph({ view, step }: { view: TraceView; step: number }) {
 function Node({ x, y, w, label, sub, color, on, delay = 0, strong }: { x: number; y: number; w: number; label: string; sub: string; color: string; on: boolean; delay?: number; strong?: boolean }) {
   return (
     <g style={{ opacity: on ? 1 : 0.18, transition: `opacity .5s ${delay}ms` }}>
-      <rect x={x} y={y} width={w} height={38} rx={9} fill="rgba(255,255,255,.85)" stroke={on ? color : "var(--line-strong)"} strokeWidth={strong ? 1.6 : 1} />
-      <rect x={x} y={y + 8} width={3} height={22} rx={1.5} fill={color} />
+      <rect x={x} y={y} width={w} height={38} rx={2} fill="#fff" stroke={on ? color : "var(--line-strong)"} strokeWidth={strong ? 1.6 : 1} />
+      <rect x={x} y={y + 8} width={3} height={22} rx={0} fill={color} />
       <text x={x + 11} y={y + 16} fontSize={12.5} fontWeight={600} fill="var(--fg)" fontFamily={label.startsWith("+") || /^\d/.test(label) ? "var(--font-mono)" : undefined}>{clip(label, Math.floor(w / 7.4))}</text>
       <text x={x + 11} y={y + 31} fontSize={11} fill="var(--muted)">{clip(sub, Math.floor(w / 6))}</text>
     </g>

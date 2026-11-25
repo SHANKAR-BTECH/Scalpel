@@ -1,6 +1,7 @@
 "use client";
 /** The supervisor's queue: short items on the left, everything about the chosen one on the right. */
 import { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import { Check, ChevronRight, TriangleAlert, X } from "lucide-react";
 import { ActForm } from "./ActForm";
@@ -52,8 +53,10 @@ export function ApprovalBoard({ items }: { items: ApprovalItem[] }) {
         })}
       </ul>
 
+      <AnimatePresence mode="wait">
       {cur && (
-        <section key={cur.key} className="card card-float detail-in sticky top-24 p-5" data-testid="detail" aria-live="polite">
+        <motion.section key={cur.key} initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -8 }} transition={{ duration: 0.2 }}
+          className="card sticky top-20 p-5" data-testid="detail" aria-live="polite">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h2 className="text-[21px]">{KIND[cur.kind]} {cur.amountText ? <span className="money">{cur.amountText}</span> : null} on {cur.name}</h2>
@@ -95,8 +98,9 @@ export function ApprovalBoard({ items }: { items: ApprovalItem[] }) {
                 </div>
               )}
           </div>
-        </section>
+        </motion.section>
       )}
+      </AnimatePresence>
     </div>
   );
 }

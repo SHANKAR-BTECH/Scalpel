@@ -9,9 +9,10 @@ export default function Home() {
   const catchable = m.cases.reduce((s, c) => s + c.catchable, 0);
   return (
     <div>
-      <section className="grid gap-8 py-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+      <section className="grid gap-8 py-6 lg:grid-cols-[1.25fr_0.75fr] lg:items-center">
         <div>
-          <h1 className="text-[40px] leading-[1.08] tracking-[-0.025em] sm:text-[50px]">Hold the scam money,<br />not the whole account.<br /><span className="text-[var(--phone)]">Block the scam phone,</span><br />not the innocent number.</h1>
+          <p className="label">Bharat Demo Bank · Telco-A</p>
+          <h1 className="display mt-3">Hold the scam money,<br /><span className="text-[#9a9a9a]">not the account.</span><br />Block the scam phone,<br /><span className="text-[#9a9a9a]">not the number.</span></h1>
           <p className="mt-4 max-w-[560px] text-[16.5px] muted">Scalpel follows money from the victim through every mule account, and the calls back to the phone that made them. It suggests the smallest lawful action, a second person approves it, and every step is written into a record nobody can quietly change.</p>
           <div className="mt-6 flex flex-wrap gap-2">
             <Link href="/login" className="btn btn-primary">Sign in to the demo</Link>
@@ -22,12 +23,12 @@ export default function Home() {
         <div className="card p-5">
           <h2>Right now at Bharat Demo Bank</h2>
           <dl className="mt-3 grid grid-cols-2 gap-4">
-            <div><dt className="text-[13px] muted">Fraud complaints</dt><dd className="money text-[26px]"><CountUp value={W.complaints.length} /></dd></div>
-            <div><dt className="text-[13px] muted">Linked into cases</dt><dd className="money text-[26px]"><CountUp value={m.cases.length} /></dd></div>
-            <div><dt className="text-[13px] muted">Victims reported</dt><dd className="money text-[26px]"><CountUp value={reported} format="inrShort" /></dd></div>
-            <div><dt className="text-[13px] muted">Still in accounts</dt><dd className="money text-[26px] text-[var(--accent)]"><CountUp value={catchable} format="inrShort" /></dd></div>
+            <div><dt className="label">Fraud complaints</dt><dd className="money text-[30px]"><CountUp value={W.complaints.length} /></dd></div>
+            <div><dt className="label">Linked into cases</dt><dd className="money text-[30px]"><CountUp value={m.cases.length} /></dd></div>
+            <div><dt className="label">Victims reported</dt><dd className="money text-[30px]"><CountUp value={reported} format="inrShort" /></dd></div>
+            <div><dt className="label">Still in accounts</dt><dd className="money text-[30px]"><CountUp value={catchable} format="inrShort" /></dd></div>
           </dl>
-          <p className="mt-4 rounded-xl bg-[var(--phone-tint)] p-3 text-[13.5px] text-[var(--phone)]">One SIM box with {rig.sims.length} SIMs made the calls behind {m.casesOfRig.get(rig.id)?.length ?? 0} separate cases.</p>
+          <p className="mt-4 border-t border-[var(--line)] pt-3 text-[13.5px]">One SIM box with {rig.sims.length} SIMs made the calls behind {m.casesOfRig.get(rig.id)?.length ?? 0} separate cases.</p>
         </div>
       </section>
       <section className="mt-10">

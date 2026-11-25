@@ -15,18 +15,18 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
       <div className="mt-6 space-y-6">
         {ORGS.map((org) => (
           <section key={org}>
-            <h2 className="text-[15px] muted">{org}</h2>
+            <h2 className="label">{org}</h2>
             <ul className="card board mt-2">
               {USERS.filter((u) => u.org === org).map((u) => (
                 <li key={u.id} className="board-row">
                   <form action={loginAs} className="flex flex-wrap items-center gap-4 px-4 py-3.5">
                     <input type="hidden" name="user" value={u.id} />
-                    <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-full text-[13.5px] font-semibold text-white ${u.role === "telco" ? "bg-[var(--phone)]" : "bg-[var(--accent)]"}`}>{u.name.split(" ").map((x) => x[0]).join("")}</span>
+                    <span className="mono grid h-10 w-10 shrink-0 place-items-center border border-[#0d0d0d] text-[13px] font-medium">{u.name.split(" ").map((x) => x[0]).join("")}</span>
                     <span className="min-w-[220px] flex-1 leading-snug">
                       <span className="block font-semibold">{u.name} <span className="font-normal muted">· {u.title}</span></span>
                       <span className="block text-[13.5px] muted">{u.can.join(". ")}.</span>
                     </span>
-                    <button className={`btn btn-sm ${u.role === "telco" ? "btn-phone" : "btn-primary"}`} data-testid={`login-${u.id}`}>Sign in as {u.name.split(" ")[0]}</button>
+                    <button className="btn btn-sm" data-testid={`login-${u.id}`}>Sign in as {u.name.split(" ")[0]}</button>
                   </form>
                 </li>
               ))}

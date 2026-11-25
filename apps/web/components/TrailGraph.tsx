@@ -110,8 +110,8 @@ export function TrailGraph({ g, reveal, pulse = true, showChain = true, legend =
           const node = (
             <g transform={`translate(${p.x},${p.y})`} className="node-in" style={{ animationDelay: `${n.col * 140}ms`, cursor: n.href ? "pointer" : "default" }}
               onMouseEnter={() => setHover(n.id)} onMouseLeave={() => setHover(null)} data-node={n.kind}>
-              {chained && !still && <rect width={W} height={H} rx="10" fill="none" stroke={n.kind === "phone" ? "var(--phone)" : "var(--accent)"} strokeWidth="2" className="ring-pulse" />}
-              <rect width={W} height={H} rx="10" fill={held ? "var(--accent-tint)" : fill[n.kind]} stroke={held ? "var(--accent)" : pending ? "var(--warn)" : chained && n.kind !== "phone" ? "var(--accent)" : stroke[n.kind]}
+              {chained && !still && <rect width={W} height={H} rx="2" fill="none" stroke={n.kind === "phone" ? "var(--phone)" : "var(--accent)"} strokeWidth="2" className="ring-pulse" />}
+              <rect width={W} height={H} rx="2" fill={held ? "var(--accent-tint)" : fill[n.kind]} stroke={held ? "var(--accent)" : pending ? "var(--warn)" : chained && n.kind !== "phone" ? "var(--accent)" : stroke[n.kind]}
                 strokeWidth={held || pending || chained || n.kind === "mule" ? 1.6 : 1} strokeDasharray={n.kind === "group" ? "3 3" : undefined} />
               {n.kind === "mule" && <circle cx={W - 12} cy={12} r={4} fill="var(--bad)"><title>Likely mule (mule score high)</title></circle>}
               <text x="10" y="20" fontSize="12.5" fontWeight="600" fill={n.kind === "phone" ? "var(--phone)" : "var(--fg)"}>{n.label.length > 18 ? n.label.slice(0, 17) + "…" : n.label}</text>

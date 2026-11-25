@@ -19,7 +19,7 @@ export function DecisionCard({ acct, ai, returned, step }: { acct: CardAccount; 
   const overrule = choice !== ai.suggest;
   const options: Choice[] = ai.suggest === "SEND_BACK" ? ["SEND_BACK", "NO_HOLD"] : ["HOLD", "NO_HOLD"];
   return (
-    <div className="card card-float p-5 page-enter" data-testid="decision-card" data-account={acct.id}>
+    <div className="card p-5" data-testid="decision-card" data-account={acct.id}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           {step && <p className="label text-[var(--accent-ink)]">{step}</p>}

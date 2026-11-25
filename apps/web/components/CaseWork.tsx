@@ -109,7 +109,7 @@ export function CaseWork({ caseId, graph, points, clear, done, canDecide, phone 
         {next && canDecide && <DecisionCard key={next.acct.id} acct={next.acct} ai={next.ai} returned={next.returned} step={`Needs your judgement · ${points.length} left`} />}
 
         {!next && clear.length > 0 && canDecide && (
-          <div className="card p-5 page-enter" data-testid="clear-group">
+          <div className="card p-5" data-testid="clear-group">
                         <h3 className="text-[19px]">Accept the AI&apos;s suggestion for {clearShown.length} account{clearShown.length === 1 ? "" : "s"}</h3>
             <p className="mt-1 text-[13.5px] muted">No clash in the evidence. Untick any you want to look at yourself; it will come back as its own card.</p>
             <ActForm action={decideClearAction} label={`Accept ${clearShown.length}`} testid="accept-clear" className="mt-3 space-y-3">
@@ -129,7 +129,7 @@ export function CaseWork({ caseId, graph, points, clear, done, canDecide, phone 
         )}
 
         {!next && clear.length === 0 && (
-          <div className="panel p-4 page-enter" data-testid="case-done">
+          <div className="panel p-4" data-testid="case-done">
             <p className="font-semibold">Every account on this case is decided.</p>
             <p className="mt-1 text-[13.5px] muted">Holds and any overrules of a confident AI are with the supervisor now. Compliance sees every decision and its reason.</p>
           </div>

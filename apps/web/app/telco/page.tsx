@@ -45,7 +45,7 @@ export default async function Telco() {
                   <span className="text-[13px]">
                     <span className="label block">AI suggests · {Math.round(a.ai.confidence * 100)}%</span>
                     <span className="block">{ACTION_LABEL[a.ai.suggest]}</span>
-                    <span className="thread mt-1.5 block" style={{ height: 4 }}><span className="thread-fill block" style={{ width: `${a.ai.confidence * 100}%`, background: "linear-gradient(90deg, #a9a7ff, var(--phone))" }} /></span>
+                    <span className="thread mt-1.5 block" style={{ height: 4 }}><span className="thread-fill block" style={{ width: `${a.ai.confidence * 100}%`, background: "#0d0d0d" }} /></span>
                   </span>
                   <span>
                     {t ? <span className={`chip ${t.agreed ? "chip-good" : "chip-warn"}`}>{t.agreed ? "Decided with AI" : "AI overruled"}</span>

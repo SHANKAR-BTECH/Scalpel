@@ -68,7 +68,7 @@ export function MuleBoard({ rows }: { rows: MuleRow[] }) {
 
       <div className="min-w-0">
         {cur && (
-          <div key={cur.id} className="card page-enter sticky top-20 p-5" data-testid="mule-detail">
+          <div key={cur.id} className="card sticky top-20 p-5" data-testid="mule-detail">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="label">{cur.caseId} · {cur.scamType} · Layer {cur.layer}</p>
@@ -115,7 +115,7 @@ function MiniNet({ r }: { r: MuleRow }) {
   const path = (x1: number, y1: number, x2: number, y2: number) => { const m = (x1 + x2) / 2; return `M${x1},${y1} C${m},${y1} ${m},${y2} ${x2},${y2}`; };
   const box = (it: Link, x: number, y: number, k: string, delay: number) => (
     <g key={k} transform={`translate(${x},${y})`} className="node-in" style={{ animationDelay: `${delay}ms` }}>
-      <rect width={BW} height={BH} rx="9" fill={it.kind === "exit" ? "var(--panel)" : "#fff"} stroke={COLOR[it.kind]} strokeWidth={it.kind === "mule" ? 1.5 : 1} />
+      <rect width={BW} height={BH} rx="2" fill={it.kind === "exit" ? "var(--panel)" : "#fff"} stroke={COLOR[it.kind]} strokeWidth={it.kind === "mule" ? 1.5 : 1} />
       {it.kind === "mule" && <circle cx={BW - 10} cy={10} r={3.5} fill="var(--bad)" />}
       <text x="9" y="17" fontSize="12" fontWeight="600" fill="var(--fg)">{it.label.length > 19 ? it.label.slice(0, 18) + "…" : it.label}</text>
       <text x="9" y="32" fontSize="10.5" fill="var(--muted)">{it.kind === "victim" ? "victim paid " : it.kind === "exit" ? "left the bank " : ""}{inrShort(it.amount)}</text>
@@ -137,8 +137,8 @@ function MiniNet({ r }: { r: MuleRow }) {
         {L.map(({ it, x, y }, i) => box(it, x, y, `l${i}`, i * 80))}
         {R.map(({ it, x, y }, i) => box(it, x, y, `r${i}`, 400 + i * 80))}
         <g transform={`translate(${cx},${cy})`}>
-          <rect width="150" height="52" rx="12" fill="none" stroke="var(--bad)" strokeWidth="2" className="ring-pulse" />
-          <rect width="150" height="52" rx="12" fill="var(--bad-tint)" stroke="var(--bad)" strokeWidth="1.6" />
+          <rect width="150" height="52" rx="2" fill="none" stroke="var(--bad)" strokeWidth="2" className="ring-pulse" />
+          <rect width="150" height="52" rx="2" fill="var(--bad-tint)" stroke="var(--bad)" strokeWidth="1.6" />
           <text x="11" y="21" fontSize="12.5" fontWeight="700" fill="var(--fg)">{r.name.length > 18 ? r.name.slice(0, 17) + "…" : r.name}</text>
           <text x="11" y="39" fontSize="11" fill="var(--bad)">score {Math.round(r.score * 100)} · {inrShort(r.traced)} here</text>
         </g>
