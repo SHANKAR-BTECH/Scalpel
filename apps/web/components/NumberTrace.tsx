@@ -47,12 +47,14 @@ export function NumberTrace({ a, view, labels, reasons, done, packetAt, linked, 
           </div>
           <div className="thread mt-4"><div className="thread-fill" style={{ width: `${(step / STEPS) * 100}%`, background: "#0d0d0d" }} /></div>
 
-          <Graph view={view} step={step} />
+          {step === 0 ? (
+            <p className="mt-6 py-10 text-center text-[14px] muted" data-testid="trace-empty">Press <b className="text-[var(--fg)]">Run the trace</b> to read Telco-A&apos;s call records for this {a.kind === "IMEI" ? "handset" : "number"}.</p>
+          ) : <Graph view={view} step={step} />}
 
-          <ol className="mt-4 space-y-1.5 text-[13.5px]" data-testid="trace-log">
+          <ol className={`${step === 0 ? "hidden" : ""} mt-4 space-y-1.5 text-[13.5px]`} data-testid="trace-log">
             {view.log.map((line, i) => (
-              <li key={i} className={`flex items-start gap-2 transition-opacity duration-500 ${step > i ? "opacity-100" : "opacity-60"}`}>
-                <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${step > i ? "bg-[var(--phone)]" : "bg-[var(--line-strong)]"}`} />
+              <li key={i} className={`flex items-start gap-2 transition-all duration-500 ${step > i ? "translate-y-0 opacity-100" : "translate-y-1 opacity-0"}`}>
+                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 bg-[#0d0d0d]" />
                 {line}
               </li>
             ))}
@@ -210,8 +212,8 @@ function Graph({ view, step }: { view: TraceView; step: number }) {
   return (
     <div className="mt-4 overflow-x-auto" data-testid="trace-graph">
       <svg viewBox={`0 0 ${W} ${H}`} className="min-w-[760px]" role="img" aria-label="Trace from the handset to its SIMs, the people called and the bank complaints">
-        {cols.map((c, ci) => <text key={c.title} x={xs[ci + 1]} y={14} fontSize={12} fill="var(--muted)" opacity={1} fontFamily="var(--font-mono)" letterSpacing=".06em">{c.title.toUpperCase()}</text>)}
-        <text x={xs[0]} y={14} fontSize={12} fill="var(--muted)" fontFamily="var(--font-mono)" letterSpacing=".06em">DEVICE</text>
+        {cols.map((c, ci) => <text key={c.title} x={xs[ci + 1]} y={14} fontSize={12} fill="var(--muted)" opacity={step >= c.at ? 1 : 0} style={{ transition: "opacity .4s" }} fontFamily="var(--font-mono)" letterSpacing=".06em">{c.title.toUpperCase()}</text>)}
+        <text x={xs[0]} y={14} fontSize={12} fill="var(--muted)" opacity={step >= 1 ? 1 : 0} fontFamily="var(--font-mono)" letterSpacing=".06em">DEVICE</text>
         {/* device → SIMs */}
         {view.sims.map((s, i) => { const p = pos.get(s.id)!; return <path key={s.id} d={curve(dev.x + dev.w, dev.y + 18, p.x, p.y + 18)} fill="none" stroke="var(--phone)" strokeWidth={1.3} opacity={step >= 2 ? 0.45 : 0} style={{ transition: `opacity .5s ${i * 60}ms` }} />; })}
         {view.edges.map(([f, t], i) => {
@@ -226,7 +228,7 @@ function Graph({ view, step }: { view: TraceView; step: number }) {
           return (
             <g key={c.title}>
               {c.nodes.map((nd, i) => <Node key={nd.id} x={xs[ci + 1]!} y={y(i, n)} w={NW[ci + 1]!} label={nd.label} sub={nd.sub} color={tone(nd.tone)} on={step >= c.at} delay={i * 70} />)}
-              {c.more > 0 && <text x={xs[ci + 1]! + 10} y={y(c.nodes.length, n) + 22} fontSize={12} fill="var(--muted)">+ {c.more} more</text>}
+              {c.more > 0 && <text x={xs[ci + 1]! + 10} y={y(c.nodes.length, n) + 22} fontSize={12} fill="var(--muted)" opacity={step >= c.at ? 1 : 0} style={{ transition: "opacity .4s" }}>+ {c.more} more</text>}
             </g>
           );
         })}
@@ -238,8 +240,8 @@ function Graph({ view, step }: { view: TraceView; step: number }) {
 function Node({ x, y, w, label, sub, color, on, delay = 0, strong }: { x: number; y: number; w: number; label: string; sub: string; color: string; on: boolean; delay?: number; strong?: boolean }) {
   // Waiting nodes stay readable (grey edge); when the trace reaches them they spring in with their colour.
   return (
-    <motion.g initial={false} animate={{ opacity: on ? 1 : 0.72, scale: on ? 1 : 0.985 }} transition={{ type: "spring", stiffness: 420, damping: 26, delay: on ? delay / 1000 : 0 }} style={{ transformOrigin: `${x + w / 2}px ${y + 19}px` }}>
-      <rect x={x} y={y} width={w} height={38} rx={4} fill="rgba(255,255,255,.94)" stroke={on ? color : "#d4d4d4"} strokeWidth={on && strong ? 1.6 : 1} />
+    <motion.g initial={false} animate={{ opacity: on ? 1 : 0, scale: on ? 1 : 0.9, x: on ? 0 : -12 }} transition={{ type: "spring", stiffness: 420, damping: 26, delay: on ? delay / 1000 : 0 }} style={{ transformOrigin: `${x + w / 2}px ${y + 19}px` }}>
+      <rect x={x} y={y} width={w} height={38} rx={4} fill="#fff" stroke={on ? color : "#d4d4d4"} strokeWidth={on && strong ? 1.6 : 1} />
       <rect x={x} y={y + 8} width={3} height={22} fill={on ? color : "#c8c8c8"} />
       <text x={x + 11} y={y + 16} fontSize={12.5} fontWeight={600} fill="var(--fg)" fontFamily={label.startsWith("+") || /^\d/.test(label) ? "var(--font-mono)" : undefined}>{clip(label, Math.floor(w / 7.4))}</text>
       <text x={x + 11} y={y + 31} fontSize={11} fill="var(--muted)">{clip(sub, Math.floor(w / 6))}</text>
