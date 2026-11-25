@@ -133,3 +133,44 @@ describe("person and AI decide together", () => {
     expect((await verifyChain((await desk()).chain)).ok).toBe(true);
   });
 });
+
+import { telcoDecide, policePacket } from "@/lib/server/desk";
+import { alerts, traceView } from "@/lib/server/telco";
+
+describe("Telco-A analyst decides with its AI", () => {
+  beforeEach(() => useStore(new MemoryStore()));
+  it("reporting a SIM box to DoT raises the linked mule phones and updates the bank's AI", async () => {
+    const a = alerts().find((x) => x.id === "RIG-1")!;
+    expect(a.linked.length).toBeGreaterThan(0);
+    const l = a.linked.find((x) => aiView(model().accounts.get(x.account)!, START).suggest === "HOLD")!;
+    const v = model().accounts.get(l.account)!;
+    const before = aiView(v, START);
+    expect(before.clash ?? "").toMatch(/rating is Low/);
+    await expect(telcoDecide(priya, a.id, "BAR_IMEI", "Signals match the suggestion", "", true)).rejects.toThrow(/Telco-A analyst/);
+    const r = await telcoDecide(imran, a.id, "BAR_IMEI", "Would cut off genuine customers", "route has 2 business lines", true);
+    expect(r.message).toMatch(/Reported to DoT/);
+    const d = await desk();
+    expect(d.telcoByAlert.get(a.id)!.agreed).toBe(false); // AI said block the route
+    expect(d.fri.get(l.msisdn)!.band).toBe("HIGH");
+    const after = aiView(v, d.now, d.fri.get(l.msisdn)!.band);
+    expect(after.update).toMatch(/DoT raised/);
+    expect(after.clash ?? "").not.toMatch(/rating is Low/);
+    await expect(telcoDecide(imran, a.id, "BAR_IMEI", "Signals match the suggestion", "", true)).rejects.toThrow(/already/);
+  });
+  it("a lookalike is never reported, and call records go only to police", async () => {
+    await telcoDecide(imran, "BIZ-1", "GENUINE", "Registered business traffic", "", true);
+    expect((await desk()).fri.size).toBe(0);
+    await expect(policePacket(imran, "BIZ-1")).rejects.toThrow(/stay with Telco-A/);
+    const r = await policePacket(imran, "RIG-1");
+    expect(r.message).toMatch(/bank does not receive/);
+    await expect(policePacket(imran, "RIG-1")).rejects.toThrow(/already/);
+  });
+  it("every alert has a trace to draw", () => {
+    for (const a of alerts()) {
+      const t = traceView(a);
+      expect(t.sims.length).toBeGreaterThan(0);
+      expect(t.people.length).toBeGreaterThan(0);
+      expect(t.log).toHaveLength(6);
+    }
+  });
+});

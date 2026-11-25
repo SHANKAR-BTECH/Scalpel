@@ -84,15 +84,28 @@ test("each person only reaches their own pages", async ({ browser }) => {
   await expect(anon).toHaveURL(/\/login/);
 });
 
-test("Telco-A blocks the SIM box but refuses the spoofed number", async ({ browser }) => {
+test("Telco-A traces a SIM box, decides with its AI, reports to DoT; the bank's AI updates; spoofed numbers are refused", async ({ browser }) => {
   const imran = await as(browser, "imran");
-  await imran.getByTestId("find").first().getByTestId("block-IMEI").click();
-  await expect(imran.getByTestId("find").first()).toContainText("Blocked", { timeout: 10_000 });
+  await expect(imran.getByTestId("alert-card")).toHaveCount(8);
+  await imran.getByTestId("alert-card").first().getByTestId("open-trace").click();
+  await imran.getByTestId("run-trace").click();
+  await expect(imran.getByTestId("trace-done")).toBeVisible({ timeout: 15_000 });
+  await expect(imran.getByTestId("telco-clash")).toContainText("genuine business lines");
+  await imran.getByTestId("t-option-BAR_IMEI").check();
+  await imran.getByTestId("t-reason").selectOption("Would cut off genuine customers");
+  await imran.getByTestId("telco-decide").click();
+  await expect(imran.getByTestId("telco-decided")).toContainText("Overruled the AI", { timeout: 10_000 });
+  await expect(imran.getByTestId("telco-decided")).toContainText("Reported to DoT");
+  await imran.getByTestId("police-packet").click();
+  await expect(imran.getByTestId("packet-done")).toBeVisible({ timeout: 10_000 });
+  await imran.goto("/telco");
   const spoof = imran.getByTestId("spoofed").locator("li").first();
   await spoof.getByTestId("try-spoof").click();
   await expect(spoof).toContainText(/refused/i, { timeout: 10_000 });
   await imran.getByTestId("sim-check").click();
   await expect(imran.getByTestId("sim-check-result")).toContainText("swapped");
+  const meera = await as(browser, "meera");
+  await expect(meera.getByTestId("telco-ledger-row")).toHaveCount(1);
 });
 
 test("evidence file downloads and verifies; a changed file is caught", async ({ browser }) => {
@@ -130,6 +143,13 @@ test("pages fit a phone screen", async ({ browser }) => {
   await p.waitForURL("**/case/**");
   await fits();
   await p.goto("/mules");
+  await fits();
+  await p.context().clearCookies();
+  await p.goto("/login");
+  await p.getByTestId("login-imran").click();
+  await p.waitForURL("**/telco");
+  await fits();
+  await p.goto("/telco/RIG-1");
   await fits();
 });
 

@@ -30,7 +30,7 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
   const points: PointItem[] = [], clear: ClearItem[] = [], done: DoneItem[] = [];
   const YEAR = 365 * 86_400_000;
   for (const v of withMoney) {
-    const ai = aiView(v, d.now);
+    const ai = aiView(v, d.now, d.fri.get(v.phone?.msisdn ?? "")?.band);
     const dec = d.decisionByAccount.get(v.a.id);
     if (dec) {
       const pr = dec.pid ? d.proposals.find((p) => p.pid === dec.pid) : undefined;

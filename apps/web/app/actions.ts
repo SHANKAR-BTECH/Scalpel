@@ -55,6 +55,12 @@ export async function askTelcoAction(_: Result | null, f: FormData) {
 export async function telcoActAction(_: Result | null, f: FormData) {
   return run(async () => D.telcoAct(await me(), str(f, "kind") as "IMEI", str(f, "value")));
 }
+export async function telcoDecideAction(_: Result | null, f: FormData) {
+  return run(async () => D.telcoDecide(await me(), str(f, "alert"), str(f, "action"), str(f, "reason"), str(f, "note"), str(f, "report") === "on"));
+}
+export async function policePacketAction(_: Result | null, f: FormData) {
+  return run(async () => D.policePacket(await me(), str(f, "alert")));
+}
 export async function simCheckAction(_: Result | null, f: FormData) {
   return run(async () => D.simCheck(await me(), str(f, "msisdn")));
 }

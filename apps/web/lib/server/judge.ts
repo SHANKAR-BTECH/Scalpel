@@ -8,6 +8,8 @@ export type Choice = "HOLD" | "NO_HOLD" | "SEND_BACK";
 export interface AiView {
   suggest: Choice; amount: number; confidence: number; headline: string;
   why: { clue: string; push: number }[]; rules: string[]; clash: string | null; point: boolean;
+  /** Set when a telecom report changed what the AI sees since the case opened. */
+  update?: string | null;
 }
 
 export const REASONS = [
@@ -27,7 +29,8 @@ const YEAR = 365 * 86_400_000;
 const firstIn = new Map<string, number>();
 for (const t of W.txns) if (!firstIn.has(t.to) || firstIn.get(t.to)! > t.at) firstIn.set(t.to, t.at);
 
-export function aiView(v: AccountView, now: number): AiView {
+/** `fri` is DoT's current rating for the account's phone when it changed after a telecom report. */
+export function aiView(v: AccountView, now: number, fri?: string): AiView {
   const score = v.a.score?.muleScore ?? null;
   const why = v.a.score?.why ?? [];
   const failed = v.gate.checks.filter((c) => !c.ok).map((c) => c.note);
@@ -46,12 +49,16 @@ export function aiView(v: AccountView, now: number): AiView {
   const clashes: string[] = [];
   const age = now - v.a.openedAt;
   if (score !== null && score >= 0.5 && age > YEAR) clashes.push(`High mule score, but the account is ${Math.floor(age / YEAR)} year${age >= 2 * YEAR ? "s" : ""} old. Mule accounts are usually new.`);
-  const fri = v.phone?.fri;
-  if (score !== null && score < 0.5 && fri === "VERY_HIGH") clashes.push("Low mule score, but the phone's fraud-risk rating is Very High.");
-  if (score !== null && score >= 0.5 && fri === "LOW") clashes.push("High mule score, but the phone's fraud-risk rating is Low.");
+  const friNow = fri ?? v.phone?.fri;
+  const raised = fri !== undefined && fri !== v.phone?.fri;
+  if (score !== null && score < 0.5 && friNow === "VERY_HIGH") clashes.push("Low mule score, but the phone's fraud-risk rating is Very High.");
+  if (score !== null && score >= 0.5 && friNow === "LOW") clashes.push("High mule score, but the phone's fraud-risk rating is Low.");
   if (score !== null && score >= 0.2 && score < 0.8) clashes.push(`The mule-score model is unsure (${Math.round(score * 100)}/100).`);
   const swap = v.phone?.swappedAt, first = firstIn.get(v.a.id);
   if (swap && first && swap <= first && first - swap < 30 * 86_400_000) clashes.push("The SIM was swapped just before the money arrived: the real owner may have lost control of the account.");
   const clash = clashes.length ? clashes.join(" ") : null;
-  return { suggest: v.suggested > 0 ? "HOLD" : "NO_HOLD", amount: v.suggested, confidence, headline, why, rules: failed, clash, point: clash !== null };
+  // A rating raised by DoT after a telecom report agrees with a high mule score: the AI is surer.
+  const sure = raised && score !== null && score >= 0.5 ? Math.min(0.99, confidence + 0.05) : confidence;
+  const update = raised ? `DoT raised this phone's fraud-risk rating to ${friNow === "HIGH" ? "High" : friNow} after Telco-A's report.` : null;
+  return { suggest: v.suggested > 0 ? "HOLD" : "NO_HOLD", amount: v.suggested, confidence: sure, headline, why, rules: failed, clash, point: clash !== null, update };
 }

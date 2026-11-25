@@ -9,6 +9,7 @@ import { tamperAction } from "@/app/actions";
 import { CHOICE_LABEL, REASONS } from "@/lib/server/judge";
 import { holderName } from "@/lib/server/world";
 import { userById } from "@/lib/users";
+import { alertById, ACTION_LABEL } from "@/lib/server/telco";
 
 const GROUP: Record<string, string> = { small_shop: "Small shops", salaried: "Salaried", gig_worker: "Gig workers", student: "Students", pensioner: "Pensioners", homemaker: "Homemakers", other: "Others" };
 
@@ -65,6 +66,32 @@ export default async function Assure() {
               </table>
             </div>
           </>
+        )}
+      </section>
+
+      <section className="mt-6 card p-4" data-testid="telco-ledger">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2>Telco-A analyst and its AI</h2>
+          <p className="text-[13px] muted">{d.telco.length} alerts decided · {d.telco.filter((x) => !x.agreed).length} overruled · {d.telco.reduce((n, x) => n + x.reported.length, 0)} numbers reported to DoT</p>
+        </div>
+        {d.telco.length === 0 ? <p className="mt-2 text-[13.5px] muted">No Telco-A decisions yet.</p> : (
+          <div className="mt-3 overflow-x-auto">
+            <table className="table">
+              <thead><tr><th>When</th><th>Alert</th><th>AI said</th><th>Analyst chose</th><th>Reason</th><th>Reported to DoT</th></tr></thead>
+              <tbody>
+                {[...d.telco].reverse().map((x) => (
+                  <tr key={x.tid} data-testid="telco-ledger-row">
+                    <td className="whitespace-nowrap muted">{ago(x.at, d.now)}</td>
+                    <td>{alertById(x.alert)?.title ?? x.alert} <span className="mono muted">{x.alert}</span></td>
+                    <td>{ACTION_LABEL[x.ai.suggest]} <span className="muted">({Math.round(x.ai.confidence * 100)}%)</span></td>
+                    <td><span className={`chip ${x.agreed ? "chip-good" : "chip-warn"}`}>{ACTION_LABEL[x.action]}</span> <span className="muted">by {userById(x.by)?.name ?? x.by}</span></td>
+                    <td>{x.reason}{x.note ? <span className="muted">: {x.note}</span> : null}</td>
+                    <td>{x.reported.length ? `${x.reported.length} number${x.reported.length > 1 ? "s" : ""}` : <span className="muted">none</span>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
 

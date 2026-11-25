@@ -8,10 +8,11 @@ import {
   type AuditEntry, type Hold, type ClockView, type HoldEvent, type Signal, type GateResult,
 } from "@scalpel/engine";
 import { cache } from "react";
-import { store, type Store } from "./store";
+import { store, type Store, type Note } from "./store";
 import { model, policyNow, START, W, isProtectedNumber, holderName, type AccountView, type WRig } from "./world";
 import type { User } from "@/lib/users";
 import { aiView, REASONS, SIGNOFF_AT, CHOICE_LABEL, type Choice } from "./judge";
+import { alertById, ACTION_LABEL, TREASONS, type TAction } from "./telco";
 
 export const DAY = 86_400_000;
 
@@ -38,8 +39,19 @@ export interface Decision {
   open: boolean; // false once a send-back reopened the account
 }
 
+/** Imran's call on one Telco-A alert, next to what Telco-A's AI suggested. */
+export interface TelcoDecision {
+  tid: string; alert: string; by: string; at: number; ai: { suggest: TAction; confidence: number };
+  action: TAction; reason: string; note: string; agreed: boolean; reported: string[]; packet: boolean;
+}
+
 export interface Desk {
   now: number; chain: AuditEntry[];
+  telco: TelcoDecision[]; telcoByAlert: Map<string, TelcoDecision>;
+  /** DoT's fraud-risk rating for a number, raised after Telco-A reported it (overrides the starting rating). */
+  fri: Map<string, { band: string; at: number; alert: string }>;
+  /** Alerts whose call records were packed for the police, and when. */
+  packets: Map<string, number>;
   decisions: Decision[]; decisionByAccount: Map<string, Decision>; returned: Map<string, Decision>;
   proposals: Proposal[]; holds: HoldRow[]; asks: TelcoAsk[]; actions: TelcoAction[]; checks: SimCheck[];
   holdByAccount: Map<string, HoldRow>; pendingByAccount: Map<string, Proposal>;
@@ -54,6 +66,9 @@ export function fold(chain: AuditEntry[], now: number): Desk {
   const actions: TelcoAction[] = [];
   const checks: SimCheck[] = [];
   const decisions = new Map<string, Decision>();
+  const telco: TelcoDecision[] = [];
+  const fri = new Map<string, { band: string; at: number; alert: string }>();
+  const packets = new Map<string, number>();
   const ev = (row: HoldRow, type: HoldEvent, e: AuditEntry, note?: string) => {
     row.hold = applyEvent(row.hold, { type, at: e.at, by: e.actor, note }, policyNow(row.hold.events[0]!.at));
   };
@@ -117,6 +132,15 @@ export function fold(chain: AuditEntry[], now: number): Desk {
         for (const k of asks.values()) if (!k.done && k.kind === a.kind && k.value === a.value) k.done = a;
         break;
       }
+      case "TELCO_DECISION":
+        telco.push({ tid: p.tid, alert: p.alert, by: e.actor, at: e.at, ai: p.ai, action: p.action, reason: p.reason, note: p.note ?? "", agreed: p.agreed, reported: p.reported ?? [], packet: Boolean(p.packet) });
+        break;
+      case "DOT_FRI":
+        for (const n of p.msisdns as string[]) fri.set(n, { band: p.band, at: e.at, alert: p.alert });
+        break;
+      case "POLICE_PACKET":
+        packets.set(p.alert, e.at);
+        break;
       case "SIM_CHECK":
         checks.push({ msisdn: p.msisdn, swappedHoursAgo: p.swappedHoursAgo, at: e.at, by: e.actor });
         break;
@@ -137,7 +161,8 @@ export function fold(chain: AuditEntry[], now: number): Desk {
     if (dd.open) { decisionByAccount.set(dd.account, dd); returned.delete(dd.account); }
     else if (!decisionByAccount.has(dd.account)) returned.set(dd.account, dd);
   }
-  return { now, chain, decisions: [...decisions.values()], decisionByAccount, returned, proposals: [...proposals.values()], holds: [...holds.values()], asks: [...asks.values()], actions, checks, holdByAccount, pendingByAccount };
+  const telcoByAlert = new Map(telco.map((t) => [t.alert, t] as const));
+  return { now, chain, telco, telcoByAlert, fri, packets, decisions: [...decisions.values()], decisionByAccount, returned, proposals: [...proposals.values()], holds: [...holds.values()], asks: [...asks.values()], actions, checks, holdByAccount, pendingByAccount };
 }
 
 /** Read once per page render: the header and the page share it instead of each asking the database. */
@@ -295,7 +320,7 @@ export async function decideAccount(u: User, account: string, choice: Choice, re
   const caseId = m.caseOfAccount.get(account) ?? "CASE-?";
   const s = await store();
   const now = await demoNow(s);
-  const ai = aiView(v, now);
+  const ai = aiView(v, now, fold(await s.chain(), now).fri.get(v.phone?.msisdn ?? "")?.band);
   must(!(choice === "HOLD" && ai.suggest === "SEND_BACK"), `This police request can't be used as it is (${ai.rules[0] ?? "rules"}). Send it back, or wait for a valid one.`);
   must(!(choice === "HOLD" && ai.amount <= 0), "There is no victims' money left here to hold.");
   must(!(choice === "HOLD" && v.gate.decision === "DENY"), `The rules don't allow a hold here: ${ai.rules[0] ?? ""}`);
@@ -327,7 +352,8 @@ export async function decideClear(u: User, accounts: string[]): Promise<ActionRe
   for (const a of accounts) {
     const v = model().accounts.get(a);
     must(v, "Unknown account.");
-    const ai = aiView(v, await demoNow());
+    const now2 = await demoNow();
+    const ai = aiView(v, now2, (await desk()).fri.get(v.phone?.msisdn ?? "")?.band);
     must(!ai.point, `${holderName(v.a)} needs a closer look; decide it on its own.`);
     await decideAccount(u, a, ai.suggest, REASONS[0], "Accepted with the clear group");
     n++;
@@ -400,6 +426,50 @@ export async function telcoAct(u: User, kind: TelcoAction["kind"], value: string
   await s.append([{ at: now, actor: u.id, type: "TELCO_ACTION", caseId, payload: { kind, value, outcome, reasons: t.refusal, aid: ask?.aid ?? null, signals: t.signals } }]);
   if (ask) await s.notify([{ at: now, to: ask.by, text: `Telco-A ${outcome === "BLOCKED" ? "blocked" : "refused to block"} ${t.label}${outcome === "REFUSED" ? `: ${t.refusal[0]}` : ""}`, link: `/case/${ask.caseId}` }]);
   return { message: outcome === "BLOCKED" ? `${t.label} blocked.` : `Not blocked: ${t.refusal.join(" ")}` };
+}
+
+/** Imran decides an alert with Telco-A's AI. Reporting to DoT raises the fraud-risk rating banks receive for the
+ *  linked numbers; call records never go to the bank (a police packet is a separate, police-only step). */
+export async function telcoDecide(u: User, alertId: string, action: string, reason: string, note: string, report: boolean): Promise<ActionResult> {
+  must(u.role === "telco", "Only the Telco-A analyst decides alerts.");
+  const a = alertById(alertId);
+  must(a, "Unknown alert.");
+  must((a.options as string[]).includes(action), "Pick one of the actions.");
+  must((TREASONS as readonly string[]).includes(reason), "Pick a reason.");
+  must(reason !== "Other" || note.trim().length >= 5, "Write a short note for 'Other'.");
+  const s = await store();
+  const now = await demoNow(s);
+  const act = action as TAction;
+  const agreed = act === a.ai.suggest;
+  const fraudAction = act === "BAR_IMEI" || act === "BLOCK_ROUTE" || act === "DISCONNECT" || act === "KEEP_LIVE" || act === "REVERIFY";
+  const reported = report && fraudAction && a.reportable ? a.linked.map((l) => l.msisdn) : [];
+  const tid = id("TD");
+  const caseId = a.cases[0] ?? "TELCO";
+  const drafts: Omit<AuditEntry, "seq" | "prevHash" | "hash">[] = [
+    { at: now, actor: u.id, type: "TELCO_DECISION", caseId, payload: { tid, alert: a.id, value: a.value, ai: a.ai.suggest === undefined ? null : { suggest: a.ai.suggest, confidence: a.ai.confidence }, action: act, reason, note: note.trim().slice(0, 500), agreed, reported, packet: false } },
+  ];
+  if (reported.length) drafts.push({ at: now, actor: "dot", type: "DOT_FRI", caseId, payload: { alert: a.id, msisdns: reported, band: "HIGH", source: "Telco-A report via DIP" } });
+  await s.append(drafts, (c) => must(!fold(c, now).telcoByAlert.has(a.id), "This alert has already been decided."));
+  const notes: Omit<Note, "id" | "read">[] = [];
+  for (const cid of new Set(a.linked.filter((l) => reported.includes(l.msisdn)).map((l) => l.caseId).filter(Boolean) as string[])) {
+    const n = a.linked.filter((l) => l.caseId === cid && reported.includes(l.msisdn)).length;
+    notes.push({ at: now, to: "priya", text: `DoT raised the fraud-risk rating to High on ${n} phone${n > 1 ? "s" : ""} in ${cid}, after Telco-A's report. The AI's suggestions there are updated.`, link: `/case/${cid}` });
+  }
+  if (!agreed) notes.push({ at: now, to: "meera", text: `${u.name} (Telco-A) overruled Telco-A's AI on ${a.title}: ${ACTION_LABEL[act].toLowerCase()}.`, link: "/assure" });
+  if (notes.length) await s.notify(notes);
+  return { message: `Recorded: ${ACTION_LABEL[act].toLowerCase()}.${reported.length ? ` Reported to DoT: ${reported.length} linked number${reported.length > 1 ? "s" : ""} now rated High for banks.` : ""}` };
+}
+
+/** Call records for one alert, prepared for the police (never for the bank). Needs a police request on a linked case. */
+export async function policePacket(u: User, alertId: string): Promise<ActionResult> {
+  must(u.role === "telco", "Only Telco-A prepares police packets.");
+  const a = alertById(alertId);
+  must(a, "Unknown alert.");
+  must(a.cases.length > 0 && a.calls.length > 0, "No police request covers this alert, so its call records stay with Telco-A.");
+  const s = await store();
+  const now = await demoNow(s);
+  await s.append([{ at: now, actor: u.id, type: "POLICE_PACKET", caseId: a.cases[0]!, payload: { alert: a.id, calls: a.calls.length, to: "Investigating officer (police only)", basis: "Police request on the linked case (BNSS s.94)" } }], (c) => must(!fold(c, now).packets.has(a.id), "The police packet for this alert is already prepared."));
+  return { message: `Police packet ready: ${a.calls.length} call records for the investigating officer only. The bank does not receive them.` };
 }
 
 export async function simCheck(u: User, msisdn: string): Promise<ActionResult> {

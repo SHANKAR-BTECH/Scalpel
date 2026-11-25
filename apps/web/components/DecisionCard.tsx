@@ -45,6 +45,7 @@ export function DecisionCard({ acct, ai, returned, step }: { acct: CardAccount; 
             <span className="mono">{Math.round(ai.confidence * 100)}%</span>
           </div>
           {ai.rules.length > 0 && <ul className="mt-2 list-disc pl-5 text-[13px] text-[var(--warn)]">{ai.rules.slice(0, 3).map((r) => <li key={r}>{r}</li>)}</ul>}
+          {ai.update && <p className="mt-3 rounded-lg bg-[var(--phone-tint)] p-2.5 text-[13px] text-[var(--phone)]" data-testid="fri-update">{ai.update}</p>}
           {ai.clash && <p className="mt-3 rounded-lg bg-[var(--warn-tint)] p-2.5 text-[13px] text-[var(--warn)]" data-testid="clash"><b>Evidence clashes: </b>{ai.clash}</p>}
           <button type="button" className="btn btn-sm mt-3" onClick={() => setWhy((x) => !x)} aria-expanded={why} data-testid="why-toggle">{why ? "Hide why" : "Why?"}</button>
           {why && <div className="mt-3"><WhyBars why={ai.why} /></div>}

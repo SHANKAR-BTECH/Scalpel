@@ -1,38 +1,66 @@
+import Link from "next/link";
+import { ChevronRight, Smartphone, Phone } from "lucide-react";
 import { requireUser } from "@/lib/server/auth";
 import { desk, phoneTarget } from "@/lib/server/desk";
 import { model, W } from "@/lib/server/world";
+import { alerts, ACTION_LABEL } from "@/lib/server/telco";
 import { ActForm } from "@/components/ActForm";
 import { simCheckAction, telcoActAction } from "@/app/actions";
-import { ago, day, inr } from "@/lib/format";
+import { ago } from "@/lib/format";
 import { userById } from "@/lib/users";
-
-const SIGN: Record<string, string> = {
-  HANDSET_GT5_SIMS: "more than 5 SIMs in one handset", SIMBOX_ROUTE: "calls leave through a SIM-box gateway", SIM_SWAP_LT_72H: "SIM swapped in the last 3 days", GE3_CASE_LINKED_SENDERS: "called 3 or more fraud victims",
-};
 
 export default async function Telco() {
   await requireUser("telco");
   const d = await desk();
   const m = model();
-  const blocked = (kind: string, value: string) => d.actions.find((a) => a.kind === kind && a.value === value && a.outcome === "BLOCKED");
-  const victimsOf = (pred: (c: (typeof W.calls)[number]) => boolean) => {
-    const calls = W.calls.filter(pred);
-    const phones = new Set(calls.map((c) => c.to));
-    const lost = [...phones].reduce((s, p) => { const v = [...m.victimById.values()].find((x) => x.phone === p); const c = v && m.complaintByVictim.get(v.id); return s + (c ? W.txns.find((t) => t.id === c.txnId)!.amount : 0); }, 0);
-    return { calls: calls.length, victims: phones.size, lost };
-  };
-  const finds = [
-    ...W.rigs.map((r) => ({ key: r.imei, title: `${r.kind === "simbox" ? "SIM box" : "One handset"} with ${r.sims.length} SIMs`, sub: `IMEI ${r.imei} · cell ${r.cell} (${r.state})`, rig: r, stats: victimsOf((c) => c.imei === r.imei), cases: m.casesOfRig.get(r.id) ?? [], kind: "IMEI" as const })),
-    ...W.soloSims.map((s) => ({ key: s.msisdn, title: "One SIM, swapped recently", sub: `${s.msisdn} · IMEI ${s.imei}`, rig: null, stats: victimsOf((c) => c.realSim === s.msisdn), cases: m.casesOfRig.get(s.msisdn) ?? [], kind: "MSISDN" as const })),
-  ].sort((a, b) => b.stats.victims - a.stats.victims);
+  const list = alerts();
+  const open = list.filter((a) => !d.telcoByAlert.has(a.id));
   const openAsks = d.asks.filter((a) => !a.done);
-  const shown = [...new Set(W.calls.map((c) => c.shownCaller).filter((n) => m.spoofed.has(n)))];
+  const shown = [...new Set(W.calls.map((c) => c.shownCaller).filter((n) => m.spoofed.has(n)))].slice(0, 4);
   return (
     <div>
-      <h1 className="mt-1">Find the phone behind the scams</h1>
-      <p className="mt-1 max-w-[760px] muted">Our call records show which SIM and handset really made each call. Many cases at the bank lead back to a few devices: block the device, not the number the victim saw.</p>
+      <h1>Alerts from Telco-A&apos;s AI</h1>
+      <p className="mt-1 max-w-[780px] muted">The AI watches network counters and flags handsets and numbers that look like fraud. Open one, run the trace, and decide with it. Your report goes to DoT, which rates the risk for banks; call records go only to police.</p>
 
-      <section className="mt-5">
+      <section className="card board mt-5" data-testid="alerts">
+        <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-[var(--line-strong)] px-4 py-3">
+          <h2>{open.length} to decide</h2>
+          <p className="text-[13px] muted">{list.length - open.length} decided · {d.telco.filter((t) => !t.agreed).length} overruled the AI</p>
+        </div>
+        <ul>
+          {list.map((a) => {
+            const t = d.telcoByAlert.get(a.id);
+            const Icon = a.kind === "IMEI" ? Smartphone : Phone;
+            return (
+              <li key={a.id} className="board-row" data-testid="alert-card">
+                <Link href={`/telco/${a.id}`} className="grid items-center gap-x-5 gap-y-2 px-4 py-3.5 md:grid-cols-[minmax(240px,1.3fr)_minmax(220px,1fr)_150px_20px]" data-testid="open-trace">
+                  <span className="flex min-w-0 items-start gap-3">
+                    <Icon size={18} className="mt-0.5 shrink-0 text-[var(--phone)]" aria-hidden />
+                    <span className="min-w-0">
+                      <span className="block font-semibold">{a.title}</span>
+                      <span className="block truncate mono text-[12px] muted">{a.sub}</span>
+                      <span className="mt-0.5 block text-[12.5px] muted">{a.facts[0]}</span>
+                    </span>
+                  </span>
+                  <span className="text-[13px]">
+                    <span className="label block">AI suggests · {Math.round(a.ai.confidence * 100)}%</span>
+                    <span className="block">{ACTION_LABEL[a.ai.suggest]}</span>
+                    <span className="thread mt-1.5 block" style={{ height: 4 }}><span className="thread-fill block" style={{ width: `${a.ai.confidence * 100}%`, background: "linear-gradient(90deg, #c2a8ff, var(--phone))" }} /></span>
+                  </span>
+                  <span>
+                    {t ? <span className={`chip ${t.agreed ? "chip-good" : "chip-warn"}`}>{t.agreed ? "Decided with AI" : "AI overruled"}</span>
+                      : <span className="chip chip-phone">New</span>}
+                    {t && <span className="mt-1 block text-[12px] muted">{userById(t.by)?.name.split(" ")[0]} · {ago(t.at, d.now)}</span>}
+                  </span>
+                  <ChevronRight size={16} className="hidden text-[var(--muted)] md:block" aria-hidden />
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+
+      <section className="mt-7">
         <h2>Requests from banks {openAsks.length > 0 && <span className="chip chip-blue ml-1 align-middle">{openAsks.length} new</span>}</h2>
         {openAsks.length === 0 && <p className="mt-2 text-[14px] muted">No open requests. Bharat Demo Bank&apos;s officer can send one from any case.</p>}
         <ul className="mt-2 space-y-2" data-testid="asks">
@@ -48,62 +76,19 @@ export default async function Telco() {
         </ul>
       </section>
 
-      <section className="mt-7">
-        <h2>Devices behind the most victims</h2>
-        <div className="mt-3 grid gap-3 lg:grid-cols-2" data-testid="finds">
-          {finds.map((f) => {
-            const t = phoneTarget(f.kind, f.key, d.now, d.checks);
-            const route = f.rig?.route ? phoneTarget("ROUTE", f.rig.route, d.now, d.checks) : null;
-            const b = blocked(f.kind, f.key);
-            return (
-              <div key={f.key} className="card p-4" data-testid="find">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div><p className="font-semibold text-[var(--phone)]">{f.title}</p><p className="mono text-[12px] muted">{f.sub}</p></div>
-                  {b ? <span className="chip chip-good">Blocked {ago(b.at, d.now)}</span> : <span className="chip chip-phone">Active</span>}
-                </div>
-                <dl className="mt-3 grid grid-cols-3 gap-2 text-[13px]">
-                  <div><dt className="muted">Scam calls</dt><dd className="money text-[17px]">{f.stats.calls}</dd></div>
-                  <div><dt className="muted">Victims called</dt><dd className="money text-[17px]">{f.stats.victims}</dd></div>
-                  <div><dt className="muted">They lost</dt><dd className="money text-[17px]">{inr(f.stats.lost)}</dd></div>
-                </dl>
-                <p className="mt-2 text-[13px]">Linked bank cases: <span className="font-medium">{f.cases.join(", ") || "none"}</span></p>
-                <p className="mt-1 text-[12.5px] muted">Signs: {t.signals.map((s) => SIGN[s] ?? s).join(", ") || "none"}</p>
-                {!b && (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <ActForm action={telcoActAction} hidden={{ kind: f.kind, value: f.key }} label={f.kind === "IMEI" ? "Block handset (all its SIMs)" : "Block this SIM"} variant="phone" size="sm" testid={`block-${f.kind}`} />
-                    {route && !blocked("ROUTE", route.value) && <ActForm action={telcoActAction} hidden={{ kind: "ROUTE", value: route.value }} label={`Block ${route.value}`} variant="ghost" size="sm" testid="block-route" />}
-                  </div>
-                )}
-                {route?.collateral && !b && <p className="mt-2 text-[12.5px] text-[var(--warn)]">Route check: {route.collateral}</p>}
-                {f.rig && (
-                  <details className="mt-3 text-[13px]">
-                    <summary className="link">See its {f.rig.sims.length} SIMs</summary>
-                    <ul className="mt-2 grid grid-cols-1 gap-x-4 sm:grid-cols-2">
-                      {f.rig.sims.map((s) => <li key={s.msisdn} className="mono text-[12px]">{s.msisdn} <span className="muted">· on {day(s.activatedAt)} as &ldquo;{s.kycName}&rdquo;</span></li>)}
-                    </ul>
-                  </details>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      <section className="mt-7 grid gap-4 lg:grid-cols-2">
+      <section className="mt-7 grid gap-5 lg:grid-cols-2">
         <div className="card p-4">
-          <h2>Numbers victims saw on screen</h2>
-          <p className="mt-1 text-[13.5px] muted">These were faked by the callers. Scalpel will not block them.</p>
+          <h2>Block a number the victim saw?</h2>
+          <p className="mt-1 text-[13.5px] muted">Banks often ask for this. These numbers were faked by the callers and belong to other people, so the block is refused with the reason.</p>
           <ul className="mt-3 space-y-3" data-testid="spoofed">
             {shown.map((n) => {
               const t = phoneTarget("MSISDN", n, d.now, d.checks);
               const owner = W.spoofedOwners.find((o) => o.msisdn === n)?.holder.name ?? W.protectedNumbers.find((p) => p.msisdn === n)?.owner ?? "a genuine subscriber";
               const tried = d.actions.filter((a) => a.value === n).at(-1);
               return (
-                <li key={n} className="rounded-lg border border-[var(--line)] p-3 text-[13.5px]">
-                  <p className="mono font-semibold">{n}</p>
-                  <p className="muted">Belongs to {owner}. Shown in {W.calls.filter((c) => c.shownCaller === n).length} scam calls that really came from other SIMs.</p>
-                  <p className="mt-1 text-[var(--bad)]">{t.refusal[0]}</p>
-                  {tried ? <p className="mt-1 chip chip-bad">Block refused {ago(tried.at, d.now)}</p> : <ActForm action={telcoActAction} hidden={{ kind: "MSISDN", value: n }} label="Try to block it" variant="ghost" size="sm" className="mt-2" testid="try-spoof" />}
+                <li key={n} className="border-t border-[var(--line)] pt-3 text-[13.5px] first:border-0 first:pt-0">
+                  <p className="mono font-semibold">{n} <span className="font-sans font-normal muted">· belongs to {owner}</span></p>
+                  {tried ? <p className="mt-1 chip chip-bad">Block refused {ago(tried.at, d.now)}: {t.refusal[0]}</p> : <ActForm action={telcoActAction} hidden={{ kind: "MSISDN", value: n }} label="Try to block it" variant="ghost" size="sm" className="mt-2" testid="try-spoof" />}
                 </li>
               );
             })}

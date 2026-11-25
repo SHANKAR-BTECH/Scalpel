@@ -3,6 +3,7 @@ import Link from "next/link";
 import { currentUser, holderRef } from "@/lib/server/auth";
 import { desk } from "@/lib/server/desk";
 import { store } from "@/lib/server/store";
+import { alerts } from "@/lib/server/telco";
 import { logout } from "@/app/actions";
 import { LiveBell } from "./Live";
 import { NavLinks } from "./NavLinks";
@@ -13,7 +14,7 @@ const LINKS: Record<Role | "public", { href: string; label: string }[]> = {
   officer: [{ href: "/inbox", label: "Inbox" }, { href: "/mules", label: "Mules" }, { href: "/holds", label: "Holds" }],
   supervisor: [{ href: "/approvals", label: "Approvals" }, { href: "/holds", label: "Holds" }, { href: "/inbox", label: "Inbox" }, { href: "/mules", label: "Mules" }],
   auditor: [{ href: "/assure", label: "Assure" }, { href: "/mules", label: "Mules" }, { href: "/holds", label: "Holds" }],
-  telco: [{ href: "/telco", label: "Telco-A console" }],
+  telco: [{ href: "/telco", label: "Alerts" }],
   admin: [{ href: "/admin", label: "Admin" }],
   public: [{ href: "/portal", label: "Account holder" }, { href: "/verify", label: "Verify a file" }],
 };
@@ -25,7 +26,7 @@ export async function Header() {
   const s = await store();
   const badge: Record<string, number> = {};
   if (d && u?.role === "supervisor") badge["/approvals"] = d.proposals.filter((p) => p.status === "pending").length;
-  if (d && u?.role === "telco") badge["/telco"] = d.asks.filter((a) => !a.done).length;
+  if (d && u?.role === "telco") badge["/telco"] = d.asks.filter((a) => !a.done).length + alerts().filter((a) => !d.telcoByAlert.has(a.id)).length;
   const links = (u ? LINKS[u.role] : LINKS.public).map((l) => ({ ...l, badge: badge[l.href] ?? 0 }));
   return (
     <header className="sticky top-0 z-40 border-b border-white/70 bg-white/60 shadow-[0_1px_0_rgba(10,18,34,0.06)] backdrop-blur-2xl backdrop-saturate-150 no-print">
