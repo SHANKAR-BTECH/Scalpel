@@ -91,3 +91,15 @@ export async function holderReplyAction(_: Result | null, f: FormData) {
   const name = file && typeof file === "object" && "name" in file ? String((file as File).name) : "";
   return run(() => D.holderReply(ref, str(f, "text"), name));
 }
+export async function decideAccountAction(_: Result | null, f: FormData) {
+  return run(async () => D.decideAccount(await me(), str(f, "account"), str(f, "choice") as "HOLD", str(f, "reason"), str(f, "note")));
+}
+export async function decideClearAction(_: Result | null, f: FormData) {
+  return run(async () => D.decideClear(await me(), f.getAll("account").map(String)));
+}
+export async function signoffAction(_: Result | null, f: FormData) {
+  return run(async () => D.signoff(await me(), str(f, "did"), str(f, "approve") === "yes", str(f, "note")));
+}
+export async function tamperAction(_: Result | null, _f: FormData) {
+  return run(async () => D.tamperTest(await me()));
+}

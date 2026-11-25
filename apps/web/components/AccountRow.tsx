@@ -68,7 +68,9 @@ export function AccountRow({ v, desk, canPropose }: { v: AccountView; desk: Desk
           {ph && <p className="text-[12.5px] muted">Phone <span className="mono">{ph.msisdn}</span>{phoneSigns.length > 0 && <span className="text-[var(--phone)]"> · {phoneSigns.join(", ")}</span>}</p>}
         </div>
         <div className="md:text-right">
-          {held ? (
+          {desk.decisionByAccount.get(v.a.id) && !held && !pending ? (
+            <p className={`chip ${desk.decisionByAccount.get(v.a.id)!.agreed ? "chip-good" : "chip-warn"}`} data-testid="decided-chip">Decided: {desk.decisionByAccount.get(v.a.id)!.choice === "HOLD" ? "hold" : desk.decisionByAccount.get(v.a.id)!.choice === "SEND_BACK" ? "sent back to police" : "no hold, watch"} · {desk.decisionByAccount.get(v.a.id)!.agreed ? "agreed with AI" : "overruled AI"}</p>
+          ) : held ? (
             <div><p className="chip chip-blue" data-testid="held-chip">Held {inr(held.hold.amount)} · {held.ref}</p><p className="mt-1 text-[12px] muted">Approved by {userById(held.approvedBy)?.name ?? held.approvedBy}; holder told.</p></div>
           ) : pending ? (
             <p className="chip chip-warn" data-testid="pending-chip">Waiting for {pending.kind === "HOLD" ? "approval" : "release approval"}: {inr(pending.amount)}</p>

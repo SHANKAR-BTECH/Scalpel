@@ -4,12 +4,13 @@
  * cannot approve the same proposal twice or approve their own proposal.
  */
 import {
-  createHold, applyEvent, clockViews, settle, evaluateGate, formatINR,
+  verifyChain, createHold, applyEvent, clockViews, settle, evaluateGate, formatINR,
   type AuditEntry, type Hold, type ClockView, type HoldEvent, type Signal, type GateResult,
 } from "@scalpel/engine";
 import { store, type Store } from "./store";
 import { model, policyNow, START, W, isProtectedNumber, holderName, type AccountView, type WRig } from "./world";
 import type { User } from "@/lib/users";
+import { aiView, REASONS, SIGNOFF_AT, CHOICE_LABEL, type Choice } from "./judge";
 
 export const DAY = 86_400_000;
 
@@ -27,8 +28,18 @@ export interface TelcoAsk { aid: string; caseId: string; kind: "IMEI" | "MSISDN"
 export interface TelcoAction { kind: "IMEI" | "MSISDN" | "ROUTE"; value: string; outcome: "BLOCKED" | "REFUSED"; reasons: string[]; by: string; at: number; aid?: string }
 export interface SimCheck { msisdn: string; swappedHoursAgo: number | null; at: number; by: string }
 
+/** One person-vs-AI decision on an account. Overruling a confident AI needs the supervisor's sign-off. */
+export interface Decision {
+  did: string; account: string; caseId: string; by: string; at: number;
+  ai: { suggest: Choice; confidence: number; clash: string | null };
+  choice: Choice; reason: string; note: string; agreed: boolean; needsSignoff: boolean; pid?: string;
+  signoff?: { by: string; at: number; approved: boolean; note: string };
+  open: boolean; // false once a send-back reopened the account
+}
+
 export interface Desk {
   now: number; chain: AuditEntry[];
+  decisions: Decision[]; decisionByAccount: Map<string, Decision>; returned: Map<string, Decision>;
   proposals: Proposal[]; holds: HoldRow[]; asks: TelcoAsk[]; actions: TelcoAction[]; checks: SimCheck[];
   holdByAccount: Map<string, HoldRow>; pendingByAccount: Map<string, Proposal>;
 }
@@ -41,6 +52,7 @@ export function fold(chain: AuditEntry[], now: number): Desk {
   const asks = new Map<string, TelcoAsk>();
   const actions: TelcoAction[] = [];
   const checks: SimCheck[] = [];
+  const decisions = new Map<string, Decision>();
   const ev = (row: HoldRow, type: HoldEvent, e: AuditEntry, note?: string) => {
     row.hold = applyEvent(row.hold, { type, at: e.at, by: e.actor, note }, policyNow(row.hold.events[0]!.at));
   };
@@ -54,6 +66,22 @@ export function fold(chain: AuditEntry[], now: number): Desk {
       case "DECIDE": {
         const x = proposals.get(p.pid);
         if (x) Object.assign(x, { status: p.approved ? "approved" : "rejected", decidedBy: e.actor, decidedAt: e.at, decisionNote: p.note ?? "" });
+        // Deciding the hold that came from a decision is also the sign-off on that decision.
+        for (const dd of decisions.values()) if (dd.pid === p.pid && dd.open) {
+          dd.signoff = { by: e.actor, at: e.at, approved: p.approved, note: p.note ?? "" };
+          if (!p.approved) dd.open = false;
+        }
+        break;
+      }
+      case "DECISION":
+        decisions.set(p.did, { did: p.did, account: p.account, caseId: e.caseId, by: e.actor, at: e.at, ai: p.ai, choice: p.choice, reason: p.reason, note: p.note ?? "", agreed: p.agreed, needsSignoff: p.needsSignoff, pid: p.pid ?? undefined, open: true });
+        break;
+      case "SIGNOFF": {
+        const dd = decisions.get(p.did);
+        if (dd && dd.open && !dd.signoff) {
+          dd.signoff = { by: e.actor, at: e.at, approved: p.approved, note: p.note ?? "" };
+          if (!p.approved) dd.open = false;
+        }
         break;
       }
       case "HOLD_PLACED": {
@@ -102,7 +130,13 @@ export function fold(chain: AuditEntry[], now: number): Desk {
   for (const h of holds.values()) if (h.hold.state === "ACTIVE") holdByAccount.set(h.hold.account, h);
   const pendingByAccount = new Map<string, Proposal>();
   for (const pr of proposals.values()) if (pr.status === "pending") pendingByAccount.set(pr.account, pr);
-  return { now, chain, proposals: [...proposals.values()], holds: [...holds.values()], asks: [...asks.values()], actions, checks, holdByAccount, pendingByAccount };
+  const decisionByAccount = new Map<string, Decision>();
+  const returned = new Map<string, Decision>();
+  for (const dd of decisions.values()) {
+    if (dd.open) { decisionByAccount.set(dd.account, dd); returned.delete(dd.account); }
+    else if (!decisionByAccount.has(dd.account)) returned.set(dd.account, dd);
+  }
+  return { now, chain, decisions: [...decisions.values()], decisionByAccount, returned, proposals: [...proposals.values()], holds: [...holds.values()], asks: [...asks.values()], actions, checks, holdByAccount, pendingByAccount };
 }
 
 export async function desk(): Promise<Desk> {
@@ -179,7 +213,14 @@ export async function proposeHold(u: User, account: string, amount: number, note
   must(amount <= v.traced, `The hold can't be more than the victim money still in the account (${formatINR(v.traced)}).`);
   const s = await store();
   const now = await demoNow(s);
-  await s.append([{ at: now, actor: u.id, type: "PROPOSE", caseId, payload: { pid: id("P"), kind: "HOLD", account, amount, note } }], (chain) => {
+  const pid = id("P");
+  const ai = aiView(v, now);
+  must(ai.suggest !== "SEND_BACK", "The police request can't be used as it is: send it back instead of holding.");
+  const agreed = ai.suggest === "HOLD";
+  await s.append([
+    { at: now, actor: u.id, type: "DECISION", caseId, payload: { did: id("D"), account, ai: { suggest: ai.suggest, confidence: ai.confidence, clash: ai.clash }, choice: "HOLD", reason: agreed ? REASONS[0] : "Other", note, agreed, needsSignoff: !agreed && ai.confidence >= SIGNOFF_AT, pid } },
+    { at: now, actor: u.id, type: "PROPOSE", caseId, payload: { pid, kind: "HOLD", account, amount, note } },
+  ], (chain) => {
     const d = fold(chain, now);
     must(!d.pendingByAccount.has(account), "A proposal for this account is already waiting for the supervisor.");
     must(!d.holdByAccount.has(account), "This account already has an active hold.");
@@ -240,6 +281,73 @@ export async function decide(u: User, pid: string, approved: boolean, note: stri
   });
   await s.notify(notes.map((n) => ({ ...n, at: now })));
   return { message: msg };
+}
+
+export async function decideAccount(u: User, account: string, choice: Choice, reason: string, note: string): Promise<ActionResult> {
+  must(u.role === "officer", "Only the fraud officer decides on accounts.");
+  must(["HOLD", "NO_HOLD", "SEND_BACK"].includes(choice), "Pick what to do.");
+  must((REASONS as readonly string[]).includes(reason), "Pick a reason.");
+  const m = model();
+  const v = m.accounts.get(account);
+  must(v, "Unknown account.");
+  const caseId = m.caseOfAccount.get(account) ?? "CASE-?";
+  const s = await store();
+  const now = await demoNow(s);
+  const ai = aiView(v, now);
+  must(!(choice === "HOLD" && ai.suggest === "SEND_BACK"), `This police request can't be used as it is (${ai.rules[0] ?? "rules"}). Send it back, or wait for a valid one.`);
+  must(!(choice === "HOLD" && ai.amount <= 0), "There is no victims' money left here to hold.");
+  must(!(choice === "HOLD" && v.gate.decision === "DENY"), `The rules don't allow a hold here: ${ai.rules[0] ?? ""}`);
+  must(choice !== "SEND_BACK" || ai.rules.length > 0 || note.trim().length >= 5, "Say what the police must fix.");
+  must(reason !== "Other" || note.trim().length >= 5, "Write a short note for 'Other'.");
+  const agreed = choice === ai.suggest;
+  const needsSignoff = !agreed && ai.confidence >= SIGNOFF_AT;
+  const did = id("D"), pid = choice === "HOLD" ? id("P") : undefined;
+  const drafts: Omit<AuditEntry, "seq" | "prevHash" | "hash">[] = [
+    { at: now, actor: u.id, type: "DECISION", caseId, payload: { did, account, ai: { suggest: ai.suggest, confidence: ai.confidence, clash: ai.clash }, choice, reason, note: note.trim().slice(0, 500), agreed, needsSignoff, pid: pid ?? null } },
+  ];
+  if (pid) drafts.push({ at: now, actor: u.id, type: "PROPOSE", caseId, payload: { pid, kind: "HOLD", account, amount: ai.amount, note: `${reason}${note ? `: ${note}` : ""}` } });
+  await s.append(drafts, (c) => {
+    const d = fold(c, now);
+    must(!d.decisionByAccount.has(account), "This account has already been decided.");
+    must(!d.holdByAccount.has(account) && !d.pendingByAccount.has(account), "This account already has a hold or one waiting.");
+  });
+  const who = holderName(v.a);
+  if (pid) await s.notify([{ at: now, to: "vikram", text: `${u.name} proposed a hold of ${formatINR(ai.amount)} on ${who} (${caseId})${agreed ? "" : ", overruling the AI"}`, link: "/approvals" }]);
+  else if (needsSignoff) await s.notify([{ at: now, to: "vikram", text: `${u.name} overruled a confident AI on ${who} (${caseId}): ${CHOICE_LABEL[choice]}. Needs your sign-off.`, link: "/approvals" }]);
+  return { message: pid ? `Sent to the supervisor: hold ${formatINR(ai.amount)} on ${who}.` : needsSignoff ? `Recorded. You overruled a confident AI, so the supervisor will check it.` : `Recorded: ${CHOICE_LABEL[choice].toLowerCase()} for ${who}.` };
+}
+
+/** Accept the AI's suggestion for several clear accounts at once (the officer can untick any). */
+export async function decideClear(u: User, accounts: string[]): Promise<ActionResult> {
+  must(u.role === "officer", "Only the fraud officer decides on accounts.");
+  must(accounts.length > 0, "Tick at least one account.");
+  let n = 0;
+  for (const a of accounts) {
+    const v = model().accounts.get(a);
+    must(v, "Unknown account.");
+    const ai = aiView(v, await demoNow());
+    must(!ai.point, `${holderName(v.a)} needs a closer look; decide it on its own.`);
+    await decideAccount(u, a, ai.suggest, REASONS[0], "Accepted with the clear group");
+    n++;
+  }
+  return { message: `${n} account${n > 1 ? "s" : ""} decided as the AI suggested. Holds went to the supervisor.` };
+}
+
+export async function signoff(u: User, did: string, approved: boolean, note: string): Promise<ActionResult> {
+  must(u.role === "supervisor", "Only the supervisor signs off.");
+  const s = await store();
+  const now = await demoNow(s);
+  const pre = fold(await s.chain(), now).decisions.find((x) => x.did === did);
+  must(pre && pre.open && pre.needsSignoff && !pre.signoff && !pre.pid, "Nothing to sign off here.");
+  must(pre.by !== u.id, "You can't sign off your own decision.");
+  must(approved || note.trim().length >= 5, "Tell the officer why you're sending it back.");
+  await s.append([{ at: now, actor: u.id, type: "SIGNOFF", caseId: pre.caseId, payload: { did, approved, note: note.trim().slice(0, 500) } }], (c) => {
+    const x = fold(c, now).decisions.find((y) => y.did === did);
+    must(x && x.open && !x.signoff, "Someone already signed this off.");
+  });
+  const who = holderName(model().accounts.get(pre.account)!.a);
+  await s.notify([{ at: now, to: pre.by, text: approved ? `${u.name} agreed with your call on ${who}.` : `${u.name} sent back your call on ${who}: "${note.trim()}". Please decide again.`, link: `/case/${pre.caseId}#acct-${pre.account}` }]);
+  return { message: approved ? "Signed off." : "Sent back to the officer with your note." };
 }
 
 export async function uploadGrievance(u: User, holdId: string): Promise<ActionResult> {
@@ -308,6 +416,22 @@ export async function exportEvidence(u: User, caseId: string) {
   const s = await store();
   const now = await demoNow(s);
   await s.append([{ at: now, actor: u.id, type: "EVIDENCE_EXPORTED", caseId, payload: { caseId } }]);
+}
+
+/** Compliance's tamper test: copy the record, quietly change one past entry, and show that the check catches it.
+ *  The real record is never touched. */
+export async function tamperTest(u: User): Promise<ActionResult & { row?: number; reason?: string }> {
+  must(u.role === "auditor", "Only compliance runs the tamper test.");
+  const chain = await (await store()).chain();
+  must(chain.length >= 2, "Nothing recorded yet. Make a decision or two first.");
+  const i = Math.max(0, Math.floor(chain.length / 2) - 1);
+  const copy = chain.map((e) => ({ ...e, payload: { ...(e.payload as object) } }));
+  const target = copy[i]!;
+  const p = target.payload as Record<string, unknown>;
+  if (typeof p.amount === "number") p.amount = Math.round(p.amount / 2); else p.note = "changed quietly";
+  const r = await verifyChain(copy);
+  must(!r.ok, "The check did not catch the change. This should never happen.");
+  return { message: `Changed entry #${i} (${target.type}) in a copy. The check caught it at entry #${r.brokenAt}: ${r.reason}. The real record is untouched.`, row: r.brokenAt, reason: r.reason };
 }
 
 export async function moveClock(u: User, days: number): Promise<ActionResult> {

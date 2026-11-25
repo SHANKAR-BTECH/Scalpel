@@ -8,8 +8,8 @@ import { TrailGraph } from "@/components/TrailGraph";
 import { AccountRow } from "@/components/AccountRow";
 import { ActForm } from "@/components/ActForm";
 import { CountUp } from "@/components/CountUp";
-import { CaseAnalysis } from "@/components/CaseAnalysis";
-import { analyse } from "@/lib/server/analysis";
+import { CaseWork, type PointItem, type ClearItem, type DoneItem } from "@/components/CaseWork";
+import { aiView } from "@/lib/server/judge";
 import { askTelcoAction } from "@/app/actions";
 import { ago, inr, when } from "@/lib/format";
 import { userById } from "@/lib/users";
@@ -26,6 +26,31 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
   // Below the Rs 1,000 minimum a hold isn't allowed anyway: list those accounts briefly instead of as full cards.
   const withMoney = accts.filter((v) => v.traced >= 1000_00);
   const rest = accts.filter((v) => v.traced < 1000_00);
+  const points: PointItem[] = [], clear: ClearItem[] = [], done: DoneItem[] = [];
+  const YEAR = 365 * 86_400_000;
+  for (const v of withMoney) {
+    const ai = aiView(v, d.now);
+    const dec = d.decisionByAccount.get(v.a.id);
+    if (dec) {
+      const pr = dec.pid ? d.proposals.find((p) => p.pid === dec.pid) : undefined;
+      const status = d.holdByAccount.has(v.a.id) ? "held" : pr?.status === "pending" ? "with supervisor" : dec.needsSignoff && !dec.signoff ? "waiting sign-off" : dec.signoff?.approved ? "signed off" : "recorded";
+      done.push({ id: v.a.id, name: holderName(v.a), choice: dec.choice, agreed: dec.agreed, status });
+      continue;
+    }
+    if (d.holdByAccount.has(v.a.id) || d.pendingByAccount.has(v.a.id)) continue;
+    const back = d.returned.get(v.a.id);
+    const returned = back?.signoff ? { by: userById(back.signoff.by)?.name ?? back.signoff.by, note: back.signoff.note } : null;
+    if (ai.point || returned) {
+      const age = d.now - v.a.openedAt;
+      points.push({ ai, returned, acct: {
+        id: v.a.id, name: holderName(v.a), sub: `${v.a.type === "CURRENT" ? "Current" : v.a.type === "SALARY" ? "Salary" : "Savings"}, ${v.a.holder.city}`,
+        traced: v.traced, balance: v.balance, asked: "amount" in v.asked ? inr(v.asked.amount) : "Whole a/c", score: v.a.score?.muleScore ?? null,
+        age: age > YEAR ? `${Math.floor(age / YEAR)} yr ago` : `${Math.max(1, Math.round(age / 86_400_000))} days ago`, phone: v.phone?.msisdn,
+      } });
+    } else clear.push({ id: v.a.id, name: holderName(v.a), suggest: ai.suggest, amount: ai.amount, confidence: ai.confidence });
+  }
+  // Sent-back accounts first, so the supervisor's note is dealt with before anything new.
+  points.sort((a, b) => Number(Boolean(b.returned)) - Number(Boolean(a.returned)));
   const heldTotal = withMoney.reduce((s, v) => s + (d.holdByAccount.get(v.a.id)?.hold.amount ?? 0), 0);
   const linked = [...new Set(c.rigs.flatMap((r) => (m.casesOfRig.get(r) ?? []).filter((x) => x !== c.id)))];
   const log = d.chain.filter((e) => e.caseId === c.id).reverse();
@@ -50,7 +75,7 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
         </dl>
       </div>
 
-      <div className="mt-5"><CaseAnalysis a={analyse(c, g)} /></div>
+      <div className="mt-5"><CaseWork caseId={c.id} graph={g} points={points} clear={clear} done={done} canDecide={u.role === "officer"} /></div>
 
       <section className="mt-6">
         <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">

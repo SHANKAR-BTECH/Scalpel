@@ -259,7 +259,8 @@ def build(seed: int = SEED) -> dict:
         "accounts": [{**{k: a[k] for k in ("id", "type", "openedAt", "kycChangedAt")}, "opening": opening[a["id"]], "holder": holders[a["id"]],
                       "phone": phones[a["id"]]["msisdn"],
                       "score": (None if a["id"] not in scored else {"muleScore": scored[a["id"]]["muleScore"],
-                                                                     "reasons": scored[a["id"]]["reasons"]}),
+                                                                     "reasons": scored[a["id"]]["reasons"],
+                                                                     "why": scored[a["id"]]["why"]}),
                       "signals": signals.get(a["id"], [])}
                      for a in world["accounts"] if a["id"] in reached],
         "txns": sorted(case_txns, key=lambda t: (t["at"], t["id"])),
@@ -307,6 +308,15 @@ def _plain_reasons(model, world: dict, signals: dict, scored: dict) -> None:
             if len(out) == 3:
                 break
         scored[a]["reasons"] = out
+        # "Why?": the five clues that moved this score most, either way, each phrased so it is true of the account.
+        why = []
+        for f, cval in ranked[:5]:
+            if f in BINARY:
+                text = TEXT[f][0 if vals[f] >= 0.5 else 1](vals[f])
+            else:
+                text = TEXT[f][0 if cval > 0 else 1](vals[f])
+            why.append({"clue": text, "push": round(float(cval), 3)})
+        scored[a]["why"] = why
 
 
 def _check_no_answers(obj, path="") -> None:

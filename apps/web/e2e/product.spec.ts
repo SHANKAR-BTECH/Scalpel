@@ -119,24 +119,36 @@ test("pages fit a phone screen", async ({ browser }) => {
   await fits();
 });
 
-test("the analysis replays on a case, and the Mules tab shows each mule's network", async ({ browser }) => {
+test("officer and AI decide together; an overrule goes to the supervisor, who sends it back; compliance sees it", async ({ browser }) => {
+  test.setTimeout(90_000);
   const priya = await as(browser, "priya");
   await priya.getByTestId("case-row").first().click();
-  await priya.getByTestId("run-analysis").click();
-  await expect(priya.getByText(/scam calls?, matched to the SIMs/)).toBeVisible({ timeout: 8_000 });
-  await priya.getByTestId("skip-analysis").click();
-  await expect(priya.getByRole("heading", { name: "What Scalpel suggests" })).toBeVisible();
-  await priya.goto("/mules");
-  const rows = priya.getByTestId("mule-row");
-  expect(await rows.count()).toBeGreaterThan(5);
-  const name = (await rows.nth(1).locator("p").first().innerText()).split("\n")[0]!.trim();
-  await rows.nth(1).click();
-  await expect(priya.getByTestId("mule-detail").locator("h2")).toHaveText(name);
-  await priya.goto("/mules");
+  await priya.getByTestId("start-work").click();
+  await expect(priya.getByTestId("trace-log")).toContainText("ms", { timeout: 10_000 });
+  const card = priya.getByTestId("decision-card").first();
+  await expect(card).toBeVisible({ timeout: 30_000 });
+  const acct = await card.getAttribute("data-account");
+  await card.getByTestId("why-toggle").click();
+  await expect(card.getByTestId("why").locator("li")).toHaveCount(6);
+  await card.getByText("Don't hold, keep watching").click();
+  await expect(card.getByTestId("needs-signoff")).toBeVisible();
+  await card.locator("select[name=reason]").selectOption("Other");
+  await card.locator("input[name=note]").fill("Checked the branch: long-time customer");
+  await card.getByTestId(`decide-${acct}`).click();
+  await expect(priya.getByTestId("flash")).toContainText("supervisor will check");
+
   const vikram = await as(browser, "vikram");
-  await vikram.goto("/mules");
-  await expect(vikram.getByTestId("mule-board")).toBeVisible();
-  const imran = await as(browser, "imran");
-  await imran.goto("/mules");
-  await expect(imran).toHaveURL(/login\?denied/);
+  const item = vikram.getByTestId("overrule-item").first();
+  await expect(item).toContainText("Don't hold");
+  await item.getByPlaceholder("Why (the officer sees this)").fill("Money left within minutes; hold it");
+  await item.getByTestId("signoff-back").click();
+  await expect(vikram.getByTestId("flash")).toContainText("Sent back");
+
+  await priya.reload();
+  await expect(priya.getByTestId("returned-note")).toContainText("Money left within minutes", { timeout: 10_000 });
+
+  const meera = await as(browser, "meera");
+  await expect(meera.getByTestId("ledger-row").first()).toContainText("sent back");
+  await meera.getByTestId("tamper-test").click();
+  await expect(meera.getByTestId("flash")).toContainText("caught it");
 });

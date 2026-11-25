@@ -15,7 +15,7 @@ import { POLICY_YAML, OVERLAY_YAML } from "@/lib/policies.generated";
 export interface Holder { name: string; city: string; state: string; group: string; business?: string }
 export interface WAccount {
   id: string; type: AccountType; openedAt: number; kycChangedAt: number | null; opening: number; holder: Holder; phone: string;
-  score: { muleScore: number; reasons: string[] } | null; signals: Signal[];
+  score: { muleScore: number; reasons: string[]; why: { clue: string; push: number }[] } | null; signals: Signal[];
 }
 export interface WTxn { id: string; at: number; from: string; to: string; amount: number; channel: string }
 export interface WComplaint { id: string; ack: string; victim: string; txnId: string; reportedAt: number; story: string; scamType: string }

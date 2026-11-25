@@ -4,7 +4,8 @@ import { desk } from "@/lib/server/desk";
 import { model, holderName } from "@/lib/server/world";
 import { ActForm } from "@/components/ActForm";
 import { suggestion } from "@/components/AccountRow";
-import { decideAction } from "@/app/actions";
+import { decideAction, signoffAction } from "@/app/actions";
+import { CHOICE_LABEL } from "@/lib/server/judge";
 import { ago, inr } from "@/lib/format";
 import { userById } from "@/lib/users";
 
@@ -13,12 +14,41 @@ export default async function Approvals() {
   const d = await desk();
   const m = model();
   const pending = d.proposals.filter((p) => p.status === "pending").sort((a, b) => a.at - b.at);
+  const overrules = d.decisions.filter((x) => x.open && x.needsSignoff && !x.signoff && !x.pid).sort((a, b) => a.at - b.at);
+  const decOf = (pid: string) => d.decisions.find((x) => x.pid === pid);
   const done = d.proposals.filter((p) => p.status !== "pending").sort((a, b) => (b.decidedAt ?? 0) - (a.decidedAt ?? 0)).slice(0, 8);
   return (
     <div className="max-w-[920px]">
       <p className="eyebrow">Approvals · two-person rule</p>
-      <h1 className="mt-1">{pending.length ? `${pending.length} waiting for you` : "Nothing waiting"}</h1>
-      <p className="mt-1 muted">Nothing is held or released until you approve it. You can never approve something you proposed.</p>
+      <h1 className="mt-1">{pending.length + overrules.length ? `${pending.length + overrules.length} waiting for you` : "Nothing waiting"}</h1>
+      <p className="mt-1 muted">Nothing is held or released until you approve it. You can never approve something you proposed. When the officer overrules a confident AI, you check it.</p>
+      {overrules.length > 0 && (
+        <section className="mt-5" data-testid="overrules">
+          <h2>Overrules to check</h2>
+          <ul className="mt-2 space-y-3">
+            {overrules.map((x) => {
+              const v = m.accounts.get(x.account)!;
+              return (
+                <li key={x.did} className="card p-4" data-testid="overrule-item">
+                  <p className="font-semibold">{holderName(v.a)}: {userById(x.by)?.name} chose &ldquo;{CHOICE_LABEL[x.choice]}&rdquo;</p>
+                  <p className="text-[13px] muted">{ago(x.at, d.now)} · <Link className="link" href={`/case/${x.caseId}#acct-${x.account}`}>{x.caseId}</Link> · victims&apos; money here {inr(v.traced)}</p>
+                  <div className="mt-3 grid gap-2 text-[13.5px] md:grid-cols-2">
+                    <div className="panel p-3"><p className="eyebrow">AI suggested</p><p className="mt-1 font-medium">{CHOICE_LABEL[x.ai.suggest]} · {Math.round(x.ai.confidence * 100)}% sure</p>{v.a.score && <p className="mt-1 text-[12.5px] muted">{v.a.score.reasons.join(" · ")}</p>}{x.ai.clash && <p className="mt-1 text-[12.5px] text-[var(--warn)]">Clash: {x.ai.clash}</p>}</div>
+                    <div className="panel p-3"><p className="eyebrow">Officer&apos;s reason</p><p className="mt-1 font-medium">{x.reason}</p>{x.note && <p className="mt-1 text-[12.5px] muted">&ldquo;{x.note}&rdquo;</p>}</div>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <ActForm action={signoffAction} hidden={{ did: x.did, approve: "yes", note: "" }} label="Agree with the officer" testid="signoff-approve" />
+                    <ActForm action={signoffAction} hidden={{ did: x.did, approve: "no" }} label="Send back" variant="danger" testid="signoff-back" className="flex flex-wrap items-center gap-2">
+                      <input name="note" placeholder="Why (the officer sees this)" className="input w-[260px] py-1.5" />
+                    </ActForm>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+      {pending.length > 0 && overrules.length > 0 && <h2 className="mt-6">Holds and releases</h2>}
       <ul className="mt-5 space-y-3" data-testid="pending-list">
         {pending.map((p) => {
           const v = m.accounts.get(p.account)!;
@@ -38,6 +68,7 @@ export default async function Approvals() {
                 {p.kind === "HOLD" && <li className="muted">Rules: {s.text}</li>}
                 {v.a.score && <li className="muted">Mule score {Math.round(v.a.score.muleScore * 100)}/100: {v.a.score.reasons.join(" · ")}</li>}
                 {p.note && <li className="muted">Note: {p.note}</li>}
+                {(() => { const x = decOf(p.pid); return x ? <li><span className={`chip ${x.agreed ? "chip-good" : "chip-warn"}`}>{x.agreed ? "Officer agreed with the AI" : `Officer overruled the AI (${Math.round(x.ai.confidence * 100)}% sure of "${CHOICE_LABEL[x.ai.suggest]}")`}</span>{x.ai.clash && <span className="ml-2 text-[12.5px] text-[var(--warn)]">Clash: {x.ai.clash}</span>}</li> : null; })()}
               </ul>
               {mine ? <p className="mt-3 chip chip-warn">You proposed this: another supervisor must decide.</p> : (
                 <div className="mt-3 flex flex-wrap gap-2">

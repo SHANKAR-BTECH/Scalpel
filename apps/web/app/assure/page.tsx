@@ -3,7 +3,12 @@ import { fairnessReport, verifyChain } from "@scalpel/engine";
 import { requireUser } from "@/lib/server/auth";
 import { desk } from "@/lib/server/desk";
 import { model, policyNow } from "@/lib/server/world";
-import { inr, pct } from "@/lib/format";
+import { inr, pct, ago } from "@/lib/format";
+import { ActForm } from "@/components/ActForm";
+import { tamperAction } from "@/app/actions";
+import { CHOICE_LABEL, REASONS } from "@/lib/server/judge";
+import { holderName } from "@/lib/server/world";
+import { userById } from "@/lib/users";
 
 const GROUP: Record<string, string> = { small_shop: "Small shops", salaried: "Salaried", gig_worker: "Gig workers", student: "Students", pensioner: "Pensioners", homemaker: "Homemakers", other: "Others" };
 
@@ -33,11 +38,44 @@ export default async function Assure() {
         <div className="card p-4"><p className="text-[13px] muted">Deadlines missed</p><p className={`money text-[26px] ${overdue ? "text-[var(--bad)]" : ""}`}>{overdue}</p><p className="text-[12.5px] muted"><Link className="link" href="/holds">See the clock board</Link></p></div>
       </section>
 
+      <section className="mt-6 card p-4" data-testid="ledger">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2>Person and AI: every decision</h2>
+          <p className="text-[13px] muted">{d.decisions.length} decisions · {d.decisions.filter((x) => x.agreed).length} agreed with the AI · {d.decisions.filter((x) => !x.agreed).length} overruled</p>
+        </div>
+        {d.decisions.length === 0 ? <p className="mt-2 text-[13.5px] muted">No decisions yet. They appear here as the fraud officer works cases.</p> : (
+          <>
+            <ul className="mt-3 flex flex-wrap gap-2">
+              {REASONS.map((r) => ({ r, n: d.decisions.filter((x) => x.reason === r).length })).filter((x) => x.n).map((x) => <li key={x.r} className="chip chip-grey">{x.r}: {x.n}</li>)}
+            </ul>
+            <div className="mt-3 overflow-x-auto">
+              <table className="table">
+                <thead><tr><th>When</th><th>Account</th><th>AI said</th><th>Person chose</th><th>Reason</th><th>Supervisor</th></tr></thead>
+                <tbody>
+                  {[...d.decisions].reverse().slice(0, 30).map((x) => (
+                    <tr key={x.did} data-testid="ledger-row">
+                      <td className="whitespace-nowrap muted">{ago(x.at, d.now)}</td>
+                      <td>{holderName(m.accounts.get(x.account)!.a)} <span className="mono muted">{x.caseId}</span></td>
+                      <td>{CHOICE_LABEL[x.ai.suggest]} <span className="muted">({Math.round(x.ai.confidence * 100)}%)</span></td>
+                      <td><span className={`chip ${x.agreed ? "chip-good" : "chip-warn"}`}>{CHOICE_LABEL[x.choice]}</span> <span className="muted">by {userById(x.by)?.name ?? x.by}</span></td>
+                      <td>{x.reason}{x.note ? <span className="muted">: {x.note}</span> : null}</td>
+                      <td>{x.signoff ? (x.signoff.approved ? <span className="text-[var(--good)]">agreed</span> : <span className="text-[var(--bad)]">sent back: {x.signoff.note}</span>) : x.needsSignoff || x.pid ? <span className="muted">waiting</span> : <span className="muted">not needed</span>}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+      </section>
+
       <section className="mt-6 grid gap-4 lg:grid-cols-2">
         <div className="card p-4" data-testid="chain">
           <h2>Tamper check</h2>
           <p className="mt-1 text-[13.5px] muted">Every action is written with a fingerprint (SHA-256) of the one before it. Changing any old record breaks every fingerprint after it.</p>
           <p className={`mt-3 chip ${chainOk.ok ? "chip-good" : "chip-bad"}`}>{chainOk.ok ? `All ${d.chain.length} records intact` : `Broken at record ${chainOk.brokenAt}: ${chainOk.reason}`}</p>
+          <ActForm action={tamperAction} label="Run a tamper test" variant="ghost" size="sm" testid="tamper-test" className="mt-3" />
+          <p className="mt-1 text-[12px] muted">Quietly changes one old record in a copy and checks whether the fingerprints catch it. The real record is not touched.</p>
           {d.chain.length > 0 && <p className="mt-2 break-all mono text-[11.5px] muted">Latest fingerprint {d.chain.at(-1)!.hash}</p>}
         </div>
         <div className="card p-4">
