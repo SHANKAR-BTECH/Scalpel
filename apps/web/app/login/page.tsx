@@ -1,3 +1,4 @@
+import { Stagger } from "@/components/Stagger";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { loginAs } from "@/app/actions";
@@ -16,7 +17,7 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
         {ORGS.map((org) => (
           <section key={org}>
             <h2 className="label">{org}</h2>
-            <ul className="card board mt-2">
+            <Stagger as="ul" className="card board mt-2">
               {USERS.filter((u) => u.org === org).map((u) => (
                 <li key={u.id} className="board-row">
                   <form action={loginAs} className="flex flex-wrap items-center gap-4 px-4 py-3.5">
@@ -30,7 +31,7 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
                   </form>
                 </li>
               ))}
-            </ul>
+            </Stagger>
           </section>
         ))}
         <Link href="/portal" className="sheet flex items-center gap-4 px-4 py-3.5 transition-colors hover:bg-white/80">

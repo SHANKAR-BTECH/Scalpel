@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Stagger } from "@/components/Stagger";
 import { ChevronRight, Smartphone, Phone } from "lucide-react";
 import { requireUser } from "@/lib/server/auth";
 import { desk, phoneTarget } from "@/lib/server/desk";
@@ -27,7 +28,7 @@ export default async function Telco() {
           <h2>{open.length} to decide</h2>
           <p className="text-[13px] muted">{list.length - open.length} decided · {d.telco.filter((t) => !t.agreed).length} overruled the AI</p>
         </div>
-        <ul>
+        <Stagger as="ul">
           {list.map((a) => {
             const t = d.telcoByAlert.get(a.id);
             const Icon = a.kind === "IMEI" ? Smartphone : Phone;
@@ -57,7 +58,7 @@ export default async function Telco() {
               </li>
             );
           })}
-        </ul>
+        </Stagger>
       </section>
 
       <section className="mt-7">

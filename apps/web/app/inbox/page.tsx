@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Stagger } from "@/components/Stagger";
 import { ChevronRight } from "lucide-react";
 import { requireUser } from "@/lib/server/auth";
 import { desk } from "@/lib/server/desk";
@@ -36,7 +37,7 @@ export default async function Inbox({ searchParams }: { searchParams: Promise<{ 
           <SortSelect value={key} options={Object.entries(SORTS).map(([k, v]) => ({ value: k, label: v.label }))} />
         </div>
       </div>
-      <div className="card board mt-5" data-testid="case-list">
+      <Stagger className="card board mt-5" data-testid="case-list">
         <div className="inbox-grid board-head"><span>Case</span><span className="text-right">Reported lost</span><span className="text-right">Still in accounts</span><span>Held</span><span /></div>
         {cases.map((c) => {
           const h = held(c);
@@ -63,7 +64,7 @@ export default async function Inbox({ searchParams }: { searchParams: Promise<{ 
             </Link>
           );
         })}
-      </div>
+      </Stagger>
     </div>
   );
 }

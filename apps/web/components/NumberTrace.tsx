@@ -2,6 +2,7 @@
 /** Telco-A's number trace: the analyst runs it, the call records turn into a picture (handset → SIMs → people
  *  called → bank complaints), the network counters fill in, and only then does the decision open. */
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { Check, Lock, PhoneOff, ShieldAlert, TriangleAlert } from "lucide-react";
 import type { Alert, TAction, TraceView, TNode } from "@/lib/server/telco";
 import { ActForm } from "./ActForm";
@@ -50,7 +51,7 @@ export function NumberTrace({ a, view, labels, reasons, done, packetAt, linked, 
 
           <ol className="mt-4 space-y-1.5 text-[13.5px]" data-testid="trace-log">
             {view.log.map((line, i) => (
-              <li key={i} className={`flex items-start gap-2 transition-opacity duration-500 ${step > i ? "opacity-100" : "opacity-25"}`}>
+              <li key={i} className={`flex items-start gap-2 transition-opacity duration-500 ${step > i ? "opacity-100" : "opacity-60"}`}>
                 <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${step > i ? "bg-[var(--phone)]" : "bg-[var(--line-strong)]"}`} />
                 {line}
               </li>
@@ -119,12 +120,12 @@ export function NumberTrace({ a, view, labels, reasons, done, packetAt, linked, 
             <h2>Telco-A&apos;s AI suggests</h2>
             <span className="money text-[15px]">{Math.round(a.ai.confidence * 100)}% sure</span>
           </div>
-          <p className="mt-1 text-[17px] font-semibold text-[var(--phone)]">{labels[a.ai.suggest]}</p>
+          <p className="mt-1 text-[17px] font-semibold">{labels[a.ai.suggest]}</p>
           <p className="mt-2 text-[13px] muted">Because of: {a.ai.drivers.join("; ")}.</p>
           <p className="mt-2 text-[12.5px] muted">It reads network counters only. It does not see company registrations, police letters or who owned the number before.</p>
         </section>
 
-        <section className={`card p-5 transition-opacity duration-500 ${finished ? "opacity-100" : "opacity-60"}`} data-testid="telco-decide-panel">
+        <section className={`card p-5 transition-opacity duration-500 opacity-100`} data-testid="telco-decide-panel">
           <h2>What the records show</h2>
           <ul className="mt-2 space-y-1.5 text-[13.5px]">
             {a.facts.map((f) => <li key={f} className="flex gap-2"><span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[var(--muted)]" />{f}</li>)}
@@ -209,8 +210,8 @@ function Graph({ view, step }: { view: TraceView; step: number }) {
   return (
     <div className="mt-4 overflow-x-auto" data-testid="trace-graph">
       <svg viewBox={`0 0 ${W} ${H}`} className="min-w-[760px]" role="img" aria-label="Trace from the handset to its SIMs, the people called and the bank complaints">
-        {cols.map((c, ci) => <text key={c.title} x={xs[ci + 1]} y={14} fontSize={12} fill="var(--muted)" opacity={step >= c.at ? 1 : 0.35}>{c.title}</text>)}
-        <text x={xs[0]} y={14} fontSize={12} fill="var(--muted)">Device</text>
+        {cols.map((c, ci) => <text key={c.title} x={xs[ci + 1]} y={14} fontSize={12} fill="var(--muted)" opacity={1} fontFamily="var(--font-mono)" letterSpacing=".06em">{c.title.toUpperCase()}</text>)}
+        <text x={xs[0]} y={14} fontSize={12} fill="var(--muted)" fontFamily="var(--font-mono)" letterSpacing=".06em">DEVICE</text>
         {/* device → SIMs */}
         {view.sims.map((s, i) => { const p = pos.get(s.id)!; return <path key={s.id} d={curve(dev.x + dev.w, dev.y + 18, p.x, p.y + 18)} fill="none" stroke="var(--phone)" strokeWidth={1.3} opacity={step >= 2 ? 0.45 : 0} style={{ transition: `opacity .5s ${i * 60}ms` }} />; })}
         {view.edges.map(([f, t], i) => {
@@ -225,7 +226,7 @@ function Graph({ view, step }: { view: TraceView; step: number }) {
           return (
             <g key={c.title}>
               {c.nodes.map((nd, i) => <Node key={nd.id} x={xs[ci + 1]!} y={y(i, n)} w={NW[ci + 1]!} label={nd.label} sub={nd.sub} color={tone(nd.tone)} on={step >= c.at} delay={i * 70} />)}
-              {c.more > 0 && <text x={xs[ci + 1]! + 10} y={y(c.nodes.length, n) + 22} fontSize={12} fill="var(--muted)" opacity={step >= c.at ? 1 : 0}>+ {c.more} more</text>}
+              {c.more > 0 && <text x={xs[ci + 1]! + 10} y={y(c.nodes.length, n) + 22} fontSize={12} fill="var(--muted)">+ {c.more} more</text>}
             </g>
           );
         })}
@@ -235,13 +236,14 @@ function Graph({ view, step }: { view: TraceView; step: number }) {
 }
 
 function Node({ x, y, w, label, sub, color, on, delay = 0, strong }: { x: number; y: number; w: number; label: string; sub: string; color: string; on: boolean; delay?: number; strong?: boolean }) {
+  // Waiting nodes stay readable (grey edge); when the trace reaches them they spring in with their colour.
   return (
-    <g style={{ opacity: on ? 1 : 0.18, transition: `opacity .5s ${delay}ms` }}>
-      <rect x={x} y={y} width={w} height={38} rx={2} fill="#fff" stroke={on ? color : "var(--line-strong)"} strokeWidth={strong ? 1.6 : 1} />
-      <rect x={x} y={y + 8} width={3} height={22} rx={0} fill={color} />
+    <motion.g initial={false} animate={{ opacity: on ? 1 : 0.72, scale: on ? 1 : 0.985 }} transition={{ type: "spring", stiffness: 420, damping: 26, delay: on ? delay / 1000 : 0 }} style={{ transformOrigin: `${x + w / 2}px ${y + 19}px` }}>
+      <rect x={x} y={y} width={w} height={38} rx={4} fill="rgba(255,255,255,.94)" stroke={on ? color : "#d4d4d4"} strokeWidth={on && strong ? 1.6 : 1} />
+      <rect x={x} y={y + 8} width={3} height={22} fill={on ? color : "#c8c8c8"} />
       <text x={x + 11} y={y + 16} fontSize={12.5} fontWeight={600} fill="var(--fg)" fontFamily={label.startsWith("+") || /^\d/.test(label) ? "var(--font-mono)" : undefined}>{clip(label, Math.floor(w / 7.4))}</text>
       <text x={x + 11} y={y + 31} fontSize={11} fill="var(--muted)">{clip(sub, Math.floor(w / 6))}</text>
-    </g>
+    </motion.g>
   );
 }
 const clip = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + "…" : s);
