@@ -28,12 +28,13 @@ export async function Header() {
   if (d && u?.role === "telco") badge["/telco"] = d.asks.filter((a) => !a.done).length;
   const links = (u ? LINKS[u.role] : LINKS.public).map((l) => ({ ...l, badge: badge[l.href] ?? 0 }));
   return (
-    <header className="sticky top-0 z-40 border-b border-[var(--line)] bg-white/90 backdrop-blur no-print">
-      <div className="mx-auto flex max-w-[1280px] flex-wrap items-center gap-x-5 gap-y-2 px-4 py-2.5 sm:px-6">
+    <header className="sticky top-0 z-40 border-b border-white/70 bg-white/60 shadow-[0_1px_0_rgba(10,18,34,0.06)] backdrop-blur-2xl backdrop-saturate-150 no-print">
+      <div className="mx-auto flex w-full max-w-[1760px] flex-wrap items-center gap-x-5 gap-y-2 px-4 py-2.5 sm:px-6 lg:px-10">
         <Link href={u ? u.home : "/"} className="flex items-center gap-2" aria-label="Scalpel home">
           <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden><rect width="32" height="32" rx="8" fill="var(--accent)" /><path d="M8 22 L22 8 L24 10 L12 22 Z" fill="#fff" /><path d="M8 22 L12 22 L10 24 Z" fill="#fff" opacity=".6" /></svg>
           <span className="title text-[18px]">Scalpel</span>
         </Link>
+        <span className="demo-tag glass -ml-3" title="Fictional people, banks and numbers. Not legal advice." data-testid="demo-tag">Demo</span>
         <NavLinks links={links} />
         <div className="ml-auto flex items-center gap-2.5">
           {d && <span className="hidden items-center gap-1.5 text-[12.5px] muted md:flex" title="Demo clock" data-testid="demo-clock"><span className="live-dot" />{when(d.now)}</span>}

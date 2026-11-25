@@ -7,6 +7,7 @@ import { caseGraph } from "@/lib/server/graph";
 import { TrailGraph } from "@/components/TrailGraph";
 import { AccountRow } from "@/components/AccountRow";
 import { ActForm } from "@/components/ActForm";
+import { CountUp } from "@/components/CountUp";
 import { askTelcoAction } from "@/app/actions";
 import { ago, inr, when } from "@/lib/format";
 import { userById } from "@/lib/users";
@@ -41,8 +42,8 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
           <p className="mt-1 max-w-[720px] muted">&ldquo;{c.complaints[0]!.story}&rdquo;</p>
         </div>
         <dl className="grid grid-cols-3 gap-4 text-right">
-          <div><dt className="text-[12px] muted">Reported lost</dt><dd className="money text-[20px]">{inr(c.reported)}</dd></div>
-          <div><dt className="text-[12px] muted">Still in accounts</dt><dd className="money text-[20px] text-[var(--accent)]" data-testid="catchable">{inr(c.catchable)}</dd></div>
+          <div><dt className="text-[12px] muted">Reported lost</dt><dd className="money text-[20px]"><CountUp value={c.reported} format="inr" /></dd></div>
+          <div><dt className="text-[12px] muted">Still in accounts</dt><dd className="money text-[20px] text-[var(--accent)]" data-testid="catchable"><CountUp value={c.catchable} format="inr" /></dd></div>
           <div><dt className="text-[12px] muted">Held so far</dt><dd className="money text-[20px]" data-testid="held-total">{inr(heldTotal)}</dd></div>
         </dl>
       </div>

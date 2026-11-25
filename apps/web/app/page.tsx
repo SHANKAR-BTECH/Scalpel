@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { model, W } from "@/lib/server/world";
-import { inrShort } from "@/lib/format";
+import { CountUp } from "@/components/CountUp";
 
 export default function Home() {
   const m = model();
@@ -21,12 +21,12 @@ export default function Home() {
           </div>
         </div>
         <div className="card p-5">
-          <p className="eyebrow">In this demo world</p>
+          <p className="eyebrow">Right now at Bharat Demo Bank</p>
           <dl className="mt-3 grid grid-cols-2 gap-4">
-            <div><dt className="text-[13px] muted">Fraud complaints</dt><dd className="money text-[26px]">{W.complaints.length}</dd></div>
-            <div><dt className="text-[13px] muted">Linked into cases</dt><dd className="money text-[26px]">{m.cases.length}</dd></div>
-            <div><dt className="text-[13px] muted">Victims reported</dt><dd className="money text-[26px]">{inrShort(reported)}</dd></div>
-            <div><dt className="text-[13px] muted">Still in accounts</dt><dd className="money text-[26px] text-[var(--accent)]">{inrShort(catchable)}</dd></div>
+            <div><dt className="text-[13px] muted">Fraud complaints</dt><dd className="money text-[26px]"><CountUp value={W.complaints.length} /></dd></div>
+            <div><dt className="text-[13px] muted">Linked into cases</dt><dd className="money text-[26px]"><CountUp value={m.cases.length} /></dd></div>
+            <div><dt className="text-[13px] muted">Victims reported</dt><dd className="money text-[26px]"><CountUp value={reported} format="inrShort" /></dd></div>
+            <div><dt className="text-[13px] muted">Still in accounts</dt><dd className="money text-[26px] text-[var(--accent)]"><CountUp value={catchable} format="inrShort" /></dd></div>
           </dl>
           <p className="mt-4 rounded-lg bg-[var(--phone-tint)] p-3 text-[13.5px] text-[var(--phone)]">One SIM box with {rig.sims.length} SIMs made the calls behind {m.casesOfRig.get(rig.id)?.length ?? 0} separate cases.</p>
         </div>

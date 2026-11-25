@@ -1,16 +1,28 @@
 "use client";
 /** The case picture: violet dashed lines are calls, blue lines are victims' money, grey lines are money leaving the bank.
  *  Hover a box to light up its lines; click an account to jump to its row. */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Graph, GNode } from "@/lib/server/graph";
 
-const W = 144, H = 50, GAP_X = 28, ROW = 62, TOP = 36;
+const W = 144, H = 50, MIN_GAP = 28, ROW = 62, TOP = 36;
 
 const fill: Record<GNode["kind"], string> = { phone: "var(--phone-tint)", victim: "#fff", mule: "#fff", innocent: "#fff", group: "var(--panel)", exit: "var(--panel)" };
 const stroke: Record<GNode["kind"], string> = { phone: "var(--phone)", victim: "var(--line-strong)", mule: "var(--fg)", innocent: "var(--line-strong)", group: "var(--line-strong)", exit: "var(--line-strong)" };
 
 export function TrailGraph({ g }: { g: Graph }) {
   const [hover, setHover] = useState<string | null>(null);
+  // Spread the columns across the full width of the box; on a phone keep the minimum gap and scroll sideways.
+  const box = useRef<HTMLDivElement>(null);
+  const [avail, setAvail] = useState(0);
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setAvail(el.clientWidth - 24));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const n = g.cols.length;
+  const GAP_X = Math.max(MIN_GAP, Math.min(90, n > 1 ? (avail - n * W) / (n - 1) : MIN_GAP));
   const pos = useMemo(() => {
     const p = new Map<string, { x: number; y: number }>();
     const byCol = new Map<number, GNode[]>();
@@ -20,7 +32,7 @@ export function TrailGraph({ g }: { g: Graph }) {
       ns.forEach((n, i) => p.set(n.id, { x: col * (W + GAP_X), y: TOP + i * ROW }));
     }
     return p;
-  }, [g]);
+  }, [g, GAP_X]);
   const rows = Math.max(1, ...g.cols.map((_, c) => g.nodes.filter((n) => n.col === c).length));
   const width = g.cols.length * (W + GAP_X) - GAP_X;
   const height = TOP + rows * ROW;
@@ -28,7 +40,7 @@ export function TrailGraph({ g }: { g: Graph }) {
   const lit = (e: { from: string; to: string }) => hover !== null && (e.from === hover || e.to === hover);
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-[var(--line)] bg-white p-3" data-testid="trail-graph">
+    <div ref={box} className="overflow-x-auto rounded-2xl border border-[var(--line)] bg-white/90 p-3" data-testid="trail-graph">
       <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Money and phone trail for this case" className="block">
         {g.cols.map((c, i) => (
           <text key={c} x={i * (W + GAP_X)} y={14} fontSize="10.5" fontWeight="700" letterSpacing="0.06em" fill={i === 0 ? "var(--phone)" : "var(--muted)"} style={{ textTransform: "uppercase" }}>{c}</text>
@@ -42,7 +54,9 @@ export function TrailGraph({ g }: { g: Graph }) {
           const dim = hover !== null && !lit(e);
           return (
             <path key={i} d={`M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`} fill="none" stroke={color} strokeWidth={w}
-              strokeDasharray={e.kind === "call" ? "4 4" : undefined} opacity={dim ? 0.12 : e.kind === "exit" ? 0.7 : 0.55} style={{ transition: "opacity .15s" }}>
+              pathLength={e.kind === "call" ? undefined : 1} className={e.kind === "call" ? "node-in" : "edge-draw"}
+              strokeDasharray={e.kind === "call" ? "4 4" : undefined} opacity={dim ? 0.12 : e.kind === "exit" ? 0.7 : 0.55}
+              style={{ transition: "opacity .25s", animationDelay: `${150 + (a.x / (W + GAP_X)) * 180}ms` }}>
               <title>{e.kind === "call" ? `${e.calls ?? 1} call(s)` : `₹${Math.round(e.amount / 100).toLocaleString("en-IN")}`}</title>
             </path>
           );
@@ -51,7 +65,7 @@ export function TrailGraph({ g }: { g: Graph }) {
           const p = pos.get(n.id)!;
           const held = n.status === "held", pending = n.status === "pending";
           const box = (
-            <g transform={`translate(${p.x},${p.y})`} onMouseEnter={() => setHover(n.id)} onMouseLeave={() => setHover(null)} style={{ cursor: n.href ? "pointer" : "default" }} data-node={n.kind}>
+            <g transform={`translate(${p.x},${p.y})`} className="node-in" style={{ animationDelay: `${(n.col * 140)}ms`, cursor: n.href ? "pointer" : "default" }} onMouseEnter={() => setHover(n.id)} onMouseLeave={() => setHover(null)} data-node={n.kind}>
               <rect width={W} height={H} rx="10" fill={held ? "var(--accent-tint)" : fill[n.kind]} stroke={held ? "var(--accent)" : pending ? "var(--warn)" : stroke[n.kind]}
                 strokeWidth={held || pending || n.kind === "mule" ? 1.6 : 1} strokeDasharray={n.kind === "group" ? "3 3" : undefined} />
               {n.kind === "mule" && <circle cx={W - 12} cy={12} r={4} fill="var(--bad)"><title>Likely mule (mule score high)</title></circle>}

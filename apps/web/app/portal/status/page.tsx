@@ -45,7 +45,7 @@ export default async function Status() {
         ) : active ? (
           <ActForm action={holderReplyAction} label="Send my explanation" className="mt-2 space-y-3" testid="reply">
             <textarea name="text" required minLength={10} rows={4} className="input" placeholder="For example: this was a customer's payment for a blouse order on 3 December. Order book photo attached." />
-            <div><label className="text-[13px] font-medium" htmlFor="file">Attach a document (photo or PDF)</label><input id="file" type="file" name="file" accept="image/*,application/pdf" className="mt-1 block text-[13px]" /><p className="mt-1 text-[12px] muted">In this demo only the file name is kept.</p></div>
+            <div><label className="text-[13px] font-medium" htmlFor="file">Attach a document (photo or PDF)</label><input id="file" type="file" name="file" accept="image/*,application/pdf" className="mt-1 block text-[13px]" /><p className="mt-1 text-[12px] muted">Only the file name is kept.</p></div>
           </ActForm>
         ) : <p className="mt-2 muted">Nothing more to do.</p>}
       </section>

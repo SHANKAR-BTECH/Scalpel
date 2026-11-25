@@ -42,12 +42,12 @@ export function LiveBell({ signedIn }: { signedIn: boolean }) {
     <div className="relative">
       <button type="button" aria-label={`Notifications, ${unread} unread`} data-testid="bell" aria-expanded={open}
         onClick={async () => { setOpen((o) => !o); if (!open && unread) { await markReadAction(); setNotes((ns) => ns.map((n) => ({ ...n, read: true }))); } }}
-        className="relative grid h-9 w-9 place-items-center rounded-full border border-[var(--line)] bg-white hover:bg-[var(--panel)]">
+        className="glass glass-round relative grid h-9 w-9 place-items-center">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></svg>
         {unread > 0 && <span data-testid="bell-count" className="absolute -right-1 -top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-[var(--bad)] px-1 text-[11px] font-bold text-white">{unread}</span>}
       </button>
       {open && (
-        <div className="absolute right-0 z-50 mt-2 w-[min(360px,calc(100vw-32px))] card p-2" data-testid="bell-list">
+        <div className="pop-in glass absolute right-0 z-50 mt-2 w-[min(360px,calc(100vw-32px))] rounded-2xl p-2" data-testid="bell-list">
           <p className="eyebrow px-2 py-1">Notifications</p>
           {notes.length === 0 && <p className="px-2 py-3 text-sm muted">Nothing yet.</p>}
           <ul className="max-h-[60vh] overflow-auto">
@@ -62,7 +62,7 @@ export function LiveBell({ signedIn }: { signedIn: boolean }) {
         </div>
       )}
       {toast && (
-        <div role="status" data-testid="toast" className="fixed bottom-4 right-4 z-[60] w-[min(380px,calc(100vw-32px))] card border-[var(--accent-line)] p-3 text-[13.5px]">
+        <div role="status" data-testid="toast" className="toast-in glass fixed bottom-4 right-4 z-[60] w-[min(380px,calc(100vw-32px))] rounded-2xl p-3 text-[13.5px]">
           <p className="eyebrow mb-1 text-[var(--accent)]">New</p>
           <Link href={toast.link} className="hover:underline" onClick={() => setToast(null)}>{toast.text}</Link>
         </div>
