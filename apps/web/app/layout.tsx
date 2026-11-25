@@ -1,32 +1,25 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Banner } from "@/components/Banner";
-import { Nav } from "@/components/Nav";
-import { MotionProvider } from "@/components/ui/MotionProvider";
-import { DeskProvider } from "@/lib/desk";
+import { Header } from "@/components/Header";
+import { Flash } from "@/components/Flash";
 
 export const metadata: Metadata = {
-  title: "Scalpel · fraud hold desk",
-  description: "A demo fraud desk for a bank: open police hold requests, hold only the traced scam money, check each hold against the rules, and print the proof. Simulation with fictional data.",
+  title: "Scalpel · hold the scam money, block the scam phone",
+  description: "A demo product for a bank and a telecom company: follow scam money and the phones behind it, hold only the traced amount, block only the real source, and prove every step. Fictional data.",
 };
+
+export const dynamic = "force-dynamic";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        {/* Marks that scripts run, so fade-ins never hide content when they do not. */}
-        <script dangerouslySetInnerHTML={{ __html: "document.documentElement.classList.add('js')" }} />
-      </head>
+    <html lang="en">
       <body className="min-h-screen">
-        <MotionProvider>
-          <DeskProvider>
-            <Banner />
-            <Nav />
-            <main className="relative z-[1]">
-              <div className="mx-auto max-w-[1480px] px-4 sm:px-5 lg:px-6 pb-14">{children}</div>
-            </main>
-          </DeskProvider>
-        </MotionProvider>
+        <div role="note" className="border-b border-[var(--line)] bg-[var(--panel)] py-1 text-center text-[12px] muted no-print">
+          Simulation with fictional people, banks and numbers. Not legal advice.
+        </div>
+        <Header />
+        <main className="mx-auto max-w-[1280px] px-4 pb-16 pt-6 sm:px-6">{children}</main>
+        <Flash />
       </body>
     </html>
   );

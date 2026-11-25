@@ -1,9 +1,8 @@
 import type { NextConfig } from "next";
 
-// Static export: the whole site is plain files built from data/demo.json. No server, no database.
+// A server app: logins, a shared database (Neon Postgres when DATABASE_URL is set) and live updates.
 const config: NextConfig = {
-  output: "export",
-  images: { unoptimized: true },
+  transpilePackages: ["@scalpel/engine"],
   // Type checking runs separately (`pnpm typecheck`) with the repo's TypeScript version.
   typescript: { ignoreBuildErrors: true },
 };

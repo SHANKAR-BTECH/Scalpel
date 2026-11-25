@@ -13,3 +13,5 @@ pipeline/.venv/
 pipeline/out/
 .superpowers/
 .handoff/
+apps/web/test-results/
+apps/web/out/
