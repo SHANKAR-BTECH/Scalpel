@@ -184,7 +184,7 @@ describe("Telco-A analyst decides with its AI", () => {
     await expect(telcoDecide(imran, a.id, "BAR_IMEI", "Signals match the suggestion", "", true)).rejects.toThrow(/save your trace/);
     await saveTrace(imran, a.id, rigPins().slice(0, 1), [], "");
     await expect(telcoDecide(imran, a.id, "BAR_IMEI", "Signals match the suggestion", "", true)).rejects.toThrow(/Still missing/);
-    await saveTrace(imran, a.id, rigPins(), ["tick-many"], "");
+    await saveTrace(imran, a.id, rigPins(), ["many"], "");
     const r = await telcoDecide(imran, a.id, "BAR_IMEI", "Would cut off genuine customers", "route has 2 business lines", true);
     expect(r.message).toMatch(/Reported to DoT/);
     const d = await desk();
@@ -381,5 +381,15 @@ describe("Priya builds the money trail herself", () => {
     expect(B.payment("nope").found).toBe(false);
     const k = B.kyc(pay.to);
     expect(k.found && k.request.id).toBeTruthy();
+  });
+});
+
+describe("Imran's signs come from his clues", () => {
+  it("no clue, no sign; the handset and its records show the SIM box", () => {
+    expect(checkTrace("RIG-1", []).signals.every((x) => !x.seen)).toBe(true);
+    const r = checkTrace("RIG-1", rigPins());
+    expect(r.signals.find((x) => x.key === "many")!.seen).toBe(true);
+    expect(r.signals.find((x) => x.key === "many")!.why).toMatch(/\d+ SIMs/);
+    expect(r.signals.find((x) => x.key === "owner")!.seen).toBe(false);
   });
 });

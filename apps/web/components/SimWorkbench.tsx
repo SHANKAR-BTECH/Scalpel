@@ -33,11 +33,6 @@ type Results = {
   doc?: { found: boolean; note: string; doc: string; sims: { msisdn: string; kycName: string; pos: string; at: number }[] };
 };
 
-const SIGNALS = [
-  ["many", "Many SIMs used in one device"], ["gateway", "The device is a multi-SIM gateway, not a phone"], ["noin", "Almost no incoming calls"],
-  ["tower", "Never moves from one tower"], ["batch", "SIMs bought in a batch at one shop, on reused IDs"], ["spoof", "Calls carried someone else's caller ID"],
-  ["business", "Registered business traffic"], ["owner", "Long-time owner lost the SIM (swap)"],
-] as const;
 
 export interface SavedView { version: number; pins: PinRef[]; ticks: string[]; by: string; at: number }
 
@@ -65,7 +60,6 @@ export function SimWorkbench({ alert, leads, start, firstDay, lastDay, saved, lo
   const [dir, setDir] = useState<"all" | "out" | "in">("all");
   const [res, setRes] = useState<Results>({});
   const [pins, setPins] = useState<PinRef[]>(saved?.pins ?? []);
-  const [ticks, setTicks] = useState<string[]>(saved?.ticks ?? []);
   const [check, setCheck] = useState<TraceCheck | null>(null);
   const [note, setNote] = useState("");
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -73,8 +67,8 @@ export function SimWorkbench({ alert, leads, start, firstDay, lastDay, saved, lo
   const key = `scalpel-simbench-v2:${alert?.id ?? "free"}`;
 
   // A draft per alert, kept in this browser between saves.
-  useEffect(() => { try { const s = JSON.parse(localStorage.getItem(key) ?? "null"); if (s && (!saved || s.base === saved.version)) { setPins(s.pins ?? []); setTicks(s.ticks ?? []); } } catch { /* storage blocked */ } }, [key, saved]);
-  useEffect(() => { try { localStorage.setItem(key, JSON.stringify({ pins, ticks, base: saved?.version ?? 0 })); } catch { /* storage blocked */ } }, [key, pins, ticks, saved]);
+  useEffect(() => { try { const s = JSON.parse(localStorage.getItem(key) ?? "null"); if (s && (!saved || s.base === saved.version)) { setPins(s.pins ?? []); } } catch { /* storage blocked */ } }, [key, saved]);
+  useEffect(() => { try { localStorage.setItem(key, JSON.stringify({ pins, base: saved?.version ?? 0 })); } catch { /* storage blocked */ } }, [key, pins, saved]);
 
   const has = (kind: PinKind, ref: string) => pins.some((p) => p.kind === kind && p.ref === ref);
   const add = (p: PinRef) => { if (!has(p.kind, p.ref)) { setPins((x) => [...x, p]); setCheck(null); } };
@@ -104,7 +98,8 @@ export function SimWorkbench({ alert, leads, start, firstDay, lastDay, saved, lo
   const doCheck = () => go(async () => { if (alert) setCheck(await checkTraceAction(alert.id, pins)); });
   const doSave = () => go(async () => {
     if (!alert) return;
-    const r = await saveTraceAction(alert.id, pins, ticks, note);
+    const seen = (await checkTraceAction(alert.id, pins)).signals.filter((x) => x.seen).map((x) => x.key);
+    const r = await saveTraceAction(alert.id, pins, seen, note);
     setMsg({ ok: r.ok, text: r.message });
     if (r.ok) { setNote(""); setCheck(await checkTraceAction(alert.id, pins)); router.refresh(); }
   });
@@ -325,7 +320,7 @@ export function SimWorkbench({ alert, leads, start, firstDay, lastDay, saved, lo
         <section className="card p-4" data-testid="pin-board">
           <div className="flex items-baseline justify-between gap-2">
             <h2>Your trace</h2>
-            {pins.length > 0 && <button type="button" className="link text-[13px]" onClick={() => { setPins([]); setTicks([]); setCheck(null); }}>Clear</button>}
+            {pins.length > 0 && <button type="button" className="link text-[13px]" onClick={() => { setPins([]); setCheck(null); }}>Clear</button>}
           </div>
           <p className="mt-1 text-[13px] muted">Built only from what you pin. {pins.length} pinned.{saved && ` Saved version ${saved.version}.`}</p>
           {pins.length === 0 ? <p className="mt-4 text-[14px] muted" data-testid="pins-empty">Nothing pinned yet. Look something up and pin what matters.</p> : (
@@ -348,13 +343,8 @@ export function SimWorkbench({ alert, leads, start, firstDay, lastDay, saved, lo
         </section>
 
         <section className="card p-4" data-testid="signals-sheet">
-          <h2>Signals you see</h2>
-          <p className="mt-1 text-[13px] muted">Tick what your evidence shows. This is your reading; the AI does not tick for you.</p>
-          <ul className="mt-3 space-y-2 text-[14px]">
-            {SIGNALS.map(([k, label]) => (
-              <li key={k}><label className="flex items-start gap-2"><input type="checkbox" className="mt-1" checked={ticks.includes(k)} onChange={(e) => setTicks((t) => e.target.checked ? [...t, k] : t.filter((x) => x !== k))} data-testid={`tick-${k}`} />{label}</label></li>
-            ))}
-          </ul>
+          <h2>Check my trace</h2>
+          <p className="mt-1 text-[13px] muted">The AI looks up each of your clues again in Telco-A&apos;s records. It shows which signs of fraud your clues prove, with the data behind each, and what each action still needs. You still decide.</p>
           {alert && (
             <div className="mt-4 flex flex-wrap gap-2">
               <button type="button" className="btn btn-ghost" onClick={doCheck} disabled={pins.length === 0 || pending} data-testid="ai-check"><ShieldCheck size={14} aria-hidden /> Check my trace</button>
@@ -362,6 +352,16 @@ export function SimWorkbench({ alert, leads, start, firstDay, lastDay, saved, lo
           )}
           {check && (
             <div className="mt-4 space-y-3 border-t border-[var(--line)] pt-3 text-[13.5px]" data-testid="ai-result">
+              <div><p className="label">Signs your clues show</p>
+                <ul className="mt-1 space-y-1.5" data-testid="ai-signals">
+                  {check.signals.map((x) => (
+                    <li key={x.key} data-testid={`sign-${x.key}`} data-seen={x.seen} className="flex gap-2">
+                      <span className={`mt-0.5 shrink-0 font-semibold ${x.seen ? "text-[var(--bad)]" : "text-[var(--muted)]"}`} aria-hidden>{x.seen ? "✓" : "–"}</span>
+                      <span><span className={x.seen ? "font-medium" : "muted"}>{x.label}</span><span className="block text-[12.5px] muted">{x.why}</span></span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
               {check.shows.length > 0 && <div><p className="label">Your pins show</p><ul className="mt-1 list-disc pl-5">{check.shows.map((s) => <li key={s}>{s}</li>)}</ul></div>}
               {check.empty.length > 0 && <div><p className="label">Pinned, but the record holds nothing</p><ul className="mt-1 list-disc pl-5 text-[var(--warn)]" data-testid="ai-empty">{check.empty.map((s) => <li key={s}>{s}</li>)}</ul></div>}
               {check.offAlert.length > 0 && <div><p className="label">Not part of this alert</p><ul className="mt-1 list-disc pl-5 text-[var(--warn)]" data-testid="ai-offalert">{check.offAlert.map((s) => <li key={s}>{s}</li>)}</ul></div>}

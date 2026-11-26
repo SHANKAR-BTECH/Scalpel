@@ -14,7 +14,6 @@ import { aiView } from "@/lib/server/judge";
 import { askTelcoAction } from "@/app/actions";
 import { ago, inr, when } from "@/lib/format";
 import { userById } from "@/lib/users";
-import { YourJob } from "@/components/YourJob";
 
 export default async function CasePage({ params }: { params: Promise<{ id: string }> }) {
   const u = await requireUser("officer", "supervisor");
@@ -90,7 +89,6 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
       <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="label"><span className="mono">{c.id}</span> · {c.complaints.length} complaints · first {when(c.firstAt)}</p>
-          <YourJob who="Bank fraud officer">Follow the money first. Then decide each account on your trail: freeze it, watch it, or send the police request back.</YourJob>
           <h1 className="mt-1">{c.scamType}: {c.complaints.length} victims</h1>
           <p className="mt-1 max-w-[720px] muted">&ldquo;{c.complaints[0]!.story}&rdquo;</p>
         </div>

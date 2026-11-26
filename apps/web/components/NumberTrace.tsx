@@ -56,7 +56,10 @@ export function NumberTrace({ a, view, labels, reasons, done, packetAt, linked, 
             </div>
           ) : (
             <div className="mt-4" data-testid="trace-saved">
-              <p className="text-[13px] muted">Version {trace.version} · {trace.pins} pin{trace.pins === 1 ? "" : "s"} · saved by {trace.by} · {when(trace.at)}</p>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-[13px] muted">Version {trace.version} · {trace.pins} pin{trace.pins === 1 ? "" : "s"} · saved by {trace.by} · {when(trace.at)}</p>
+                <a href={`/api/telco-evidence/${a.id}`} className="btn btn-sm" download data-testid="download-calls">Download call records + summary (CSV)</a>
+              </div>
               {trace.shows.length > 0 ? (
                 <ul className="mt-3 space-y-1.5 text-[13.5px]" data-testid="trace-shows">
                   {trace.shows.map((f) => <li key={f} className="flex gap-2"><span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[var(--phone)]" />{f}</li>)}
@@ -106,12 +109,16 @@ export function NumberTrace({ a, view, labels, reasons, done, packetAt, linked, 
             </div>
           ) : readyOpts.length === 0 ? (
             <div className="mt-3" data-testid="none-ready">
-              <p className="text-[13.5px]">Your trace (version {trace.version}) doesn&apos;t hold the evidence for any action yet. Each one needs:</p>
-              <ul className="mt-2 space-y-2 text-[13.5px]">
+              <p className="text-[13.5px]"><Lock size={13} className="mr-1 inline" aria-hidden />Your trace (version {trace.version}) doesn&apos;t hold enough clues for any option yet. Add what each one needs in the workbench, save again, and it opens here.</p>
+              <ul className="mt-2 space-y-1.5 text-[13.5px]">
                 {trace.actions.map((x) => (
-                  <li key={x.action} data-testid={`opt-${x.action}`} data-ready="no"><span className="font-medium">{labels[x.action]}</span>{x.action === a.ai.suggest && <span className="chip chip-phone ml-1.5">AI</span>}<span className="block text-[12.5px] muted">Still missing: {x.missing.join("; ")}</span></li>
+                  <li key={x.action} data-testid={`opt-${x.action}`} data-ready="no" className="flex items-start gap-2.5 rounded-xl px-2.5 py-2 opacity-70">
+                    <input type="radio" disabled className="mt-1" aria-label={labels[x.action]} />
+                    <span><span className="font-medium">{labels[x.action]}</span>{x.action === a.ai.suggest && <span className="chip chip-phone ml-1.5">AI</span>}<span className="mt-0.5 block text-[12px] muted">Still needs: {x.missing.join("; ")}</span></span>
+                  </li>
                 ))}
               </ul>
+              <Link href={bench} className="btn btn-phone btn-sm mt-2">Add the missing clues</Link>
             </div>
           ) : (
             <ActForm action={telcoDecideAction} hidden={{ alert: a.id }} label="Record decision" variant="phone" testid="telco-decide" className="mt-3 space-y-3">

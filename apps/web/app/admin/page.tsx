@@ -7,7 +7,6 @@ import { clockAction, resetAction } from "@/app/actions";
 import { START } from "@/lib/server/world";
 import { when } from "@/lib/format";
 import { USERS } from "@/lib/users";
-import { YourJob } from "@/components/YourJob";
 
 export default async function Admin() {
   await requireUser("admin");
@@ -16,7 +15,6 @@ export default async function Admin() {
   const days = Math.floor((d.now - START) / 86_400_000);
   return (
     <div className="max-w-[900px]">
-      <YourJob who="Admin">Reset the demo and move the clock forward so deadlines can be shown.</YourJob>
       <h1 className="mt-1">Demo controls</h1>
       <section className="mt-5 card p-4" data-testid="db-status">
         <h2>Shared database</h2>

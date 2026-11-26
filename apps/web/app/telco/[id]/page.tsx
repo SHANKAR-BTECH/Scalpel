@@ -8,7 +8,6 @@ import { alertById, traceView, ACTION_LABEL, TREASONS } from "@/lib/server/telco
 import { NumberTrace } from "@/components/NumberTrace";
 import { userById } from "@/lib/users";
 import { checkTrace } from "@/lib/server/tracecheck";
-import { YourJob } from "@/components/YourJob";
 
 export default async function TelcoAlert({ params }: { params: Promise<{ id: string }> }) {
   await requireUser("telco");
@@ -27,7 +26,6 @@ export default async function TelcoAlert({ params }: { params: Promise<{ id: str
       <Link href="/telco" className="link inline-flex items-center gap-1 text-[13.5px]"><ChevronLeft size={15} aria-hidden />All alerts</Link>
       <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <YourJob who="Telco-A analyst">Build your trace from the records first. Then choose what to do with this alert. The AI only checks your clues.</YourJob>
           <h1>{a.title}</h1>
           <p className="mt-1 mono text-[13px] muted">{a.sub}</p>
         </div>

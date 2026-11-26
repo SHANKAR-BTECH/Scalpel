@@ -66,14 +66,17 @@ function holds(p: PinRef): boolean {
   }
 }
 
+/** A sign of fraud (or of innocence), worked out from his pins with the data that shows it. */
+export interface TraceSignal { key: string; label: string; seen: boolean; why: string }
+
 export interface TraceCheck {
-  shows: string[]; offAlert: string[]; empty: string[];
+  shows: string[]; offAlert: string[]; empty: string[]; signals: TraceSignal[];
   actions: { action: TAction; label: string; ready: boolean; missing: string[] }[];
 }
 
 export function checkTrace(alertId: string, pins: PinRef[]): TraceCheck {
   const s = scope(alertId);
-  if (!s) return { shows: [], offAlert: [], empty: [], actions: [] };
+  if (!s) return { shows: [], offAlert: [], empty: [], signals: [], actions: [] };
   const name = (p: PinRef) => `${PIN_TITLE[p.kind]} ${p.label}`;
   const offAlert = pins.filter((p) => !belongs(p, s)).map(name);
   const empty = pins.filter((p) => belongs(p, s) && !holds(p)).map(name);
@@ -90,7 +93,7 @@ export function checkTrace(alertId: string, pins: PinRef[]): TraceCheck {
   for (const p of inPins) if (p.kind === "sim") pinnedSims.add(norm(p.ref));
   if (pinnedSims.size) shows.push(`${pinnedSims.size} SIM${pinnedSims.size === 1 ? "" : "s"} pinned${attached.size > 1 ? ` of ${attached.size} seen in the handset` : ""}.`);
   const st = inPins.filter((p) => p.kind === "stats").map((p) => { const [k, f, t] = p.ref.split("|"); return callRecords(k!, f || null, t || null); });
-  for (const r of st) shows.push(`${r.stats.total} calls (${r.by} ${r.key}): ${Math.round(r.stats.inRatio * 100)}% incoming, ${r.stats.perDay} different numbers a day, ${r.stats.avgSec} s on average, ${r.stats.towers.length} tower${r.stats.towers.length === 1 ? "" : "s"}.`);
+  for (const r of st) shows.push(`${r.stats.total} calls (${r.by} ${r.key}): ${r.stats.inRatio > 0 && r.stats.inRatio < 0.01 ? "under 1%" : `${Math.round(r.stats.inRatio * 100)}%`} incoming, ${r.stats.perDay} different numbers a day, ${r.stats.avgSec} s on average, ${r.stats.towers.length} tower${r.stats.towers.length === 1 ? "" : "s"}.`);
   for (const p of inPins.filter((x) => x.kind === "tower")) { const t = tower(p.ref); if (t.found) shows.push(`Tower ${t.id} (${t.district}).`); }
   for (const p of inPins.filter((x) => x.kind === "shop")) { const r = shopLookup(p.ref); if (r.found) shows.push(`Shop ${r.name} (${r.pos}) is ${r.verified ? "verified" : "NOT verified"}; ${r.sims.length} SIMs activated there${r.docsReused.length ? `, ${r.docsReused.length} ID document${r.docsReused.length > 1 ? "s" : ""} used more than once` : ""}.`); }
   for (const p of inPins.filter((x) => x.kind === "doc")) { const r = kycDoc(p.ref); if (r.found) shows.push(`ID document ${r.doc}: ${r.note}`); }
@@ -120,7 +123,28 @@ export function checkTrace(alertId: string, pins: PinRef[]): TraceCheck {
     const missing = need[o].filter(([ok]) => !ok).map(([, t]) => t);
     return { action: o, label: ACTION_LABEL[o], ready: missing.length === 0, missing };
   });
-  return { shows, offAlert, empty, actions };
+  // Signs, each worked out from what he pinned. "Not pinned yet" names the lookup that would show it, never the answer.
+  const hsF = hs.filter((h) => h.found);
+  const shopsF = inPins.filter((p) => p.kind === "shop").map((p) => shopLookup(p.ref)).filter((r) => r.found);
+  const docsF = inPins.filter((p) => p.kind === "doc").map((p) => kycDoc(p.ref)).filter((r) => r.found);
+  const sig = (key: string, label: string, seen: boolean, yes: string, no: string, can: boolean): TraceSignal =>
+    ({ key, label, seen, why: seen ? yes : can ? no : `Not pinned yet: ${no}` });
+  const maxSims = Math.max(0, ...hsF.map((h) => h.sims.length));
+  const minIn = st.length ? Math.min(...st.map((r) => r.stats.inRatio)) : 1;
+  const oneTower = st.some((r) => r.stats.total >= 20 && r.stats.towers.length === 1);
+  const reused = shopsF.some((r) => r.docsReused.length > 0) || docsF.some((r) => r.sims.length > 1);
+  const swapNo = inPins.find((p) => p.kind === "swap"), spoofNo = inPins.find((p) => p.kind === "spoof"), dltNo = inPins.find((p) => p.kind === "dlt");
+  const signals: TraceSignal[] = [
+    sig("many", "Many SIMs used in one device", maxSims > 5, `${maxSims} SIMs have sat in the pinned handset.`, hsF.length ? `The pinned handset holds ${maxSims} SIM${maxSims === 1 ? "" : "s"} (a phone holds 1 or 2).` : "look up the handset and pin it.", hsF.length > 0),
+    sig("gateway", "The device is a multi-SIM gateway, not a phone", hsF.some((h) => h.kind === "gateway"), `The handset's first 8 digits say: ${hsF.find((h) => h.kind === "gateway")?.model ?? ""}.`, hsF.length ? `The handset is a ${hsF[0]!.model?.toLowerCase()}.` : "the handset (its first 8 digits tell the device type).", hsF.length > 0),
+    sig("noin", "Almost no incoming calls", st.length > 0 && minIn < 0.05, minIn === 0 ? "None of the calls in your statistics came in; they all went out." : `Only ${minIn < 0.01 ? "under 1%" : `${Math.round(minIn * 100)}%`} of the calls in your statistics came in.`, st.length ? `${Math.round(minIn * 100)}% of calls came in, a normal share.` : "call statistics (look up call records and pin the statistics).", st.length > 0),
+    sig("tower", "Never moves from one tower", oneTower, "All calls in your statistics used one tower.", st.length ? "Calls used more than one tower." : "call statistics.", st.length > 0),
+    sig("batch", "SIMs bought in a batch at one shop, on reused IDs", reused, "A pinned shop or ID document shows one ID used for several SIMs.", shopsF.length + docsF.length ? "The pinned shop or document shows no reused ID." : "the shop that sold the SIMs, or the ID document on a SIM.", shopsF.length + docsF.length > 0),
+    sig("spoof", "Calls carried someone else's caller ID", Boolean(spoofNo), `The switch log for ${spoofNo?.ref ?? ""} shows calls that carried another number.`, "the switch log for the number victims saw.", false),
+    sig("business", "Registered business traffic", Boolean(dltNo), `${dltNo?.ref ?? ""} is a registered business sender.`, "the number's business sender registration (on the subscriber record).", false),
+    sig("owner", "Long-time owner lost the SIM (swap)", Boolean(swapNo), `${swapNo?.ref ?? ""} was swapped; the owner had it for years.`, "the SIM swap history (on the subscriber record).", false),
+  ];
+  return { shows, offAlert, empty, signals, actions };
 }
 
 export const traceHash = (pins: PinRef[]) => createHash("sha256").update(JSON.stringify(pins.map((p) => [p.kind, p.ref]))).digest("hex").slice(0, 16);

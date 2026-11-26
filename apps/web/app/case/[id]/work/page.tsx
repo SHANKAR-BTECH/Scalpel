@@ -6,7 +6,6 @@ import { desk } from "@/lib/server/desk";
 import { caseById, model, holderName, W } from "@/lib/server/world";
 import { userById } from "@/lib/users";
 import { TrailWorkbench, type ComplaintItem } from "@/components/TrailWorkbench";
-import { YourJob } from "@/components/YourJob";
 
 /** Priya's money trail workbench: she follows the money herself from the statements; the AI only checks her pins. */
 export default async function TrailWork({ params }: { params: Promise<{ id: string }> }) {
@@ -26,7 +25,6 @@ export default async function TrailWork({ params }: { params: Promise<{ id: stri
   return (
     <div>
       <Link href={`/case/${c.id}`} className="link inline-flex items-center gap-1 text-[13.5px]"><ChevronLeft size={15} aria-hidden />Back to {c.id}</Link>
-      <YourJob who="Bank fraud officer">Find where the victims&apos; money went, one statement at a time. Your trail is your evidence for every freeze.</YourJob>
       <h1 className="mt-2">Money trail workbench: {c.id}</h1>
       <p className="mt-1 max-w-[800px] muted">Start from a victim&apos;s payment, open the account that received it, and read its statement. Pin the payments that carry the victims&apos; money on, and the cash-outs where it left. Write the amount you would hold on each account. When you are ready, check your trail: it tells you how much money your trail still misses and from where.</p>
       <TrailWorkbench caseId={c.id} complaints={complaints} firstDay={c.firstAt} lastDay={d.now} saved={saved} canSave={u.role === "officer"} />

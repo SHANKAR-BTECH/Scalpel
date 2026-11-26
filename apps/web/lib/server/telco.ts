@@ -19,10 +19,10 @@ import { callRecords } from "./lookup";
 export type TAction = "BAR_IMEI" | "BLOCK_ROUTE" | "DISCONNECT" | "REVERIFY" | "KEEP_LIVE" | "LABEL_SPAM" | "CLEAR_REPORT" | "GENUINE";
 
 export const ACTION_LABEL: Record<TAction, string> = {
-  BAR_IMEI: "Bar the handset (CEIR) and disconnect its SIMs",
+  BAR_IMEI: "Block the handset (CEIR) and cut off its SIMs",
   BLOCK_ROUTE: "Block the whole gateway route",
-  DISCONNECT: "Disconnect the SIM and add it to the revoked list",
-  REVERIFY: "Stop outgoing calls and re-verify the owner",
+  DISCONNECT: "Block the SIM: disconnect it and add it to the revoked list",
+  REVERIFY: "Block outgoing calls and re-verify the owner",
   KEEP_LIVE: "Keep the line live for police and watch it",
   LABEL_SPAM: "Label the number as spam for callers",
   CLEAR_REPORT: "Clear the spam reports: a genuine sender",

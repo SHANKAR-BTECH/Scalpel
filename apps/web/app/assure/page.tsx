@@ -10,7 +10,6 @@ import { CHOICE_LABEL, REASONS } from "@/lib/server/judge";
 import { holderName } from "@/lib/server/world";
 import { userById } from "@/lib/users";
 import { alertById, ACTION_LABEL } from "@/lib/server/telco";
-import { YourJob } from "@/components/YourJob";
 
 const GROUP: Record<string, string> = { small_shop: "Small shops", salaried: "Salaried", gig_worker: "Gig workers", student: "Students", pensioner: "Pensioners", homemaker: "Homemakers", other: "Others" };
 
@@ -30,7 +29,6 @@ export default async function Assure() {
   const cases = m.cases.map((c) => ({ c, n: d.chain.filter((e) => e.caseId === c.id).length })).filter((x) => x.n > 0);
   return (
     <div>
-      <YourJob who="Compliance">Check afterwards that every decision followed the rules, was the right size, and that nobody changed the records.</YourJob>
       <h1>Is every hold the right size, on time, and on the record?</h1>
 
       <section className="card stats mt-5" data-testid="kpis">

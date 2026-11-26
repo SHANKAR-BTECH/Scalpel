@@ -6,7 +6,6 @@ import { desk } from "@/lib/server/desk";
 import { model, W } from "@/lib/server/world";
 import { ago, inr, inrShort } from "@/lib/format";
 import { SortSelect } from "@/components/SortSelect";
-import { YourJob } from "@/components/YourJob";
 
 const SORTS = {
   money: { label: "Most money still in accounts", fn: (a: S, b: S) => b.catchable - a.catchable },
@@ -30,7 +29,6 @@ export default async function Inbox({ searchParams }: { searchParams: Promise<{ 
     <div>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <YourJob who="Bank fraud officer">Pick a case, follow the stolen money from account to account, then decide which accounts to freeze and for how much.</YourJob>
           <h1>{cases.length} cases from {W.complaints.length} complaints</h1>
           <p className="mt-1 muted">Complaints that paid the same accounts are grouped into one case. {inrShort(total)} of victims' money is still sitting in accounts at this bank.</p>
         </div>

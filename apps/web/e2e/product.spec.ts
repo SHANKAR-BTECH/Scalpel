@@ -129,13 +129,23 @@ test("Telco-A engineer builds the trace, the decision opens only when the eviden
   await imran.getByTestId("tool-run").click();
   await expect(imran.getByTestId("cdr-stats")).toBeVisible();
   await imran.getByTestId("pin-stats").click();
-  await imran.getByTestId("tick-many").check();
   await imran.getByTestId("ai-check").click();
+  // The signs come from his clues, with the data behind each one.
+  await expect(imran.getByTestId("sign-many")).toHaveAttribute("data-seen", "true");
+  await expect(imran.getByTestId("sign-gateway")).toContainText("gateway");
   await expect(imran.getByTestId("ready-BAR_IMEI")).toHaveAttribute("data-ready", "true");
   await imran.getByTestId("save-trace").click();
   await expect(imran.getByTestId("save-result")).toContainText("version 2");
   await imran.goto("/telco/RIG-1");
   await expect(imran.getByTestId("opt-BAR_IMEI")).toHaveAttribute("data-ready", "yes");
+  const csv = imran.waitForEvent("download");
+  await imran.getByTestId("download-calls").click();
+  const chunks: Buffer[] = [];
+  for await (const c of await (await csv).createReadStream()) chunks.push(c as Buffer);
+  const text = Buffer.concat(chunks).toString();
+  expect(text).toContain("Telco-A evidence file");
+  expect(text).toContain("Start (IST)");
+  expect(text.split("\r\n").length).toBeGreaterThan(14);
   await imran.getByTestId("t-option-BAR_IMEI").check();
   await imran.getByTestId("t-reason").selectOption("Would cut off genuine customers");
   await imran.getByTestId("t-ceir").check();
