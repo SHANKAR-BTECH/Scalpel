@@ -14,8 +14,11 @@ const inrShort = (p: number) => {
   return r >= 100000 ? `₹${(r / 100000).toFixed(2)} L` : `₹${r.toLocaleString("en-IN")}`;
 };
 
-export function caseGraph(c: CaseView, d: Desk): Graph {
+/** With `only`, the picture shows just those accounts (the officer's own trail), the money between them, and only
+ *  the payments and cash-outs in `gone` ("from>to" keys she pinned, victims as "V:<id>"). */
+export function caseGraph(c: CaseView, d: Desk, only?: Set<string>, gone?: Set<string>): Graph {
   const m = model();
+  if (only) c = { ...c, accounts: c.accounts.filter((a) => only.has(a)), edges: c.edges.filter((e) => (e.from.startsWith("V:") ? !gone || gone.has(`${e.from}>${e.to}`) : only.has(e.from)) && (e.exit ? !gone || gone.has(`${e.from}>${e.to}`) : only.has(e.to))) };
   const nodes = new Map<string, GNode>();
   let edges: GEdge[] = [];
   const maxHop = Math.min(4, Math.max(1, ...c.accounts.map((a) => m.accounts.get(a)?.hop ?? 1)));

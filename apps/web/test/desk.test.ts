@@ -90,6 +90,24 @@ describe("telecom rules", () => {
 import { decideAccount, signoff, tamperTest } from "@/lib/server/desk";
 import { aiView } from "@/lib/server/judge";
 import { START } from "@/lib/server/world";
+import { saveTrail } from "@/lib/server/desk";
+import { checkTrail } from "@/lib/server/trailcheck";
+import type { TrailPin } from "@/lib/trail";
+
+/** Every pin an officer could make on a case: each victim's payment and every move that carries their money. */
+function fullPins(caseId: string): TrailPin[] {
+  const m = model(), c = m.cases.find((x) => x.id === caseId)!;
+  const vs = new Set(c.complaints.map((x) => x.victim));
+  const carries = (t: Record<string, number>) => Object.entries(t).some(([k, p]) => vs.has(k) && p > 0);
+  return [
+    ...c.complaints.map((x) => ({ kind: "payment" as const, ref: x.txnId, label: x.txnId })),
+    ...m.trace.flows.filter((f) => carries(f.taint) && m.accounts.has(f.to)).map((f) => ({ kind: "move" as const, ref: f.txnId, label: f.txnId })),
+  ];
+}
+async function onTrail(account: string) {
+  const caseId = model().caseOfAccount.get(account)!;
+  await saveTrail(priya, caseId, fullPins(caseId), {}, "");
+}
 
 describe("person and AI decide together", () => {
   beforeEach(() => useStore(new MemoryStore()));
@@ -97,6 +115,7 @@ describe("person and AI decide together", () => {
   const all = () => [...model().accounts.values()];
   it("an agreed hold becomes a proposal for the supervisor", async () => {
     const v = all().find((x) => aiView(x, START).suggest === "HOLD" && x.traced > 1000_00)!;
+    await onTrail(v.a.id);
     await decideAccount(priya, v.a.id, "HOLD", "Evidence matches the suggestion", "");
     const d = await desk();
     expect(d.decisionByAccount.get(v.a.id)!.agreed).toBe(true);
@@ -105,6 +124,7 @@ describe("person and AI decide together", () => {
   });
   it("overruling a confident AI needs sign-off, and a send-back reopens the account", async () => {
     const v = all().find((x) => { const ai = aiView(x, START); return ai.suggest === "HOLD" && ai.confidence >= 0.8; })!;
+    await onTrail(v.a.id);
     await decideAccount(priya, v.a.id, "NO_HOLD", "Long-standing account with normal history", "");
     let d = await desk();
     const dec = d.decisionByAccount.get(v.a.id)!;
@@ -120,11 +140,13 @@ describe("person and AI decide together", () => {
   });
   it("refuses a hold on a police request that can't be used", async () => {
     const v = all().find((x) => x.gate.decision === "ROUTE")!;
+    await onTrail(v.a.id);
     await expect(decideAccount(priya, v.a.id, "HOLD", "Other", "hold anyway")).rejects.toThrow(/can't be used/);
     await decideAccount(priya, v.a.id, "SEND_BACK", "Police request can't be used as it is", "");
   });
   it("the tamper test catches a changed entry and leaves the record alone", async () => {
     const v = all().find((x) => aiView(x, START).suggest === "HOLD" && x.traced > 1000_00)!;
+    await onTrail(v.a.id);
     await decideAccount(priya, v.a.id, "HOLD", "Evidence matches the suggestion", "");
     const before = (await desk()).chain.map((e) => e.hash).join();
     const r = await tamperTest(meera);
@@ -241,5 +263,123 @@ describe("Telco-A analyst decides with its AI", () => {
       expect(t.people.length).toBeGreaterThan(0);
       expect(t.log).toHaveLength(6);
     }
+  });
+});
+
+import { resetDemo } from "@/lib/server/desk";
+import { cleanTrail } from "@/lib/server/trailcheck";
+import * as B from "@/lib/server/bank";
+
+describe("Priya builds the money trail herself", () => {
+  beforeEach(() => useStore(new MemoryStore()));
+  const c1 = () => model().cases[0]!;
+  const vsOf = (id: string) => new Set(model().cases.find((c) => c.id === id)!.complaints.map((x) => x.victim));
+  const shareIn = (id: string, t: Record<string, number>) => { const vs = vsOf(id); return Object.entries(t).reduce((s, [k, p]) => s + (vs.has(k) ? p : 0), 0); };
+  /** What a careful officer pins: every payment, every move and every cash-out worth at least the Rs 1,000 minimum. */
+  const careful = (id: string): TrailPin[] => {
+    const m = model();
+    const big = (t: Record<string, number>) => shareIn(id, t) >= 1000_00;
+    return [
+      ...fullPins(id).filter((p) => p.kind === "payment" || big((m.trace.flows.find((f) => f.txnId === p.ref) ?? { taint: {} }).taint)),
+      ...m.trace.exits.filter((x) => big(x.taint)).map((x) => ({ kind: (m.accounts.has(x.to) ? "move" : "gone") as TrailPin["kind"], ref: x.txnId, label: x.txnId })),
+    ];
+  };
+
+  it("no decision without a saved trail that reaches the account", async () => {
+    const v = model().accounts.get(c1().accounts[0]!)!;
+    await expect(decideAccount(priya, v.a.id, "NO_HOLD", "Other", "no trail yet")).rejects.toThrow(/trail workbench/);
+  });
+
+  it("reset seeds a half-built trail on CASE-001: two payments, two accounts reached", async () => {
+    await resetDemo(userById("asha")!);
+    const t = (await desk()).trails.get(c1().id)!;
+    expect(t.version).toBe(1);
+    expect(t.pins.map((p) => p.kind)).toEqual(["payment", "payment"]);
+    expect(t.reached.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("a careful trail accounts for every rupee (within 0.1%)", () => {
+    for (const c of model().cases.slice(0, 6)) {
+      const r = checkTrail(c.id, careful(c.id), {});
+      expect(r.offCase).toEqual([]);
+      expect(r.unpaid.count).toBe(0);
+      expect(r.balance.notFound).toBe(0);
+      const sum = r.balance.inAccounts + r.balance.gone + r.balance.small;
+      expect(Math.abs(sum - r.balance.reported)).toBeLessThan(r.balance.reported * 0.001);
+      expect(r.balance.small).toBeLessThan(r.balance.reported * 0.1);
+    }
+  });
+
+  it("missing money is named by account and amount, never by row", () => {
+    const c = c1();
+    const pays = c.complaints.map((x) => ({ kind: "payment" as const, ref: x.txnId, label: x.txnId }));
+    const r = checkTrail(c.id, pays, {});
+    expect(r.unpaid.count).toBe(0);
+    expect(r.missing.length).toBeGreaterThan(0);
+    expect(r.balance.notFound).toBe(r.missing.reduce((s, x) => s + x.amount, 0));
+    const text = JSON.stringify(r);
+    for (const f of model().trace.flows.filter((f) => r.reached.includes(f.from))) expect(text).not.toContain(f.txnId);
+  });
+
+  it("pins that carry no victim money, or come from another case, are flagged", () => {
+    const c = c1(), other = model().cases[1]!;
+    const first = model().accounts.get(W.txns.find((t) => t.id === c.complaints[0]!.txnId)!.to)!;
+    const before = W.txns.find((t) => t.from === first.a.id && t.at < W.txns.find((x) => x.id === c.complaints[0]!.txnId)!.at && !model().trace.flows.some((f) => f.txnId === t.id && shareIn(c.id, f.taint) > 0) && !model().trace.exits.some((f) => f.txnId === t.id && shareIn(c.id, f.taint) > 0));
+    const pins: TrailPin[] = [
+      { kind: "payment", ref: c.complaints[0]!.txnId, label: "mine" },
+      { kind: "payment", ref: other.complaints[0]!.txnId, label: "other case" },
+      ...(before ? [{ kind: "gone" as const, ref: before.id, label: "before the scam" }] : []),
+      { kind: "move", ref: "TP9999999", label: "made up" },
+    ];
+    const r = checkTrail(c.id, pins, {});
+    expect(r.offCase.length).toBe(before ? 3 : 2);
+    expect(r.reached).toEqual([first.a.id]);
+  });
+
+  it("holds are compared with the traced money, and a decision uses her hold", async () => {
+    const c = c1();
+    const pins = careful(c.id);
+    const v = [...model().accounts.values()].find((x) => c.accounts.includes(x.a.id) && aiView(x, START).suggest === "HOLD" && x.traced > 5000_00)!;
+    const r = checkTrail(c.id, pins, { [v.a.id]: v.traced * 2 });
+    expect(r.holds.find((h) => h.account === v.a.id)!.verdict).toBe("above");
+    expect(checkTrail(c.id, pins, { [v.a.id]: Math.round(v.traced / 2) }).holds.find((h) => h.account === v.a.id)!.verdict).toBe("below");
+    expect(checkTrail(c.id, pins, { [v.a.id]: v.traced }).holds.find((h) => h.account === v.a.id)!.verdict).toBe("matches");
+    const mine = Math.max(1000_00, Math.round(aiView(v, START).amount * 0.95 / 100) * 100);
+    await saveTrail(priya, c.id, pins, { [v.a.id]: mine }, "full trail");
+    await expect(decideAccount(priya, v.a.id, "HOLD", "Evidence matches the suggestion", "", aiView(v, START).amount + 100_00)).rejects.toThrow(/more than/);
+    await decideAccount(priya, v.a.id, "HOLD", "Evidence matches the suggestion", "");
+    const d = await desk();
+    expect(d.pendingByAccount.get(v.a.id)!.amount).toBe(mine);
+    const dec = d.decisionByAccount.get(v.a.id)! as unknown as { trail: { version: number; hash: string } };
+    expect(dec.trail.version).toBe(1);
+  });
+
+  it("trails are versioned, only the officer saves, and the browser can't sneak in junk", async () => {
+    const c = c1();
+    const pins = careful(c.id).slice(0, 5);
+    await expect(saveTrail(vikram, c.id, pins, {}, "")).rejects.toThrow(/fraud officer/);
+    await saveTrail(priya, c.id, pins, {}, "");
+    await expect(saveTrail(priya, c.id, pins, {}, "")).rejects.toThrow(/Nothing changed/);
+    await saveTrail(priya, c.id, careful(c.id).slice(0, 8), {}, "");
+    expect((await desk()).trails.get(c.id)!.version).toBe(2);
+    const junk = cleanTrail([{ kind: "hack", ref: "x" }, { kind: "move", ref: "A".repeat(99) }, null, { kind: "gone", ref: "TP1", label: 5 }], { P00157: -5, P1: 100, P00158: 1.5, P00159: 500_00 });
+    expect(junk.pins).toEqual([{ kind: "gone", ref: "TP1", label: "TP1" }]);
+    expect(junk.holds).toEqual({ P00159: 500_00 });
+  });
+
+  it("the bank's statement reads like a real one and never marks victims' money", () => {
+    const c = c1();
+    const pay = B.payment(c.complaints[0]!.txnId);
+    expect(pay.found).toBe(true);
+    if (!pay.found) return;
+    const st = B.statement(pay.to, null, null);
+    expect(st.found).toBe(true);
+    if (!st.found) return;
+    let bal = st.opening;
+    for (const r of st.rows) { bal += r.dir === "in" ? r.amount : -r.amount; expect(r.balance).toBe(bal); expect(r.narration.length).toBeGreaterThan(5); }
+    expect(JSON.stringify(st)).not.toMatch(/taint|victim/i);
+    expect(B.payment("nope").found).toBe(false);
+    const k = B.kyc(pay.to);
+    expect(k.found && k.request.id).toBeTruthy();
   });
 });

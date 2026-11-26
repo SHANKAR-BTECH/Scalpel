@@ -14,6 +14,7 @@ import { aiView } from "@/lib/server/judge";
 import { askTelcoAction } from "@/app/actions";
 import { ago, inr, when } from "@/lib/format";
 import { userById } from "@/lib/users";
+import { YourJob } from "@/components/YourJob";
 
 export default async function CasePage({ params }: { params: Promise<{ id: string }> }) {
   const u = await requireUser("officer", "supervisor");
@@ -23,7 +24,17 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
   const m = model();
   const d = await desk();
   const g = caseGraph(c, d);
-  const accts = c.accounts.map((a) => m.accounts.get(a)!).sort((a, b) => (a.hop ?? 9) - (b.hop ?? 9) || b.traced - a.traced);
+  // Priya's own saved trail decides what she sees: only accounts it reaches can be decided.
+  const trail = d.trails.get(c.id);
+  const reach = new Set((trail?.reached ?? []).filter((a) => c.accounts.includes(a)));
+  const txById = new Map(W.txns.map((t) => [t.id, t]));
+  const victimOf = new Map(c.complaints.map((x) => [x.txnId, x.victim]));
+  const goneKeys = new Set((trail?.pins ?? []).filter((p) => p.kind === "gone" || p.kind === "payment").map((p) => {
+    const t = txById.get(p.ref);
+    return !t ? "" : p.kind === "payment" ? `V:${victimOf.get(t.id)}>${t.to}` : `${t.from}>${t.to}`;
+  }));
+  const mine = trail ? caseGraph(c, d, reach, goneKeys) : null;
+  const accts = c.accounts.filter((a) => reach.has(a)).map((a) => m.accounts.get(a)!).sort((a, b) => (a.hop ?? 9) - (b.hop ?? 9) || b.traced - a.traced);
   // Below the Rs 1,000 minimum a hold isn't allowed anyway: list those accounts briefly instead of as full cards.
   const withMoney = accts.filter((v) => v.traced >= 1000_00);
   const rest = accts.filter((v) => v.traced < 1000_00);
@@ -47,6 +58,7 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
         id: v.a.id, name: holderName(v.a), sub: `${v.a.type === "CURRENT" ? "Current" : v.a.type === "SALARY" ? "Salary" : "Savings"}, ${v.a.holder.city}`,
         traced: v.traced, balance: v.balance, asked: "amount" in v.asked ? inr(v.asked.amount) : "Whole a/c", score: v.a.score?.muleScore ?? null,
         age: age > YEAR ? `${Math.floor(age / YEAR)} yr ago` : `${Math.max(1, Math.round(age / 86_400_000))} days ago`, phone: v.phone?.msisdn,
+        mine: trail?.holds[v.a.id] ?? null, trail: trail?.version ?? 0,
       } });
     } else clear.push({ id: v.a.id, name: holderName(v.a), suggest: ai.suggest, amount: ai.amount, confidence: ai.confidence });
   }
@@ -78,28 +90,51 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
       <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="label"><span className="mono">{c.id}</span> · {c.complaints.length} complaints · first {when(c.firstAt)}</p>
+          <YourJob who="Bank fraud officer">Follow the money first. Then decide each account on your trail: freeze it, watch it, or send the police request back.</YourJob>
           <h1 className="mt-1">{c.scamType}: {c.complaints.length} victims</h1>
           <p className="mt-1 max-w-[720px] muted">&ldquo;{c.complaints[0]!.story}&rdquo;</p>
         </div>
         <dl className="grid grid-cols-3 gap-4 text-right">
           <div><dt className="text-[12px] muted">Reported lost</dt><dd className="money text-[20px]"><CountUp value={c.reported} format="inr" /></dd></div>
-          <div><dt className="text-[12px] muted">Still in accounts</dt><dd className="money text-[20px] text-[var(--accent)]" data-testid="catchable"><CountUp value={c.catchable} format="inr" /></dd></div>
+          <div><dt className="text-[12px] muted">Accounts on your trail</dt><dd className="money text-[20px] text-[var(--accent)]" data-testid="on-trail">{trail ? reach.size : "Not started"}</dd></div>
           <div><dt className="text-[12px] muted">Held so far</dt><dd className="money text-[20px]" data-testid="held-total">{inr(heldTotal)}</dd></div>
         </dl>
       </div>
 
-      <div className="mt-5"><CaseWork caseId={c.id} graph={g} points={points} clear={clear} done={done} canDecide={u.role === "officer"} phone={phoneHelp} /></div>
-
-      <section className="mt-6">
-        <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-          <h2>Where the calls came from and where the money went</h2>
-          <p className="text-[13px] muted">Money usually moves on from the first accounts in about {c.minutesToCashOut} minutes.</p>
+      <section className="card mt-5 p-5" data-testid="trail-card">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="min-w-0">
+            <h2>{trail ? `Your money trail, version ${trail.version}` : "Follow the money first"}</h2>
+            {trail ? (
+              <p className="mt-1 text-[14px] muted">Saved by {userById(trail.by)?.name ?? trail.by} {ago(trail.at, d.now)}: {trail.pins.length} pins, {reach.size} of this case&apos;s accounts reached{trail.note ? `. "${trail.note}"` : ""}. You can decide any account your saved trail reaches; follow the money further to decide more.</p>
+            ) : (
+              <p className="mt-1 text-[14px] muted">Start from the victims&apos; payments, read each account&apos;s statement, and pin where the money went. Decisions open for the accounts your saved trail reaches.</p>
+            )}
+          </div>
+          <Link href={`/case/${c.id}/work`} className="btn btn-primary" data-testid="open-trail">{trail ? "Continue the money trail" : "Open the money trail workbench"}</Link>
         </div>
-        <TrailGraph g={g} />
+        {!trail && (
+          <ul className="mt-4 grid gap-1.5 text-[13.5px] sm:grid-cols-2" data-testid="complaint-list">
+            {c.complaints.map((x, i) => <li key={x.id} className="flex items-center gap-2"><span className="font-medium">{c.victims[i]!.name}</span><span className="mono muted">{x.txnId}</span><span className="money ml-auto">{inr(txById.get(x.txnId)!.amount)}</span></li>)}
+          </ul>
+        )}
       </section>
+
+      {trail && <div className="mt-5"><CaseWork caseId={c.id} graph={g} points={points} clear={clear} done={done} canDecide={u.role === "officer"} phone={phoneHelp} /></div>}
+
+      {mine && (
+        <section className="mt-6">
+          <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+            <h2>Your trail: where the calls came from and where the money went</h2>
+            <p className="text-[13px] muted">Drawn from your pins only. Money usually moves on from the first accounts in about {c.minutesToCashOut} minutes.</p>
+          </div>
+          <TrailGraph g={mine} />
+        </section>
+      )}
 
       <section className="mt-6 grid gap-4 lg:grid-cols-[1fr_340px]">
         <div className="min-w-0">
+          {!trail ? <div className="panel p-4 text-[14px] muted" data-testid="board-locked">The case board fills in as your trail reaches accounts. Each account&apos;s mule score and the AI&apos;s suggestion open once it is on your saved trail, as a second opinion.</div> : <>
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2>Case board</h2>
             <p className="text-[13px] muted">{decidedN} of {withMoney.length} decided · {heldN} held · {waitingN} waiting approval</p>
@@ -114,10 +149,11 @@ export default async function CasePage({ params }: { params: Promise<{ id: strin
           </div>
           {rest.length > 0 && (
             <details className="mt-3 panel p-3">
-              <summary className="text-[14px] font-medium">{rest.length} more accounts on the trail have less than ₹1,000 of victims&apos; money left (below the minimum hold)</summary>
+              <summary className="text-[14px] font-medium">{rest.length} more accounts on your trail have less than ₹1,000 of victims&apos; money left (below the minimum hold)</summary>
               <ul className="mt-2 grid gap-1 text-[13.5px] sm:grid-cols-2">{rest.map((v) => <li key={v.a.id}>{holderName(v.a)} <span className="mono muted">{v.a.id}</span> <span className="money muted">{inr(v.traced)}</span></li>)}</ul>
             </details>
           )}
+          </>}
         </div>
 
         <aside className="space-y-3">
@@ -189,6 +225,9 @@ function describe(e: { type: string; actor: string; payload: unknown }): string 
     case "TELCO_ASK": return `${who} asked Telco-A to block ${p.kind === "IMEI" ? "handset" : "number"} ${p.value}`;
     case "TELCO_ACTION": return `Telco-A ${p.outcome === "BLOCKED" ? "blocked" : "refused to block"} ${p.value}`;
     case "EVIDENCE_EXPORTED": return `${who} downloaded the evidence file`;
+    case "TRACE_SAVED": return `${who} saved the SIM trace for ${p.alert}, version ${p.version}`;
+    case "TRAIL_SAVED": return `${who} saved the money trail, version ${p.version} (${(p.pins as unknown[]).length} pins)`;
+    case "DECISION": return `${who} decided ${acct}: ${p.choice === "HOLD" ? `hold${p.amount ? ` ${inr(p.amount)}` : ""}` : p.choice === "NO_HOLD" ? "no hold, watch" : "send back to police"}${p.trail ? ` (trail v${p.trail.version})` : ""}`;
     default: return `${who}: ${e.type}`;
   }
 }

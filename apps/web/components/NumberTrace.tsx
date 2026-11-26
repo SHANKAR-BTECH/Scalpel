@@ -21,9 +21,9 @@ export interface TraceSummary {
 }
 export interface LinkedView { msisdn: string; name: string; account: string; caseId: string | null; band: string }
 
-export function NumberTrace({ a, view, labels, reasons, done, packetAt, linked, now, trace }: {
+export function NumberTrace({ a, view, labels, reasons, done, packetAt, linked, now, trace, needs }: {
   a: Alert; view: TraceView; labels: Record<TAction, string>; reasons: readonly string[];
-  done: DoneView | null; packetAt: number | null; linked: LinkedView[]; now: number; trace: TraceSummary | null;
+  done: DoneView | null; packetAt: number | null; linked: LinkedView[]; now: number; trace: TraceSummary | null; needs?: TraceSummary["actions"];
 }) {
   // The replay only exists after the decision; before it the engineer works from his own pins.
   const [step, setStep] = useState(0);
@@ -93,7 +93,17 @@ export function NumberTrace({ a, view, labels, reasons, done, packetAt, linked, 
               </div>
             </div>
           ) : !trace ? (
-            <p className="mt-3 text-[13px] muted" data-testid="decide-locked"><Lock size={13} className="mr-1 inline" aria-hidden />Save a trace in the workbench to decide. Each action needs its own evidence.</p>
+            <div className="mt-3" data-testid="decide-locked">
+              <p className="text-[13.5px]"><Lock size={13} className="mr-1 inline" aria-hidden />Your options open once you save a trace in the workbench with the clues each one needs:</p>
+              <ul className="mt-2 space-y-1.5 text-[13.5px]">
+                {(needs ?? []).map((x) => (
+                  <li key={x.action} data-testid={`opt-${x.action}`} data-ready="no" className="flex items-start gap-2.5 rounded-xl px-2.5 py-2 opacity-70">
+                    <input type="radio" disabled className="mt-1" aria-label={labels[x.action]} />
+                    <span><span className="font-medium">{labels[x.action]}</span><span className="mt-0.5 block text-[12px] muted">Needs: {x.missing.join("; ")}</span></span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           ) : readyOpts.length === 0 ? (
             <div className="mt-3" data-testid="none-ready">
               <p className="text-[13.5px]">Your trace (version {trace.version}) doesn&apos;t hold the evidence for any action yet. Each one needs:</p>

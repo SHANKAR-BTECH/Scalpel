@@ -2,6 +2,7 @@ import { desk } from "@/lib/server/desk";
 import { model, holderName } from "@/lib/server/world";
 import { ActForm } from "@/components/ActForm";
 import { holderLookup } from "@/app/actions";
+import { YourJob } from "@/components/YourJob";
 
 export default async function Portal() {
   const d = await desk();
@@ -9,6 +10,7 @@ export default async function Portal() {
   const demo = d.holds.filter((h) => h.hold.state === "ACTIVE").slice(-4);
   return (
     <div className="mx-auto max-w-[560px]">
+      <YourJob who="Account holder">If your money is frozen, see why, how much and until when, and send your explanation.</YourJob>
       <h1 className="mt-1">Is money in your account on hold?</h1>
       <p className="mt-2 muted">Enter the reference from the SMS or email your bank sent, and the last 4 digits of your mobile number. You will see how much is held, why, until when, and you can send your explanation.</p>
       <div className="card mt-5 p-5">

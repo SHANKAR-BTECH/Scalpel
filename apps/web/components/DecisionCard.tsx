@@ -11,11 +11,12 @@ import { inr } from "@/lib/format";
 const REASONS = ["Evidence matches the suggestion", "Long-standing account with normal history", "Looks like account takeover (SIM swap), not a mule", "Police request can't be used as it is", "Score unclear: hold now, check more", "Phone risk rating disagrees", "Other"];
 const LABEL: Record<Choice, string> = { HOLD: "Hold the victims' money", NO_HOLD: "Don't hold, keep watching", SEND_BACK: "Send request back to police" };
 
-export interface CardAccount { id: string; name: string; sub: string; traced: number; balance: number; asked: string; score: number | null; age: string; phone?: string }
+export interface CardAccount { id: string; name: string; sub: string; traced: number; balance: number; asked: string; score: number | null; age: string; phone?: string; mine: number | null; trail: number }
 
 export function DecisionCard({ acct, ai, returned, step }: { acct: CardAccount; ai: AiView; returned?: { by: string; note: string } | null; step?: string }) {
   const [choice, setChoice] = useState<Choice>(ai.suggest);
   const [why, setWhy] = useState(false);
+  const [amount, setAmount] = useState(acct.mine !== null ? String(acct.mine / 100) : "");
   const overrule = choice !== ai.suggest;
   const options: Choice[] = ai.suggest === "SEND_BACK" ? ["SEND_BACK", "NO_HOLD"] : ["HOLD", "NO_HOLD"];
   return (
@@ -57,11 +58,17 @@ export function DecisionCard({ acct, ai, returned, step }: { acct: CardAccount; 
             {options.map((c) => (
               <label key={c} className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 text-[14px] transition-all duration-300 ${choice === c ? "glass border-[var(--accent)]" : "border-white/70 bg-white/40 hover:bg-white/70"}`}>
                 <input type="radio" name="choice" value={c} checked={choice === c} onChange={() => setChoice(c)} className="accent-[var(--accent)]" />
-                <span className="font-medium">{LABEL[c]}{c === "HOLD" && ai.amount > 0 ? ` (${inr(ai.amount)})` : ""}</span>
+                <span className="font-medium">{LABEL[c]}</span>
                 {c === ai.suggest && <span className="chip chip-blue ml-auto">AI&apos;s pick</span>}
               </label>
             ))}
           </div>
+          {choice === "HOLD" && (
+            <label className="block text-[13px] font-medium">Hold amount (₹)
+              <input name="amount" className="input mono mt-1" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder={`At most ${inr(ai.amount)}`} required data-testid="hold-amount" />
+              <span className="mt-1 block text-[12px] font-normal muted">{acct.mine !== null ? `From your saved trail (version ${acct.trail}).` : "You wrote no hold on your trail for this account."} The AI&apos;s figure: {inr(ai.amount)}{String(ai.amount / 100) !== amount && <> (<button type="button" className="link" onClick={() => setAmount(String(ai.amount / 100))} data-testid="use-ai-amount">use it</button>)</>}. The rules never allow more.</span>
+            </label>
+          )}
           <label className="block text-[13px] font-medium">Reason
             <select name="reason" key={choice} defaultValue={overrule ? "" : REASONS[choice === "SEND_BACK" ? 3 : 0]} className="input mt-1" required>
               <option value="" disabled>Pick a reason</option>

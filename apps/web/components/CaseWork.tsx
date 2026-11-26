@@ -1,7 +1,7 @@
 "use client";
-/** Working a case: the officer starts the trace (the rules engine runs it now), watches it reach each layer,
- *  then decides every account with the AI. Accounts where the evidence clashes come one at a time;
- *  clear ones can be accepted together. Decisions are saved, so a reload picks up where she left off. */
+/** Deciding the accounts on the officer's saved money trail, with the AI as a second opinion. Accounts where the
+ *  evidence clashes come one at a time; clear ones can be accepted together. After her first decision she can
+ *  replay the rules engine's full trace (it runs now) to compare with her own. */
 import { useEffect, useRef, useState } from "react";
 import type { Graph } from "@/lib/server/graph";
 import type { AiView, Choice } from "@/lib/server/judge";
@@ -24,7 +24,7 @@ export interface PhoneHelp { device: string; victims: number; calls: number; ban
 
 export function CaseWork({ caseId, graph, points, clear, done, canDecide, phone }: { caseId: string; graph: Graph; points: PointItem[]; clear: ClearItem[]; done: DoneItem[]; canDecide: boolean; phone: PhoneHelp | null }) {
   const total = points.length + clear.length + done.length;
-  const [phase, setPhase] = useState<"idle" | "tracing" | "work">(done.length > 0 || points.some((p) => p.returned) ? "work" : "idle");
+  const [phase, setPhase] = useState<"tracing" | "work">("work");
   const [info, setInfo] = useState<TraceInfo | null>(null);
   const [reveal, setReveal] = useState(0);
   const [err, setErr] = useState("");
@@ -38,7 +38,7 @@ export function CaseWork({ caseId, graph, points, clear, done, canDecide, phone 
       const r = await fetch(`/api/trace/${caseId}`, { cache: "no-store" });
       if (!r.ok) throw new Error((await r.json()).error ?? "Trace failed");
       setInfo(await r.json());
-    } catch (e) { setErr(String((e as Error).message)); setPhase(done.length ? "work" : "idle"); }
+    } catch (e) { setErr(String((e as Error).message)); setPhase("work"); }
   };
   useEffect(() => {
     if (phase !== "tracing" || !info) return;
@@ -47,33 +47,12 @@ export function CaseWork({ caseId, graph, points, clear, done, canDecide, phone 
     return () => clearTimeout(t);
   }, [phase, info, reveal, graph.cols.length]);
 
-  if (phase === "idle") {
-    return (
-      <section ref={top} className="card p-5 scroll-mt-24" data-testid="casework">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h2>{total} accounts to decide, together with the AI</h2>
-            <p className="mt-1 text-[14px] muted">The rules engine traces the money now. Then you decide each account: {points.length} need your judgement because the evidence clashes, {clear.length} look clear.</p>
-            {phone && (
-              <p className="mt-3 flex items-start gap-2 rounded-xl bg-[var(--phone-tint)] px-3 py-2 text-[13.5px]" data-testid="telco-help">
-                <PhoneCall size={16} className="mt-0.5 shrink-0 text-[var(--phone)]" aria-hidden />
-                <span>The phone side of this trace comes from <b className="text-[var(--phone)]">Telco-A&apos;s AI</b>: it matched {phone.calls} scam calls to {phone.victims} victims and one {phone.device}. Its risk rating ({phone.band}) reaches the bank through DoT; the call records stay with Telco-A.</span>
-              </p>
-            )}
-          </div>
-          {canDecide ? <button type="button" className="btn btn-primary" onClick={start} data-testid="start-work">Start the trace</button> : <span className="chip chip-grey">The fraud officer works this case</span>}
-        </div>
-        {err && <p className="mt-2 text-[13px] text-[var(--bad)]">{err}</p>}
-      </section>
-    );
-  }
-
   if (phase === "tracing") {
     const hopsShown = info ? info.hops.filter((h) => h.hop + 1 <= reveal) : [];
     return (
       <section ref={top} className="card p-5 scroll-mt-24" data-testid="casework">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="flex items-center gap-2">{info ? <span className="live-dot" /> : <span className="spinner" />} Tracing the victims&apos; money</h2>
+          <h2 className="flex items-center gap-2">{info ? <span className="live-dot" /> : <span className="spinner" />} The engine&apos;s full trace, for comparison</h2>
           <p className="text-[13px] muted">{graph.cols[Math.min(reveal, graph.cols.length - 1)]}</p>
         </div>
         <div className="mt-3 grid gap-4 xl:grid-cols-[1fr_300px]">
@@ -83,7 +62,7 @@ export function CaseWork({ caseId, graph, points, clear, done, canDecide, phone 
             {info && <li className="pop-in">Read {info.txnsRead.toLocaleString("en-IN")} payments and followed {info.flows} money movements in <b>{info.ms} ms</b>. Shown slowly so you can follow.</li>}
             {info && reveal >= 1 && <li className="pop-in">{phone ? <>Telco-A&apos;s AI: one {phone.device} called {phone.victims} victims ({phone.calls} calls). Rating shared: <b className="text-[var(--phone)]">{phone.band}</b>.</> : <>{graph.nodes.filter((n) => n.col === 1).length} victims called.</>}</li>}
             {hopsShown.map((h) => <li key={h.hop} className="pop-in">{h.hop === 4 ? "Layer 4+" : h.hop === 1 ? "First accounts" : `Layer ${h.hop}`}: {h.accounts} accounts, <b className="money">{inrShort(h.money)}</b> of victims&apos; money still there.</li>)}
-            {info && reveal >= graph.cols.length - 1 && <li className="pop-in">{inrShort(info.movedOut)} already left the bank. <b>{points.length}</b> accounts need your judgement.</li>}
+            {info && reveal >= graph.cols.length - 1 && <li className="pop-in">{inrShort(info.movedOut)} already left the bank. Compare with your own trail below.</li>}
           </ol>
         </div>
       </section>
@@ -97,11 +76,13 @@ export function CaseWork({ caseId, graph, points, clear, done, canDecide, phone 
     <section ref={top} className="card p-5 scroll-mt-24" data-testid="casework">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2>{decided} of {total} accounts decided</h2>
+          <h2>{decided} of {total} accounts on your trail decided</h2>
+          {total === 0 && <p className="mt-1 text-[13.5px] muted">Your saved trail doesn&apos;t reach an account with ₹1,000 or more of victims&apos; money yet. Follow the money further.</p>}
+          {err && <p className="mt-1 text-[13px] text-[var(--bad)]">{err}</p>}
         </div>
         <div className="flex items-center gap-3">
           <span className="thread w-48"><span className="thread-fill" style={{ width: `${total ? (decided / total) * 100 : 0}%` }} /></span>
-          <button type="button" className="btn btn-sm" onClick={start}>Replay the trace</button>
+          {decided > 0 && <button type="button" className="btn btn-sm" onClick={start} data-testid="replay-engine">Compare with the engine&apos;s full trace</button>}
         </div>
       </div>
 
@@ -128,9 +109,9 @@ export function CaseWork({ caseId, graph, points, clear, done, canDecide, phone 
           </div>
         )}
 
-        {!next && clear.length === 0 && (
+        {!next && clear.length === 0 && total > 0 && (
           <div className="panel p-4" data-testid="case-done">
-            <p className="font-semibold">Every account on this case is decided.</p>
+            <p className="font-semibold">Every account on your trail is decided.</p>
             <p className="mt-1 text-[13.5px] muted">Holds and any overrules of a confident AI are with the supervisor now. Compliance sees every decision and its reason.</p>
           </div>
         )}

@@ -14,6 +14,8 @@ import type { User } from "@/lib/users";
 import { aiView, REASONS, SIGNOFF_AT, CHOICE_LABEL, type Choice } from "./judge";
 import { alertById, ACTION_LABEL, TREASONS, type TAction } from "./telco";
 import { checkTrace, cleanPins, traceHash, type PinRef } from "./tracecheck";
+import { checkTrail, cleanTrail, reachedOf, trailHash } from "./trailcheck";
+import type { TrailPin, TrailHolds } from "@/lib/trail";
 
 export const DAY = 86_400_000;
 
@@ -36,6 +38,7 @@ export interface Decision {
   did: string; account: string; caseId: string; by: string; at: number;
   ai: { suggest: Choice; confidence: number; clash: string | null };
   choice: Choice; reason: string; note: string; agreed: boolean; needsSignoff: boolean; pid?: string;
+  trail: { caseId: string; version: number; hash: string } | null; amount: number | null;
   signoff?: { by: string; at: number; approved: boolean; note: string };
   open: boolean; // false once a send-back reopened the account
 }
@@ -50,6 +53,9 @@ export interface TelcoDecision {
 /** An engineer's saved trace for one alert (latest version wins; every version stays in the record). */
 export interface SavedTrace { alert: string; version: number; hash: string; pins: PinRef[]; ticks: string[]; note: string; by: string; at: number }
 
+/** An officer's saved money trail for one case (latest version wins; every version stays in the record). */
+export interface SavedTrail { caseId: string; version: number; hash: string; pins: TrailPin[]; holds: TrailHolds; note: string; by: string; at: number; reached: string[] }
+
 export interface Desk {
   now: number; chain: AuditEntry[];
   telco: TelcoDecision[]; telcoByAlert: Map<string, TelcoDecision>;
@@ -58,6 +64,9 @@ export interface Desk {
   /** Alerts whose call records were packed for the police, and when. */
   packets: Map<string, number>;
   traces: Map<string, SavedTrace>;
+  trails: Map<string, SavedTrail>;
+  /** Account -> the saved trail (case) that reached it. */
+  trailOfAccount: Map<string, SavedTrail>;
   decisions: Decision[]; decisionByAccount: Map<string, Decision>; returned: Map<string, Decision>;
   proposals: Proposal[]; holds: HoldRow[]; asks: TelcoAsk[]; actions: TelcoAction[]; checks: SimCheck[];
   holdByAccount: Map<string, HoldRow>; pendingByAccount: Map<string, Proposal>;
@@ -76,6 +85,7 @@ export function fold(chain: AuditEntry[], now: number): Desk {
   const fri = new Map<string, { band: string; at: number; alert: string }>();
   const packets = new Map<string, number>();
   const traces = new Map<string, SavedTrace>();
+  const trails = new Map<string, SavedTrail>();
   const ev = (row: HoldRow, type: HoldEvent, e: AuditEntry, note?: string) => {
     row.hold = applyEvent(row.hold, { type, at: e.at, by: e.actor, note }, policyNow(row.hold.events[0]!.at));
   };
@@ -97,7 +107,7 @@ export function fold(chain: AuditEntry[], now: number): Desk {
         break;
       }
       case "DECISION":
-        decisions.set(p.did, { did: p.did, account: p.account, caseId: e.caseId, by: e.actor, at: e.at, ai: p.ai, choice: p.choice, reason: p.reason, note: p.note ?? "", agreed: p.agreed, needsSignoff: p.needsSignoff, pid: p.pid ?? undefined, open: true });
+        decisions.set(p.did, { did: p.did, account: p.account, caseId: e.caseId, by: e.actor, at: e.at, ai: p.ai, choice: p.choice, reason: p.reason, note: p.note ?? "", agreed: p.agreed, needsSignoff: p.needsSignoff, pid: p.pid ?? undefined, open: true, trail: p.trail ?? null, amount: p.amount ?? null });
         break;
       case "SIGNOFF": {
         const dd = decisions.get(p.did);
@@ -145,6 +155,9 @@ export function fold(chain: AuditEntry[], now: number): Desk {
       case "TRACE_SAVED":
         traces.set(p.alert, { alert: p.alert, version: p.version, hash: p.hash, pins: p.pins, ticks: p.ticks ?? [], note: p.note ?? "", by: e.actor, at: e.at });
         break;
+      case "TRAIL_SAVED":
+        trails.set(p.caseId, { caseId: p.caseId, version: p.version, hash: p.hash, pins: p.pins, holds: p.holds ?? {}, note: p.note ?? "", by: e.actor, at: e.at, reached: Array.isArray(p.reached) ? p.reached : reachedOf(p.pins) });
+        break;
       case "DOT_FRI":
         for (const n of p.msisdns as string[]) fri.set(n, { band: p.band, at: e.at, alert: p.alert });
         break;
@@ -172,7 +185,9 @@ export function fold(chain: AuditEntry[], now: number): Desk {
     else if (!decisionByAccount.has(dd.account)) returned.set(dd.account, dd);
   }
   const telcoByAlert = new Map(telco.map((t) => [t.alert, t] as const));
-  return { now, chain, telco, telcoByAlert, fri, packets, traces, decisions: [...decisions.values()], decisionByAccount, returned, proposals: [...proposals.values()], holds: [...holds.values()], asks: [...asks.values()], actions, checks, holdByAccount, pendingByAccount };
+  const trailOfAccount = new Map<string, SavedTrail>();
+  for (const t of trails.values()) for (const a of t.reached) if (!trailOfAccount.has(a)) trailOfAccount.set(a, t);
+  return { now, chain, telco, telcoByAlert, fri, packets, traces, trails, trailOfAccount, decisions: [...decisions.values()], decisionByAccount, returned, proposals: [...proposals.values()], holds: [...holds.values()], asks: [...asks.values()], actions, checks, holdByAccount, pendingByAccount };
 }
 
 /** Read once per page render: the header and the page share it instead of each asking the database. */
@@ -320,7 +335,7 @@ export async function decide(u: User, pid: string, approved: boolean, note: stri
   return { message: msg };
 }
 
-export async function decideAccount(u: User, account: string, choice: Choice, reason: string, note: string): Promise<ActionResult> {
+export async function decideAccount(u: User, account: string, choice: Choice, reason: string, note: string, amount: number | null = null): Promise<ActionResult> {
   must(u.role === "officer", "Only the fraud officer decides on accounts.");
   must(["HOLD", "NO_HOLD", "SEND_BACK"].includes(choice), "Pick what to do.");
   must((REASONS as readonly string[]).includes(reason), "Pick a reason.");
@@ -330,7 +345,14 @@ export async function decideAccount(u: User, account: string, choice: Choice, re
   const caseId = m.caseOfAccount.get(account) ?? "CASE-?";
   const s = await store();
   const now = await demoNow(s);
-  const ai = aiView(v, now, fold(await s.chain(), now).fri.get(v.phone?.msisdn ?? "")?.band);
+  const d0 = fold(await s.chain(), now);
+  const ai = aiView(v, now, d0.fri.get(v.phone?.msisdn ?? "")?.band);
+  const tr = d0.trailOfAccount.get(account);
+  must(tr, "Follow the money to this account in the trail workbench and save your trail before deciding.");
+  const hold = choice === "HOLD" ? (amount ?? tr.holds[account] ?? ai.amount) : 0;
+  must(Number.isInteger(hold) && hold >= 0, "Type the hold amount in rupees.");
+  must(!(choice === "HOLD" && hold > ai.amount), `That is more than this account may hold: at most ${formatINR(ai.amount)} (the victims' money here, within what the police asked).`);
+  must(!(choice === "HOLD" && hold < 1000_00 && ai.amount >= 1000_00), "A hold must be at least ₹1,000.");
   must(!(choice === "HOLD" && ai.suggest === "SEND_BACK"), `This police request can't be used as it is (${ai.rules[0] ?? "rules"}). Send it back, or wait for a valid one.`);
   must(!(choice === "HOLD" && ai.amount <= 0), "There is no victims' money left here to hold.");
   must(!(choice === "HOLD" && v.gate.decision === "DENY"), `The rules don't allow a hold here: ${ai.rules[0] ?? ""}`);
@@ -340,18 +362,18 @@ export async function decideAccount(u: User, account: string, choice: Choice, re
   const needsSignoff = !agreed && ai.confidence >= SIGNOFF_AT;
   const did = id("D"), pid = choice === "HOLD" ? id("P") : undefined;
   const drafts: Omit<AuditEntry, "seq" | "prevHash" | "hash">[] = [
-    { at: now, actor: u.id, type: "DECISION", caseId, payload: { did, account, ai: { suggest: ai.suggest, confidence: ai.confidence, clash: ai.clash }, choice, reason, note: note.trim().slice(0, 500), agreed, needsSignoff, pid: pid ?? null } },
+    { at: now, actor: u.id, type: "DECISION", caseId, payload: { did, account, ai: { suggest: ai.suggest, confidence: ai.confidence, clash: ai.clash }, choice, reason, note: note.trim().slice(0, 500), agreed, needsSignoff, pid: pid ?? null, trail: { caseId: tr.caseId, version: tr.version, hash: tr.hash }, amount: choice === "HOLD" ? hold : null } },
   ];
-  if (pid) drafts.push({ at: now, actor: u.id, type: "PROPOSE", caseId, payload: { pid, kind: "HOLD", account, amount: ai.amount, note: `${reason}${note ? `: ${note}` : ""}` } });
+  if (pid) drafts.push({ at: now, actor: u.id, type: "PROPOSE", caseId, payload: { pid, kind: "HOLD", account, amount: hold, note: `${reason}${note ? `: ${note}` : ""}` } });
   await s.append(drafts, (c) => {
     const d = fold(c, now);
     must(!d.decisionByAccount.has(account), "This account has already been decided.");
     must(!d.holdByAccount.has(account) && !d.pendingByAccount.has(account), "This account already has a hold or one waiting.");
   });
   const who = holderName(v.a);
-  if (pid) await s.notify([{ at: now, to: "vikram", text: `${u.name} proposed a hold of ${formatINR(ai.amount)} on ${who} (${caseId})${agreed ? "" : ", overruling the AI"}`, link: "/approvals" }]);
+  if (pid) await s.notify([{ at: now, to: "vikram", text: `${u.name} proposed a hold of ${formatINR(hold)} on ${who} (${caseId})${agreed ? "" : ", overruling the AI"}`, link: "/approvals" }]);
   else if (needsSignoff) await s.notify([{ at: now, to: "vikram", text: `${u.name} overruled a confident AI on ${who} (${caseId}): ${CHOICE_LABEL[choice]}. Needs your sign-off.`, link: "/approvals" }]);
-  return { message: pid ? `Sent to the supervisor: hold ${formatINR(ai.amount)} on ${who}.` : needsSignoff ? `Recorded. You overruled a confident AI, so the supervisor will check it.` : `Recorded: ${CHOICE_LABEL[choice].toLowerCase()} for ${who}.` };
+  return { message: pid ? `Sent to the supervisor: hold ${formatINR(hold)} on ${who}.` : needsSignoff ? `Recorded. You overruled a confident AI, so the supervisor will check it.` : `Recorded: ${CHOICE_LABEL[choice].toLowerCase()} for ${who}.` };
 }
 
 /** Accept the AI's suggestion for several clear accounts at once (the officer can untick any). */
@@ -555,6 +577,25 @@ export async function saveTrace(u: User, alertId: string, rawPins: unknown, tick
   return { message: `Trace saved (version ${version}, ${pins.length} pins).`, version };
 }
 
+/** Priya saves her money trail for a case. Pins are references; the check is worked out again on the server. */
+export async function saveTrail(u: User, caseId: string, rawPins: unknown, rawHolds: unknown, note: string): Promise<ActionResult & { version: number }> {
+  must(u.role === "officer", "Only the fraud officer saves a money trail.");
+  const c = model().cases.find((x) => x.id === caseId);
+  must(c, "Unknown case.");
+  const { pins, holds } = cleanTrail(rawPins, rawHolds);
+  must(pins.length > 0, "Pin something before saving.");
+  const s = await store();
+  const now = await demoNow(s);
+  const prev = fold(await s.chain(), now).trails.get(c.id);
+  const version = (prev?.version ?? 0) + 1;
+  const hash = trailHash(pins, holds);
+  must(!prev || prev.hash !== hash, "Nothing changed since your last save.");
+  const chk = checkTrail(c.id, pins, holds);
+  await s.append([{ at: now, actor: u.id, type: "TRAIL_SAVED", caseId: c.id, payload: { caseId: c.id, version, hash, pins, holds, note: note.trim().slice(0, 500), reached: chk.reached, notFound: chk.balance.notFound } }],
+    (ch) => must((fold(ch, now).trails.get(c.id)?.version ?? 0) === version - 1, "Someone saved this trail at the same time. Reload and try again."));
+  return { message: `Trail saved (version ${version}, ${pins.length} pins, ${chk.reached.length} account${chk.reached.length === 1 ? "" : "s"} reached).`, version };
+}
+
 export async function resetDemo(u: User): Promise<ActionResult> {
   must(u.role === "admin", "Only the admin resets the demo.");
   await (await store()).reset();
@@ -562,6 +603,14 @@ export async function resetDemo(u: User): Promise<ActionResult> {
   const rig = W.rigs[0]!;
   const seedPins: PinRef[] = [{ kind: "handset", ref: rig.imei, label: rig.imei }, { kind: "tower", ref: rig.cell, label: rig.cell }];
   const s = await store();
+  // And a half-built money trail on CASE-001: the first two victims' payments pinned.
+  const c1 = model().cases[0]!;
+  const trailPins: TrailPin[] = c1.complaints.slice(0, 2).map((x) => {
+    const t = W.txns.find((y) => y.id === x.txnId)!;
+    const v = c1.victims.find((y) => y.id === x.victim)!;
+    return { kind: "payment", ref: x.txnId, label: `${x.txnId} · ${formatINR(t.amount)} from ${v.name} (${v.bank}) to ${holderName(model().accounts.get(t.to)!.a)}` };
+  });
+  await s.append([{ at: await demoNow(s), actor: "priya", type: "TRAIL_SAVED", caseId: c1.id, payload: { caseId: c1.id, version: 1, hash: trailHash(trailPins, {}), pins: trailPins, holds: {}, note: "Started: first two payments.", reached: checkTrail(c1.id, trailPins, {}).reached } }]);
   await s.append([{ at: await demoNow(s), actor: "imran", type: "TRACE_SAVED", caseId: alertById("RIG-1")?.cases[0] ?? "TELCO", payload: { alert: "RIG-1", version: 1, hash: traceHash(seedPins), pins: seedPins, ticks: [], note: "Started: handset and tower." } }]);
   return { message: "Demo reset: no holds, no messages, clock back to the start." };
 }

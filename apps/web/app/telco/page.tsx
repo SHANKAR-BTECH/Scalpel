@@ -10,6 +10,7 @@ import { ActForm } from "@/components/ActForm";
 import { simCheckAction, telcoActAction } from "@/app/actions";
 import { ago } from "@/lib/format";
 import { userById } from "@/lib/users";
+import { YourJob } from "@/components/YourJob";
 
 export default async function Telco() {
   await requireUser("telco");
@@ -21,6 +22,7 @@ export default async function Telco() {
   const shown = [...new Set(W.calls.map((c) => c.shownCaller).filter((n) => m.spoofed.has(n)))].slice(0, 4);
   return (
     <div>
+      <YourJob who="Telco-A analyst">Find the phone or SIM box behind the scam calls, then block or report it. Never block an innocent number.</YourJob>
       <h1>Alerts from Telco-A&apos;s AI</h1>
       <p className="mt-1 max-w-[780px] muted">The AI watches network counters and flags handsets and numbers that look like fraud. Open one and build the trace yourself in the workbench: the AI's suggestion opens only after you have saved your evidence. Your report goes to DoT, which rates the risk for banks; call records go only to police.</p>
 

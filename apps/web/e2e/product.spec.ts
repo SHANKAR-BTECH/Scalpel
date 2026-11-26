@@ -9,6 +9,29 @@ async function as(browser: Browser, who: string): Promise<Page> {
   return p;
 }
 
+/** Priya builds her money trail on CASE-001 the way she would by hand: pin each victim's payment, open the account
+ *  that received it, select the payments out after the victim's credit, pin them, and save. */
+async function buildTrail(p: Page, upto = 6) {
+  await p.goto("/case/CASE-001/work");
+  const utrs = await p.getByTestId("utr").allInnerTexts();
+  for (const utr of utrs.slice(0, upto)) {
+    await p.getByTestId("utr").filter({ hasText: utr }).click();
+    await expect(p.getByTestId("result-pay")).toContainText(utr);
+    const pin = p.getByTestId("pin-payment");
+    if (await pin.isEnabled()) await pin.click();
+    await p.getByTestId("open-statement").click();
+    await p.getByTestId("tool-run").click();
+    const row = p.locator(`[data-testid=st-row][data-id=${utr}]`);
+    await expect(row).toBeVisible();
+    await row.getByTestId("tick-after").click();
+    const n = Number((await p.getByTestId("pin-selected").innerText()).match(/\((\d+)\)/)![1]);
+    if (n > 0) await p.getByTestId("pin-selected").click();
+  }
+  await p.getByTestId("save-trail").click();
+  await expect(p.getByTestId("save-result")).toContainText("Trail saved");
+  await p.goto("/case/CASE-001");
+}
+
 test.beforeEach(async ({ browser }) => {
   const admin = await as(browser, "asha");
   await admin.getByTestId("reset").click();
@@ -21,16 +44,16 @@ test("officer proposes, supervisor is notified live and approves, holder explain
   const vikram = await as(browser, "vikram");
   await expect(vikram.getByRole("heading", { name: "Nothing waiting" })).toBeVisible();
 
-  await priya.getByTestId("case-row").first().click();
+  await buildTrail(priya);
   await expect(priya.getByTestId("trail-graph").first()).toBeVisible();
   // Priya works the decision cards with the AI until one suggests a hold, and agrees with it.
-  await priya.getByTestId("start-work").click();
   let acct: string | null = null;
   for (let i = 0; i < 10 && !acct; i++) {
     const card = priya.getByTestId("decision-card");
     await expect(card).toBeVisible({ timeout: 30_000 });
     const id = (await card.getAttribute("data-account"))!;
-    const hold = (await card.getByText("Hold the victims' money").count()) > 0;
+    const hold = (await card.getByTestId("hold-amount").count()) > 0;
+    if (hold && !(await card.getByTestId("hold-amount").inputValue())) await card.getByTestId("use-ai-amount").click();
     await card.getByTestId(`decide-${id}`).click();
     await expect(priya.getByTestId("flash")).toBeVisible();
     await expect(priya.locator(`[data-testid=decision-card][data-account=${id}]`)).toHaveCount(0, { timeout: 10_000 });
@@ -140,10 +163,10 @@ test("Telco-A engineer builds the trace, the decision opens only when the eviden
 
 test("evidence file downloads and verifies; a changed file is caught", async ({ browser }) => {
   const priya = await as(browser, "priya");
-  await priya.getByTestId("case-row").first().click();
-  await priya.getByTestId("start-work").click();
+  await priya.goto("/case/CASE-001");
   const card = priya.getByTestId("decision-card");
   await expect(card).toBeVisible({ timeout: 30_000 });
+  if (await card.getByTestId("use-ai-amount").count()) await card.getByTestId("use-ai-amount").click();
   await card.getByTestId(`decide-${await card.getAttribute("data-account")}`).click();
   await expect(priya.locator("[data-testid=decided-chip],[data-testid=pending-chip]").first()).toBeVisible({ timeout: 10_000 });
   const meera = await as(browser, "meera");
@@ -172,6 +195,8 @@ test("pages fit a phone screen", async ({ browser }) => {
   await p.getByTestId("case-row").first().click();
   await p.waitForURL("**/case/**");
   await fits();
+  await p.goto("/case/CASE-001/work");
+  await fits();
   await p.goto("/mules");
   await fits();
   await p.context().clearCookies();
@@ -190,9 +215,7 @@ test("pages fit a phone screen", async ({ browser }) => {
 test("officer and AI decide together; an overrule goes to the supervisor, who sends it back; compliance sees it", async ({ browser }) => {
   test.setTimeout(90_000);
   const priya = await as(browser, "priya");
-  await priya.getByTestId("case-row").first().click();
-  await priya.getByTestId("start-work").click();
-  await expect(priya.getByTestId("trace-log")).toContainText("ms", { timeout: 10_000 });
+  await buildTrail(priya);
   const card = priya.getByTestId("decision-card").first();
   await expect(card).toBeVisible({ timeout: 30_000 });
   await card.getByTestId("why-toggle").click();
@@ -254,7 +277,53 @@ test("an alert with no trace keeps the decision locked; the free workbench only 
   await expect(imran.getByTestId("result-sub")).toContainText("Telco-A subscriber");
   await imran.getByTestId("result-sub").getByTestId("pin").first().click();
   await imran.getByTestId("ai-check").click();
-  await expect(imran.getByTestId("ai-result")).toContainText("only your");
+  await expect(imran.getByTestId("ai-result")).toContainText("The decision is yours");
   await expect(imran.getByTestId("ready-REVERIFY")).toHaveAttribute("data-ready", "false");
   await expect(imran.getByTestId("ready-REVERIFY")).toContainText("swap");
+});
+
+test("Priya follows the money herself; decisions open only for accounts her saved trail reaches", async ({ browser }) => {
+  test.setTimeout(90_000);
+  const priya = await as(browser, "priya");
+  // Reset seeded a half-built trail: two payments pinned, so a few cards are open and the rest are not.
+  await priya.goto("/case/CASE-002");
+  await expect(priya.getByTestId("trail-card")).toContainText("Follow the money first");
+  await expect(priya.getByTestId("board-locked")).toBeVisible();
+  await expect(priya.getByTestId("decision-card")).toHaveCount(0);
+  await priya.goto("/case/CASE-001");
+  await expect(priya.getByTestId("trail-card")).toContainText("version 1");
+
+  await priya.getByTestId("open-trail").click();
+  await priya.waitForURL("**/case/CASE-001/work");
+  const utr = (await priya.getByTestId("utr").nth(2).innerText()).trim();
+  await priya.getByTestId("utr").nth(2).click();
+  await priya.getByTestId("pin-payment").click();
+  await priya.getByTestId("open-statement").click();
+  await priya.getByTestId("tool-run").click();
+  const rows = priya.getByTestId("st-row");
+  await expect(rows.first()).toBeVisible();
+  // The statement never marks victims' money.
+  await expect(priya.getByTestId("statement")).not.toContainText(/victim/i);
+  // Share calculator: she picks a payment out and types her own working.
+  await priya.locator("[data-testid=st-row][data-dir=out]").first().getByTestId("calc-row").click();
+  await priya.getByTestId("calc-in").fill("100000");
+  await expect(priya.getByTestId("calc-out")).toContainText("of victims' money left with this payment");
+  // Pin the payments out after the victim's credit, and check.
+  await priya.locator(`[data-testid=st-row][data-id=${utr}]`).getByTestId("tick-after").click();
+  await priya.getByTestId("pin-selected").click();
+  await priya.getByTestId("ai-check").click();
+  await expect(priya.getByTestId("money-balance")).toContainText("Reported lost");
+  // KYC card
+  await priya.getByTestId("open-kyc").click();
+  await priya.getByTestId("tool-run").click();
+  await expect(priya.getByTestId("kyc-card")).toContainText("Police request");
+  await priya.getByTestId("pin-kyc").click();
+  await priya.getByTestId("save-trail").click();
+  await expect(priya.getByTestId("save-result")).toContainText("version 2");
+
+  await priya.goto("/case/CASE-001");
+  await expect(priya.getByTestId("trail-card")).toContainText("version 2");
+  const card = priya.getByTestId("decision-card").first();
+  await expect(card).toBeVisible();
+  await expect(priya.getByTestId("case-log")).toContainText("saved the money trail, version 2");
 });

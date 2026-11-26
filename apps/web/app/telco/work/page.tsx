@@ -6,6 +6,7 @@ import { W } from "@/lib/server/world";
 import { alerts, alertById } from "@/lib/server/telco";
 import { userById } from "@/lib/users";
 import { SimWorkbench } from "@/components/SimWorkbench";
+import { YourJob } from "@/components/YourJob";
 
 /** Imran's SIM trace workbench: he looks things up and builds the trace himself; the AI only checks his pins. */
 export default async function Workbench({ searchParams }: { searchParams: Promise<{ n?: string; alert?: string }> }) {
@@ -23,6 +24,7 @@ export default async function Workbench({ searchParams }: { searchParams: Promis
   return (
     <div>
       <Link href={al ? `/telco/${al.id}` : "/telco"} className="link inline-flex items-center gap-1 text-[13.5px]"><ChevronLeft size={15} aria-hidden />{al ? `Back to ${al.id}` : "All alerts"}</Link>
+      <YourJob who="Telco-A analyst">Look up numbers, handsets, shops and towers, and pin the clues that show who made the scam calls.</YourJob>
       <h1 className="mt-2">SIM trace workbench{al ? `: ${al.id}` : ""}</h1>
       <p className="mt-1 max-w-[780px] muted">Look up a number, read its call records, look up the handset it was used in, and pin what matters. Your trace is built only from your pins. When you are ready, ask the AI to check it: it tells you what your evidence supports and what is still missing.</p>
       <SimWorkbench alert={al ? { id: al.id, title: al.title, kind: al.kind, value: al.value } : null} saved={saved} locked={al ? d.telcoByAlert.has(al.id) : false} leads={leads} start={n ?? (al ? al.value : null)} firstDay={Math.min(...ts)} lastDay={Math.max(...ts)} />

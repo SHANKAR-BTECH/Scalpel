@@ -7,6 +7,7 @@ import { suggestion } from "@/components/AccountRow";
 import { CHOICE_LABEL } from "@/lib/server/judge";
 import { ago, inr } from "@/lib/format";
 import { userById } from "@/lib/users";
+import { YourJob } from "@/components/YourJob";
 
 export default async function Approvals() {
   const u = await requireUser("supervisor");
@@ -42,6 +43,7 @@ export default async function Approvals() {
   ];
   return (
     <div>
+      <YourJob who="Bank supervisor">Check the officer&apos;s freezes and overrules. Say yes, or send them back with a reason.</YourJob>
       <h1>{items.length ? `${items.length} waiting for you` : "Nothing waiting"}</h1>
       <p className="mt-1 max-w-[760px] muted">Nothing is held or released until you approve it, and you can never approve your own proposal. When the officer overrules a confident AI, you check it too.</p>
       <div className="mt-5" data-testid="pending-list">{items.length > 0 ? <ApprovalBoard items={items} /> : <p className="sheet p-4 text-[14px] muted">When the officer proposes a hold or overrules the AI, it lands here.</p>}</div>

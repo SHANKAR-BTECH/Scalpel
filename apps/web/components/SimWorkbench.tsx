@@ -375,7 +375,7 @@ export function SimWorkbench({ alert, leads, start, firstDay, lastDay, saved, lo
                   ))}
                 </ul>
               </div>
-              <p className="text-[12.5px] muted">The AI read only your {pins.length} pins and looked each one up again. It does not say which action is right.</p>
+              <p className="text-[12.5px] muted">You pinned {pins.length} {pins.length === 1 ? "clue" : "clues"}. The AI checked {pins.length === 1 ? "it" : "each one"} against Telco-A&apos;s records. Pin more clues to build a stronger case. The decision is yours.</p>
             </div>
           )}
         </section>

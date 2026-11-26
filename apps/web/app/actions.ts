@@ -9,6 +9,8 @@ import { USERS } from "@/lib/users";
 import { store } from "@/lib/server/store";
 import * as L from "@/lib/server/lookup";
 import { checkTrace, cleanPins } from "@/lib/server/tracecheck";
+import * as B from "@/lib/server/bank";
+import { checkTrail, cleanTrail } from "@/lib/server/trailcheck";
 
 export interface Result { ok: boolean; message: string; at?: number }
 
@@ -100,7 +102,8 @@ export async function holderReplyAction(_: Result | null, f: FormData) {
   return run(() => D.holderReply(ref, str(f, "text"), name));
 }
 export async function decideAccountAction(_: Result | null, f: FormData) {
-  return run(async () => D.decideAccount(await me(), str(f, "account"), str(f, "choice") as "HOLD", str(f, "reason"), str(f, "note")));
+  const amt = str(f, "amount").trim();
+  return run(async () => D.decideAccount(await me(), str(f, "account"), str(f, "choice") as "HOLD", str(f, "reason"), str(f, "note"), amt ? rupeesToPaise(amt) : null));
 }
 export async function decideClearAction(_: Result | null, f: FormData) {
   return run(async () => D.decideClear(await me(), f.getAll("account").map(String)));
@@ -128,4 +131,25 @@ export async function lookupDoc(doc: string) { await telcoOnly(); return L.kycDo
 export async function checkTraceAction(alert: string, pins: unknown) { await telcoOnly(); return checkTrace(alert, cleanPins(pins)); }
 export async function saveTraceAction(alert: string, pins: unknown, ticks: string[], note: string): Promise<Result> {
   return run(async () => D.saveTrace(await me(), alert, pins, Array.isArray(ticks) ? ticks.filter((t) => typeof t === "string") : [], String(note ?? "")));
+}
+
+/* Bank lookup tools for the money trail workbench (read only). */
+async function bankOnly() {
+  const u = await currentUser();
+  if (!u || (u.role !== "officer" && u.role !== "supervisor")) throw new Error("Only bank fraud staff can use these tools.");
+}
+export async function lookupPayment(q: string) { await bankOnly(); return B.payment(String(q ?? "")); }
+export async function lookupStatement(acct: string, from: string | null, to: string | null) {
+  await bankOnly();
+  const day = (x: string | null) => (typeof x === "string" && /^\d{4}-\d{2}-\d{2}$/.test(x) ? x : null);
+  return B.statement(String(acct ?? ""), day(from), day(to));
+}
+export async function lookupKyc(acct: string) { await bankOnly(); return B.kyc(String(acct ?? "")); }
+export async function checkTrailAction(caseId: string, pins: unknown, holds: unknown) {
+  await bankOnly();
+  const t = cleanTrail(pins, holds);
+  return checkTrail(String(caseId ?? ""), t.pins, t.holds);
+}
+export async function saveTrailAction(caseId: string, pins: unknown, holds: unknown, note: string): Promise<Result> {
+  return run(async () => D.saveTrail(await me(), String(caseId ?? ""), pins, holds, String(note ?? "")));
 }
