@@ -493,7 +493,7 @@ export async function simCheck(u: User, msisdn: string): Promise<ActionResult> {
   const s = await store();
   const now = await demoNow(s);
   const n = msisdn.trim();
-  must(/^\+91 \d{4,5} ?\d{2,6} ?\d{0,5}$/.test(n) || isProtectedNumber(n), "Type the number as shown, e.g. +91 04704 51176.");
+  must(/^\+91 [\d ]{10,13}$/.test(n) && n.replace(/\D/g, "").length === 12 || isProtectedNumber(n), "Type the number as shown, e.g. +91 98765 43210.");
   const hours = simSwapLookup(n, now);
   await s.append([{ at: now, actor: u.id, type: "SIM_CHECK", caseId: "TELCO", payload: { msisdn: n, swappedHoursAgo: hours, api: "CAMARA SIM Swap (simulated)" } }]);
   return { message: hours === null ? `${n}: no SIM swap on record.` : `${n}: SIM swapped ${hours} hours ago${hours <= 72 ? " (inside 72 hours: a warning sign)" : ""}.` };

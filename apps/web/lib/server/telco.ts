@@ -188,7 +188,7 @@ export function alerts(): Alert[] {
       cases: caseId ? [caseId] : [], sims: [], calls: [], linked: [{ msisdn: mulePhone.msisdn, account: mulePhone.account, name: v.a.holder.name, caseId }], reportable: true,
     });
   }
-  const biz = rec("006120774318842"), spam = rec("+91 08012 44770");
+  const biz = rec("006120774318842"), spam = rec("+91 20 4477 0812");
   const bizDay = Math.round(biz.perDay), spamDay = Math.round(spam.perDay);
   list.push({
     id: "BIZ-1", kind: "IMEI", value: "006120774318842", tone: "lookalike",
@@ -208,8 +208,8 @@ export function alerts(): Alert[] {
     cases: [], sims: [], calls: [], linked: [], reportable: false,
   });
   list.push({
-    id: "SPAM-1", kind: "MSISDN", value: "+91 08012 44770", tone: "lookalike",
-    title: "Number reported as spam 14 times", sub: "+91 08012 44770 · City Care Hospital, Pune", rule: "Spam reports above the review threshold",
+    id: "SPAM-1", kind: "MSISDN", value: "+91 20 4477 0812", tone: "lookalike",
+    title: "Number reported as spam 14 times", sub: "+91 20 4477 0812 · cell TA-MH-0410", rule: "Spam reports above the review threshold",
     gauges: [
       g("Citizen spam reports", "14 in 7 days", 0.8, true),
       g("Different numbers a day", `${spamDay}`, Math.min(1, spamDay / 160), true),

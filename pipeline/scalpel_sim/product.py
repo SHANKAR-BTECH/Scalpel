@@ -25,6 +25,7 @@ from .export import FORBIDDEN_KEYS
 from .world import DAY, HOUR, MIN, make_world
 
 SEED = 2611
+DEBUG = False
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "apps" / "web" / "data" / "world.json"
 
@@ -237,6 +238,7 @@ def build(seed: int = SEED) -> dict:
     from scalpel_model.train import V1_TRAIN_SEEDS, assess, train_models
     from .signals import compute_signals
     models = train_models([make_world(v1_config().with_seed(s)) for s in V1_TRAIN_SEEDS])
+    grey = _grey_zone(world, models["logistic"], truth, reached, holders, cut, random.Random(seed * 53 + 11))
     scored = assess(models["logistic"], world)["accounts"]
     signals = compute_signals(world)
     _plain_reasons(models["logistic"], world, signals, scored)
@@ -261,7 +263,7 @@ def build(seed: int = SEED) -> dict:
                       "score": (None if a["id"] not in scored else {"muleScore": scored[a["id"]]["muleScore"],
                                                                      "reasons": scored[a["id"]]["reasons"],
                                                                      "why": scored[a["id"]]["why"]}),
-                      "signals": signals.get(a["id"], [])}
+                      "signals": signals.get(a["id"], []), **({"before": grey[a["id"]]} if a["id"] in grey else {})}
                      for a in world["accounts"] if a["id"] in reached],
         "txns": sorted(case_txns, key=lambda t: (t["at"], t["id"])),
         "complaints": [{"id": comp["id"], "ack": _ack(rng), "victim": comp["victim"], "txnId": comp["txnId"],
@@ -276,8 +278,179 @@ def build(seed: int = SEED) -> dict:
         "soloSims": sorted(solo.values(), key=lambda s: s["msisdn"]),
         "calls": sorted(calls, key=lambda x: (x["at"], x["id"])),
     }
+    _realism(out, random.Random(seed * 97 + 5))
     _check_no_answers(out)
     return out
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# Realism fixes, applied after the world is drawn with their own random streams, so names, amounts, cases and the
+# money trail stay exactly as they were (checked by tests/test_product_realism.py).
+
+def mobile(m: str) -> str:
+    """'+91 0dddd ddddd' -> an Indian mobile number (first digit 6-9), worked out from the other digits."""
+    d = m.replace("+91 ", "").replace(" ", "")
+    if len(d) != 10 or d[0] != "0":
+        return m
+    d = "6789"[sum(map(int, d[1:])) % 4] + d[1:]
+    return f"+91 {d[:5]} {d[5:]}"
+
+
+def _map_strings(obj, f):
+    if isinstance(obj, dict):
+        return {k: _map_strings(v, f) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_map_strings(v, f) for v in obj]
+    return f(obj) if isinstance(obj, str) else obj
+
+
+ATMS = ["SBI ATM, Station Road", "HDFC ATM, Bus Stand", "Axis ATM, Main Market", "PNB ATM, Civil Lines", "ICICI ATM, Mall Road"]
+EXCHANGES = ["CoinSwitch-style exchange wallet", "P2P USDT seller", "Offshore exchange deposit address"]
+GOLD = ["Shree Ganesh Jewellers", "Lakshmi Gold House", "City Bullion Traders"]
+EXIT_OF = {"ATM_CASH": "EXT-ATM", "CRYPTO": "EXT-CRYPTO", "GOLD": "EXT-GOLD", "CARD": "EXT-MERCHANT"}
+
+
+def _realism(out: dict, rng: random.Random) -> None:
+    now = out["now"]
+    # 1. Indian mobile numbers everywhere (one mapping, so bank, Telco-A and calls still agree).
+    for k in list(out):
+        if k not in ("note", "schema"):
+            out[k] = _map_strings(out[k], lambda x: mobile(x) if x.startswith("+91 0") else x)
+    # 2. A cash-out goes where its channel says, with the place.
+    for t in out["txns"]:
+        dest = EXIT_OF.get(t["channel"])
+        if dest and t["to"].startswith("EXT-"):
+            t["to"] = dest
+            city = next((a["holder"]["city"] for a in out["accounts"] if a["id"] == t["from"]), "")
+            t["where"] = {"ATM_CASH": f"{rng.choice(ATMS)}, {city}", "CRYPTO": rng.choice(EXCHANGES),
+                          "GOLD": f"{rng.choice(GOLD)}, {city}", "CARD": "Online purchase"}[t["channel"]]
+    # 3. A SIM-box SIM is bought before the box first calls with it.
+    for r in out["rigs"]:
+        first = min((c["at"] for c in out["calls"] if c["imei"] == r["imei"]), default=now)
+        for sim in r["sims"]:
+            if sim["activatedAt"] > first - DAY:
+                sim["activatedAt"] = first - rng.randint(3, 40) * DAY - rng.randint(0, 20) * HOUR
+    # 4. A magistrate notice can't be dated after today: not sent yet.
+    for q in out["requests"]:
+        if q["magistrateIntimatedAt"] is not None and q["magistrateIntimatedAt"] > now:
+            q["magistrateIntimatedAt"] = None
+    # 5. One Inspector signs the requests for the accounts the big SIM box's victims paid first.
+    first_hop = {t["to"] for t in out["txns"] if t["from"].startswith("EXT-R")}
+    rig1 = {c["to"] for c in out["calls"] if c["imei"] == out["rigs"][0]["imei"]}
+    v_phone = {v["id"]: v["phone"] for v in out["victims"]}
+    rig1_accts = {t["to"] for t in out["txns"] if t["from"].startswith("EXT-") and v_phone.get(t["from"][4:]) in rig1}
+    for q in out["requests"]:
+        if q["account"]["id"] in rig1_accts & first_hop:
+            q["issuer"] = {"name": "Dinesh Yadav", "rank": "Inspector", "station": "Cyber Crime PS, Bengaluru", "state": "KA"}
+
+
+def _grey_zone(world: dict, model, truth: dict, reached: set, holders: dict, cut: int, rng: random.Random) -> dict:
+    """About a dozen accounts the money touched get ordinary history from before the scam, so their mule score
+    lands in the grey zone (0.4-0.7) and a person has to look. Mules get a rented account's real past (wages,
+    bills); innocent people get a busy small business (many customers, end-of-day settlement). Every pair of
+    rows nets to zero before the first victim payment, so balances and the money trail are unchanged. The model
+    is not touched. Pensioners also get their monthly pension, so a hold can leave it usable.
+    Returns a short summary per changed account, shown above the statement."""
+    from scalpel_model.train import assess
+    accts = {a["id"]: a for a in world["accounts"]}
+    roles = truth["roles"]
+    n = 0
+    summary: dict[str, dict] = {}
+
+    def add(frm: str, to: str, amount: int, at: int, ch: str) -> None:
+        nonlocal n
+        n += 1
+        world["txns"].append({"id": f"TQ{n:05d}", "at": at, "from": frm, "to": to, "amount": amount, "channel": ch})
+
+    def start(a: str) -> int:
+        return max(accts[a]["openedAt"] + DAY, cut - 90 * DAY)
+
+    def life(a: str, step: int) -> bool:  # a rented account's real past: wages and friends in, rent and family out
+        s0 = max(accts[a]["openedAt"] + DAY, world["cutoff"] - 29 * DAY)
+        span = (cut - 2 * DAY - s0) // DAY
+        if span < 3:
+            return False
+        got = 0
+        for k in range(step * 3):  # friends, family, a side job: small sums from many people (UPI)
+            amt = rng.randint(2, 40) * 100_00
+            got += amt
+            add(f"EXT-PEER{rng.randint(1, 900):03d}", a, amt, s0 + rng.randint(0, span - 1) * DAY + rng.randint(8, 21) * HOUR, "UPI")
+        end = s0 + span * DAY
+        add(a, "EXT-RENT", got * 6 // 10, end + 3 * HOUR, "IMPS")
+        add(a, "EXT-FAMILY", got - got * 6 // 10, end + 5 * HOUR, "IMPS")
+        summary[a] = {"kind": "history", "text": "Before this period: small payments from many different people, paid out as rent and to family."}
+        return True
+
+    phones = {p["account"]: p["msisdn"] for p in world["phones"]}
+    tel = world["telecom"]
+    c = world["cutoff"]
+
+    def flags(a: str, step: int) -> None:  # real-life warning signs on an honest account
+        if step >= 1:
+            accts[a]["kycChangedAt"] = c - rng.randint(6, 20) * DAY          # changed the phone number on the account
+        if step >= 2 and a in phones:
+            tel.setdefault("simSwaps", []).append({"msisdn": phones[a], "at": c - rng.randint(20, 60) * HOUR})  # new SIM
+        if step >= 3 and a in phones and phones[a] not in tel.get("callForwarding", []):
+            tel.setdefault("callForwarding", []).append(phones[a])            # forwards calls to another phone
+
+    # Pensions (all pensioners the trail reached): monthly credit, mostly withdrawn.
+    for a in sorted(reached):
+        if holders[a]["group"] == "pensioner":
+            s = start(a)
+            amt = rng.randint(9, 24) * 1000_00
+            k = 0
+            for m in range(3):
+                at = s + m * 30 * DAY
+                if at > cut - 2 * DAY:
+                    break
+                add("EXT-PENSION", a, amt, at, "NEFT")
+                add(a, "EXT-ATM", amt, at + rng.randint(1, 6) * DAY, "ATM_CASH")
+                k += 1
+            if k:
+                summary[a] = {"kind": "pension", "text": f"Monthly pension of Rs {amt // 100:,} from the state pension office, {k} month(s) before this period.", "monthly": amt}
+
+    base = assess(model, world)["accounts"]
+    in_grey = lambda sc: 0.4 <= sc <= 0.7
+    picks = [a for a in sorted(reached) if a in base and not in_grey(base[a]["muleScore"])]
+    rng.shuffle(picks)
+    mules = [a for a in picks if roles.get(a) == "mule" and base[a]["muleScore"] > 0.7]
+    innocents = [a for a in picks if roles.get(a) != "mule" and base[a]["muleScore"] < 0.4]
+    target = 12
+    for a in [x for pair in zip(mules, innocents) for x in pair] + mules[len(innocents):] + innocents[len(mules):]:
+        if sum(1 for x in base if in_grey(base[x]["muleScore"])) >= target:
+            break
+        import copy
+        saved = (len(world["txns"]), n, summary.get(a), accts[a].get("kycChangedAt"), copy.deepcopy(tel))
+        ok = False
+        steps = range(1, 13) if roles.get(a) == "mule" else range(1, 4)
+        for step in steps:
+            del world["txns"][saved[0]:]
+            n = saved[1]
+            accts[a]["kycChangedAt"] = saved[3]
+            tel.clear(); tel.update(copy.deepcopy(saved[4]))
+            if roles.get(a) == "mule":
+                if not life(a, step):
+                    break  # too new to have a past
+            else:
+                flags(a, step)
+            base = assess(model, world)["accounts"]
+            if in_grey(base[a]["muleScore"]):
+                ok = True
+                break
+            if DEBUG:
+                print("grey try", a, roles.get(a), step, round(base[a]["muleScore"], 3))
+        if not ok:  # never landed in the grey zone: undo
+            del world["txns"][saved[0]:]
+            n = saved[1]
+            accts[a]["kycChangedAt"] = saved[3]
+            tel.clear(); tel.update(saved[4])
+            if saved[2] is None:
+                summary.pop(a, None)
+            else:
+                summary[a] = saved[2]
+            base = assess(model, world)["accounts"]
+    world["txns"].sort(key=lambda t: (t["at"], t["id"]))
+    return summary
 
 
 BINARY = {"is_current", "is_salary", "sim_swap", "handset_farm", "call_forwarding", "mnrl", "fri_very_high", "simbox"}

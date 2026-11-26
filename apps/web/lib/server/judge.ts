@@ -48,11 +48,11 @@ export function aiView(v: AccountView, now: number, fri?: string): AiView {
       : `Unclear account: hold ${inr(v.suggested)} while it is checked.`;
   const clashes: string[] = [];
   const age = now - v.a.openedAt;
-  if (score !== null && score >= 0.5 && age > YEAR) clashes.push(`High mule score, but the account is ${Math.floor(age / YEAR)} year${age >= 2 * YEAR ? "s" : ""} old. Mule accounts are usually new.`);
+  if (score !== null && score >= 0.5 && age > YEAR) clashes.push(`${score >= 0.8 ? "High mule score" : "The mule score leans mule"}, but the account is ${Math.floor(age / YEAR)} year${age >= 2 * YEAR ? "s" : ""} old. Mule accounts are usually new.`);
   const friNow = fri ?? v.phone?.fri;
   const raised = fri !== undefined && fri !== v.phone?.fri;
   if (score !== null && score < 0.5 && friNow === "VERY_HIGH") clashes.push("Low mule score, but the phone's fraud-risk rating is Very High.");
-  if (score !== null && score >= 0.5 && friNow === "LOW") clashes.push("High mule score, but the phone's fraud-risk rating is Low.");
+  if (score !== null && score >= 0.5 && friNow === "LOW") clashes.push(`${score >= 0.8 ? "High mule score" : "The mule score leans mule"}, but the phone's fraud-risk rating is Low.`);
   if (score !== null && score >= 0.2 && score < 0.8) clashes.push(`The mule-score model is unsure (${Math.round(score * 100)}/100).`);
   const swap = v.phone?.swappedAt, first = firstIn.get(v.a.id);
   if (swap && first && swap <= first && first - swap < 30 * 86_400_000) clashes.push("The SIM was swapped just before the money arrived: the real owner may have lost control of the account.");

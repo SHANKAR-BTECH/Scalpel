@@ -145,7 +145,7 @@ test("evidence file downloads and verifies; a changed file is caught", async ({ 
   const card = priya.getByTestId("decision-card");
   await expect(card).toBeVisible({ timeout: 30_000 });
   await card.getByTestId(`decide-${await card.getAttribute("data-account")}`).click();
-  await expect(priya.getByTestId("decided-chip").first()).toBeVisible({ timeout: 10_000 });
+  await expect(priya.locator("[data-testid=decided-chip],[data-testid=pending-chip]").first()).toBeVisible({ timeout: 10_000 });
   const meera = await as(browser, "meera");
   const dl = meera.waitForEvent("download");
   await meera.locator("[data-testid^=evidence-CASE]").first().click();
@@ -195,10 +195,18 @@ test("officer and AI decide together; an overrule goes to the supervisor, who se
   await expect(priya.getByTestId("trace-log")).toContainText("ms", { timeout: 10_000 });
   const card = priya.getByTestId("decision-card").first();
   await expect(card).toBeVisible({ timeout: 30_000 });
-  const acct = await card.getAttribute("data-account");
   await card.getByTestId("why-toggle").click();
   await expect(card.getByTestId("why").locator("li")).toHaveCount(6);
-  await card.getByText("Don't hold, keep watching").click();
+  // Unsure cards (grey-zone score) come first and need no sign-off; overruling a confident AI does.
+  let acct = "";
+  for (let i = 0; i < 6; i++) {
+    acct = (await card.getAttribute("data-account"))!;
+    await card.getByText("Don't hold, keep watching").click();
+    if (await card.getByTestId("needs-signoff").count()) break;
+    await card.locator("select[name=reason]").selectOption({ index: 2 });
+    await card.getByTestId(`decide-${acct}`).click();
+    await expect(card).not.toHaveAttribute("data-account", acct, { timeout: 10_000 });
+  }
   await expect(card.getByTestId("needs-signoff")).toBeVisible();
   await card.locator("select[name=reason]").selectOption("Other");
   await card.locator("input[name=note]").fill("Checked the branch: long-time customer");

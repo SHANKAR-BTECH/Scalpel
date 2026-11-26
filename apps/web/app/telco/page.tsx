@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/server/auth";
 import { desk, phoneTarget } from "@/lib/server/desk";
 import { model, W } from "@/lib/server/world";
 import { alerts, ACTION_LABEL } from "@/lib/server/telco";
+import { checkTrace } from "@/lib/server/tracecheck";
 import { ActForm } from "@/components/ActForm";
 import { simCheckAction, telcoActAction } from "@/app/actions";
 import { ago } from "@/lib/format";
@@ -21,7 +22,7 @@ export default async function Telco() {
   return (
     <div>
       <h1>Alerts from Telco-A&apos;s AI</h1>
-      <p className="mt-1 max-w-[780px] muted">The AI watches network counters and flags handsets and numbers that look like fraud. Open one, run the trace, and decide with it. Your report goes to DoT, which rates the risk for banks; call records go only to police.</p>
+      <p className="mt-1 max-w-[780px] muted">The AI watches network counters and flags handsets and numbers that look like fraud. Open one and build the trace yourself in the workbench: the AI's suggestion opens only after you have saved your evidence. Your report goes to DoT, which rates the risk for banks; call records go only to police.</p>
 
       <section className="card board mt-5" data-testid="alerts">
         <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-[var(--line-strong)] px-4 py-3">
@@ -32,6 +33,8 @@ export default async function Telco() {
           {list.map((a) => {
             const t = d.telcoByAlert.get(a.id);
             const Icon = a.kind === "IMEI" ? Smartphone : Phone;
+            const tr = d.traces.get(a.id);
+            const ready = tr ? checkTrace(a.id, tr.pins).actions.filter((x) => x.ready).length : 0;
             return (
               <li key={a.id} className="board-row" data-testid="alert-card">
                 <Link href={`/telco/${a.id}`} className="grid items-center gap-x-5 gap-y-2 px-4 py-3.5 md:grid-cols-[minmax(240px,1.3fr)_minmax(220px,1fr)_150px_20px]" data-testid="open-trace">
@@ -40,13 +43,13 @@ export default async function Telco() {
                     <span className="min-w-0">
                       <span className="block font-semibold">{a.title}</span>
                       <span className="block truncate mono text-[12px] muted">{a.sub}</span>
-                      <span className="mt-0.5 block text-[12.5px] muted">{a.facts[0]}</span>
+                      <span className="mt-0.5 block text-[12.5px] muted">{a.rule}</span>
                     </span>
                   </span>
-                  <span className="text-[13px]">
-                    <span className="label block">AI suggests · {Math.round(a.ai.confidence * 100)}%</span>
-                    <span className="block">{ACTION_LABEL[a.ai.suggest]}</span>
-                    <span className="thread mt-1.5 block" style={{ height: 4 }}><span className="thread-fill block" style={{ width: `${a.ai.confidence * 100}%`, background: "#0d0d0d" }} /></span>
+                  <span className="text-[13px]" data-testid="trace-state">
+                    {t ? <><span className="label block">Decided</span><span className="block">{ACTION_LABEL[t.action]}</span></>
+                      : tr ? <><span className="label block">Your trace · version {tr.version}</span><span className="block">{tr.pins.length} pin{tr.pins.length === 1 ? "" : "s"} · {ready} action{ready === 1 ? "" : "s"} with evidence</span></>
+                      : <><span className="label block">Your trace</span><span className="block muted">Not started</span></>}
                   </span>
                   <span>
                     {t ? <span className={`chip ${t.agreed ? "chip-good" : "chip-warn"}`}>{t.agreed ? "Decided with AI" : "AI overruled"}</span>

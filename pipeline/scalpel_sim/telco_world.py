@@ -81,6 +81,8 @@ def build() -> dict:
     def new_number(prefix: str = "0") -> str:
         while True:
             d = prefix + "".join(str(rng.randrange(10)) for _ in range(10 - len(prefix)))
+            if d[0] == "0":  # an Indian mobile number starts with 6-9 (same mapping as product.py)
+                d = "6789"[sum(map(int, d[1:])) % 4] + d[1:]
             if d not in used:
                 used.add(d)
                 return fmt(d)
@@ -244,7 +246,7 @@ def build() -> dict:
                     "seconds": rng.randrange(25, 140), "imei": biz_imei, "cell": "TA-KA-0112"})
 
     # ---- SPAM-1: a hospital's reminder line ----
-    hosp = "+91 08012 44770"
+    hosp = "+91 20 4477 0812"  # a Pune landline (STD 020), not a mobile
     add_sub(hosp, kycName="City Care Hospital", kycDoc="Company PAN AAACC••••H", pos=enterprise["pos"], plan="Enterprise PRI line", activatedAt=now - 2200 * DAY,
             chakshu=14, dlt={"header": "CCHPUN", "entity": "City Care Hospital, Pune", "type": "Transactional (SMS reminders)"})
     patients = [new_number() for _ in range(900)]
