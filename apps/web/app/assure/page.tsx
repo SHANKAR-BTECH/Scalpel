@@ -77,7 +77,7 @@ export default async function Assure() {
         {d.telco.length === 0 ? <p className="mt-2 text-[13.5px] muted">No Telco-A decisions yet.</p> : (
           <div className="mt-3 overflow-x-auto">
             <table className="table">
-              <thead><tr><th>When</th><th>Alert</th><th>AI said</th><th>Analyst chose</th><th>Reason</th><th>Reported to DoT</th></tr></thead>
+              <thead><tr><th>When</th><th>Alert</th><th>AI said</th><th>Analyst chose</th><th>Evidence</th><th>Reason</th><th>Reported to DoT</th></tr></thead>
               <tbody>
                 {[...d.telco].reverse().map((x) => (
                   <tr key={x.tid} data-testid="telco-ledger-row">
@@ -85,6 +85,7 @@ export default async function Assure() {
                     <td>{alertById(x.alert)?.title ?? x.alert} <span className="mono muted">{x.alert}</span></td>
                     <td>{ACTION_LABEL[x.ai.suggest]} <span className="muted">({Math.round(x.ai.confidence * 100)}%)</span></td>
                     <td><span className={`chip ${x.agreed ? "chip-good" : "chip-warn"}`}>{ACTION_LABEL[x.action]}</span> <span className="muted">by {userById(x.by)?.name ?? x.by}</span></td>
+                    <td data-testid="telco-evidence">{x.trace ? <>Trace v{x.trace.version} · {d.traces.get(x.alert)?.pins.length ?? "?"} pins <span className="mono muted">{x.trace.hash.slice(0, 8)}</span>{x.ceir ? <span className="block muted">National block asked (CEIR)</span> : null}</> : <span className="text-[var(--warn)]">no trace</span>}</td>
                     <td>{x.reason}{x.note ? <span className="muted">: {x.note}</span> : null}</td>
                     <td>{x.reported.length ? `${x.reported.length} number${x.reported.length > 1 ? "s" : ""}` : <span className="muted">none</span>}</td>
                   </tr>

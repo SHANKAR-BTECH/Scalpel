@@ -1,9 +1,11 @@
 "use client";
-/** Telco-A's number trace: the analyst runs it, the call records turn into a picture (handset → SIMs → people
- *  called → bank complaints), the network counters fill in, and only then does the decision open. */
+/** Telco-A's alert page. The engineer builds the trace by hand in the workbench; this page shows his saved trace,
+ *  what the server's check says it supports, and only then opens the decision. The picture of the whole trace
+ *  (handset → SIMs → people called → bank complaints) is a replay after the decision, never a shortcut before it. */
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Check, Lock, PhoneOff, ShieldAlert, TriangleAlert } from "lucide-react";
+import Link from "next/link";
+import { Check, Lock, PhoneOff, Play, ShieldAlert, TriangleAlert, Wrench } from "lucide-react";
 import type { Alert, TAction, TraceView, TNode } from "@/lib/server/telco";
 import { ActForm } from "./ActForm";
 import { policePacketAction, telcoDecideAction } from "@/app/actions";
@@ -13,13 +15,18 @@ const PACE = 1500;
 const STEPS = 6;
 
 export interface DoneView { action: string; agreed: boolean; reason: string; note: string; by: string; at: number; reported: string[] }
+export interface TraceSummary {
+  version: number; by: string; at: number; pins: number; shows: string[]; offAlert: string[]; empty: string[];
+  actions: { action: TAction; label: string; ready: boolean; missing: string[] }[];
+}
 export interface LinkedView { msisdn: string; name: string; account: string; caseId: string | null; band: string }
 
-export function NumberTrace({ a, view, labels, reasons, done, packetAt, linked, now }: {
+export function NumberTrace({ a, view, labels, reasons, done, packetAt, linked, now, trace }: {
   a: Alert; view: TraceView; labels: Record<TAction, string>; reasons: readonly string[];
-  done: DoneView | null; packetAt: number | null; linked: LinkedView[]; now: number;
+  done: DoneView | null; packetAt: number | null; linked: LinkedView[]; now: number; trace: TraceSummary | null;
 }) {
-  const [step, setStep] = useState(done ? STEPS : 0);
+  // The replay only exists after the decision; before it the engineer works from his own pins.
+  const [step, setStep] = useState(0);
   const running = step > 0 && step < STEPS;
   useEffect(() => {
     if (!running) return;
@@ -27,29 +34,131 @@ export function NumberTrace({ a, view, labels, reasons, done, packetAt, linked, 
     return () => clearTimeout(t);
   }, [running, step]);
   const finished = step >= STEPS;
+  const bench = `/telco/work?alert=${a.id}`;
+  const readyOpts = trace ? trace.actions.filter((x) => x.ready).map((x) => x.action) : [];
+  const pick = readyOpts.includes(a.ai.suggest) ? a.ai.suggest : readyOpts[0];
 
   return (
     <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_400px]">
       <div className="min-w-0 space-y-5">
+        <section className="card p-5" data-testid="my-trace">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2>Your trace</h2>
+              <p className="mt-0.5 text-[13.5px] muted">Built by hand in the workbench from Telco-A&apos;s own records. They stay inside Telco-A: banks only ever see DoT&apos;s risk rating.</p>
+            </div>
+            {!done && <Link href={bench} className="btn btn-phone" data-testid="open-workbench"><Wrench size={15} aria-hidden />{trace ? "Keep working in the workbench" : "Open the workbench"}</Link>}
+          </div>
+          {!trace ? (
+            <div className="mt-5 rounded-2xl border border-dashed border-[var(--line)] px-4 py-8 text-center text-[14px]" data-testid="trace-empty">
+              <p className="font-medium">No trace saved yet.</p>
+              <p className="mt-1 muted">Look up the {a.kind === "IMEI" ? "handset" : "number"} {a.value}, read its call records, follow the SIMs, towers and shops, and pin what matters. Then save it here.</p>
+            </div>
+          ) : (
+            <div className="mt-4" data-testid="trace-saved">
+              <p className="text-[13px] muted">Version {trace.version} · {trace.pins} pin{trace.pins === 1 ? "" : "s"} · saved by {trace.by} · {when(trace.at)}</p>
+              {trace.shows.length > 0 ? (
+                <ul className="mt-3 space-y-1.5 text-[13.5px]" data-testid="trace-shows">
+                  {trace.shows.map((f) => <li key={f} className="flex gap-2"><span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[var(--phone)]" />{f}</li>)}
+                </ul>
+              ) : <p className="mt-3 text-[13.5px] muted">Your pins don&apos;t show anything about this alert yet.</p>}
+              {trace.empty.length > 0 && <p className="mt-3 text-[13px] text-[var(--warn)]" data-testid="trace-empty-pins"><b>Pinned, but the record holds nothing:</b> {trace.empty.join("; ")}.</p>}
+              {trace.offAlert.length > 0 && (
+                <p className="mt-3 flex gap-2 rounded-xl bg-[var(--warn-tint)] px-3 py-2 text-[13px] text-[var(--warn)]" data-testid="trace-offalert">
+                  <TriangleAlert size={15} className="mt-0.5 shrink-0" aria-hidden /><span><b>Not part of this alert:</b> {trace.offAlert.join("; ")}. They don&apos;t count as evidence here.</span>
+                </p>
+              )}
+            </div>
+          )}
+        </section>
+
+        <section className="card p-5" data-testid="telco-decide-panel">
+          <h2>Decision</h2>
+          {done ? (
+            <div className="mt-3 text-[13.5px]" data-testid="telco-decided">
+              <p className="font-semibold">{done.action}</p>
+              <p className="mt-1"><span className={`chip ${done.agreed ? "chip-good" : "chip-warn"}`}>{done.agreed ? "Agreed with the AI" : "Overruled the AI"}</span> <span className="muted">{done.reason}{done.note ? `: ${done.note}` : ""}</span></p>
+              <p className="mt-1 muted">{done.by} · {when(done.at)}</p>
+              {done.reported.length > 0 && <p className="mt-2 text-[var(--phone)]">Reported to DoT: {done.reported.length} linked number{done.reported.length > 1 ? "s" : ""} now rated High for banks.</p>}
+              <div className="mt-3 border-t border-[var(--line)] pt-3">
+                <p className="label">What the records hold</p>
+                <ul className="mt-1.5 space-y-1.5" data-testid="telco-facts">
+                  {a.facts.map((f) => <li key={f} className="flex gap-2"><span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[var(--muted)]" />{f}</li>)}
+                </ul>
+                {a.clash && (
+                  <p className="mt-3 flex gap-2 rounded-xl bg-[var(--warn-tint)] px-3 py-2 text-[13.5px] text-[var(--warn)]" data-testid="telco-clash">
+                    <TriangleAlert size={16} className="mt-0.5 shrink-0" aria-hidden /><span><b>The trap on this alert:</b> {a.clash}</span>
+                  </p>
+                )}
+              </div>
+            </div>
+          ) : !trace ? (
+            <p className="mt-3 text-[13px] muted" data-testid="decide-locked"><Lock size={13} className="mr-1 inline" aria-hidden />Save a trace in the workbench to decide. Each action needs its own evidence.</p>
+          ) : readyOpts.length === 0 ? (
+            <div className="mt-3" data-testid="none-ready">
+              <p className="text-[13.5px]">Your trace (version {trace.version}) doesn&apos;t hold the evidence for any action yet. Each one needs:</p>
+              <ul className="mt-2 space-y-2 text-[13.5px]">
+                {trace.actions.map((x) => (
+                  <li key={x.action} data-testid={`opt-${x.action}`} data-ready="no"><span className="font-medium">{labels[x.action]}</span>{x.action === a.ai.suggest && <span className="chip chip-phone ml-1.5">AI</span>}<span className="block text-[12.5px] muted">Still missing: {x.missing.join("; ")}</span></li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <ActForm action={telcoDecideAction} hidden={{ alert: a.id }} label="Record decision" variant="phone" testid="telco-decide" className="mt-3 space-y-3">
+              <p className="text-[12.5px] muted">Based on your trace, version {trace.version}. An action opens only when your pins hold the evidence it needs.</p>
+              <fieldset className="space-y-1.5">
+                <legend className="label mb-1">Your call</legend>
+                {trace.actions.map((x) => (
+                  <label key={x.action} data-ready={x.ready ? "yes" : "no"} data-testid={`opt-${x.action}`} className={`flex items-start gap-2.5 rounded-xl px-2.5 py-2 text-[14px] transition-colors ${x.ready ? "cursor-pointer hover:bg-white/70 has-[:checked]:bg-[var(--accent-tint)]" : "opacity-60"}`}>
+                    <input type="radio" name="action" value={x.action} disabled={!x.ready} defaultChecked={x.action === pick} className="mt-1 accent-[var(--phone)]" data-testid={`t-option-${x.action}`} />
+                    <span>{labels[x.action]}{x.action === a.ai.suggest && <span className="chip chip-phone ml-1.5">AI</span>}
+                      {!x.ready && <span className="mt-0.5 block text-[12px] muted">Still missing: {x.missing.join("; ")}</span>}
+                    </span>
+                  </label>
+                ))}
+              </fieldset>
+              <label className="block"><span className="label">Reason</span>
+                <select name="reason" className="input mt-1" defaultValue={reasons[0]} data-testid="t-reason">
+                  {reasons.map((r) => <option key={r}>{r}</option>)}
+                </select>
+              </label>
+              <input name="note" placeholder="Note (what you checked)" className="input" />
+              {a.options.includes("BAR_IMEI") && (
+                <label className="flex items-start gap-3 rounded-2xl bg-[var(--phone-tint)] px-3.5 py-3 text-[13px]">
+                  <input type="checkbox" name="ceir" className="switch mt-0.5" data-testid="t-ceir" />
+                  <span><b>Also ask DoT for a national block</b> (CEIR), if you bar the handset. Telco-A&apos;s bar works only on its own network; CEIR blocks the handset on every network in India.</span>
+                </label>
+              )}
+              {a.reportable && linked.length > 0 && (
+                <label className="flex items-start gap-3 rounded-2xl bg-[var(--phone-tint)] px-3.5 py-3 text-[13px]">
+                  <input type="checkbox" name="report" defaultChecked className="switch mt-0.5" data-testid="t-report" />
+                  <span><b>Report to DoT</b> (through DIP). These phones were activated through the same retailer the same week and sit on mule accounts:
+                    <span className="mt-1 block mono text-[12px]">{linked.map((l) => `${l.msisdn} (${l.name}, now ${l.band})`).join(" · ")}</span>
+                    <span className="mt-1 block muted">DoT can raise their fraud-risk rating to High. Banks see only that rating.</span>
+                  </span>
+                </label>
+              )}
+            </ActForm>
+          )}
+        </section>
+
+        {done && (
         <section className="card p-5" data-testid="trace">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2>Number trace</h2>
-              <p className="mt-0.5 text-[13.5px] muted">From Telco-A&apos;s call records. They stay inside Telco-A: banks only ever see DoT&apos;s risk rating.</p>
+              <h2>The whole picture</h2>
+              <p className="mt-0.5 text-[13.5px] muted">After the decision: everything the records link to this {a.kind === "IMEI" ? "handset" : "number"}, to check your trace against.</p>
             </div>
             {step === 0 ? (
-              <button type="button" className="btn btn-phone" onClick={() => setStep(1)} data-testid="run-trace">Run the trace</button>
+              <button type="button" className="btn btn-ghost" onClick={() => setStep(1)} data-testid="replay-trace"><Play size={14} aria-hidden />Replay</button>
             ) : finished ? (
-              <span className="chip chip-good" data-testid="trace-done"><Check size={13} aria-hidden />Trace complete</span>
+              <span className="chip chip-good" data-testid="trace-done"><Check size={13} aria-hidden />Replayed</span>
             ) : (
-              <span className="flex items-center gap-2 text-[13px] muted"><span className="spinner" />Tracing…</span>
+              <span className="flex items-center gap-2 text-[13px] muted"><span className="spinner" />Replaying…</span>
             )}
           </div>
           <div className="thread mt-4"><div className="thread-fill" style={{ width: `${(step / STEPS) * 100}%`, background: "#0d0d0d" }} /></div>
-
-          {step === 0 ? (
-            <p className="mt-6 py-10 text-center text-[14px] muted" data-testid="trace-empty">Press <b className="text-[var(--fg)]">Run the trace</b> to read Telco-A&apos;s call records for this {a.kind === "IMEI" ? "handset" : "number"}.</p>
-          ) : <Graph view={view} step={step} />}
+          {step > 0 && <Graph view={view} step={step} />}
 
           <ol className={`${step === 0 ? "hidden" : ""} mt-4 space-y-1.5 text-[13.5px]`} data-testid="trace-log">
             {view.log.map((line, i) => (
@@ -60,8 +169,9 @@ export function NumberTrace({ a, view, labels, reasons, done, packetAt, linked, 
             ))}
           </ol>
         </section>
+        )}
 
-        {(view.shown.length > 0 || view.cash.length > 0) && (
+        {done && (view.shown.length > 0 || view.cash.length > 0) && (
           <section className={`grid gap-5 transition-opacity duration-700 lg:grid-cols-2 ${step >= 5 ? "opacity-100" : "pointer-events-none opacity-0"}`}>
             {view.shown.length > 0 && (
               <div className="card p-5" data-testid="shown-numbers">
@@ -103,14 +213,20 @@ export function NumberTrace({ a, view, labels, reasons, done, packetAt, linked, 
       </div>
 
       <aside className="min-w-0 space-y-5 xl:sticky xl:top-24">
+        {!trace ? (
+          <section className="card p-5 text-[13.5px]" data-testid="ai-locked">
+            <h2>Network counters and Telco-A&apos;s AI</h2>
+            <p className="mt-2 muted"><Lock size={13} className="mr-1 inline" aria-hidden />They open once you have saved a trace, so your first read of the records is your own.</p>
+          </section>
+        ) : <>
         <section className="card p-5" data-testid="signals">
           <h2>Network counters</h2>
           <ul className="mt-3 space-y-3">
             {a.gauges.map((g, i) => (
               <li key={g.label} data-testid="gauge">
-                <div className="flex items-baseline justify-between gap-3 text-[13.5px]"><span>{g.label}</span><span className={`font-medium ${step >= 3 ? "" : "opacity-0"} transition-opacity`}>{g.text}</span></div>
+                <div className="flex items-baseline justify-between gap-3 text-[13.5px]"><span>{g.label}</span><span className="font-medium">{g.text}</span></div>
                 <div className="thread mt-1.5" style={{ height: 5 }}>
-                  <div className="thread-fill" style={{ width: step >= 3 ? `${g.level * 100}%` : "0%", transitionDelay: `${i * 120}ms`, background: g.bad ? "var(--warn)" : "var(--good)" }} />
+                  <div className="thread-fill" style={{ width: `${g.level * 100}%`, transitionDelay: `${i * 120}ms`, background: g.bad ? "var(--warn)" : "var(--good)" }} />
                 </div>
               </li>
             ))}
@@ -124,66 +240,17 @@ export function NumberTrace({ a, view, labels, reasons, done, packetAt, linked, 
           </div>
           <p className="mt-1 text-[17px] font-semibold">{labels[a.ai.suggest]}</p>
           <p className="mt-2 text-[13px] muted">Because of: {a.ai.drivers.join("; ")}.</p>
-          <p className="mt-2 text-[12.5px] muted">It reads network counters only. It does not see company registrations, police letters or who owned the number before.</p>
+          <p className="mt-2 text-[12.5px] muted">It reads network counters only. It does not see company registrations, police letters or who owned the number before. That part is your trace.</p>
         </section>
-
-        <section className={`card p-5 transition-opacity duration-500 opacity-100`} data-testid="telco-decide-panel">
-          <h2>What the records show</h2>
-          <ul className="mt-2 space-y-1.5 text-[13.5px]">
-            {a.facts.map((f) => <li key={f} className="flex gap-2"><span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-[var(--muted)]" />{f}</li>)}
-          </ul>
-          {finished && a.clash && (
-            <p className="mt-3 flex gap-2 rounded-xl bg-[var(--warn-tint)] px-3 py-2 text-[13.5px] text-[var(--warn)]" data-testid="telco-clash">
-              <TriangleAlert size={16} className="mt-0.5 shrink-0" aria-hidden /><span><b>Check before acting:</b> {a.clash}</span>
-            </p>
-          )}
-
-          {done ? (
-            <div className="mt-4 border-t border-[var(--line)] pt-4 text-[13.5px]" data-testid="telco-decided">
-              <p className="font-semibold">{done.action}</p>
-              <p className="mt-1"><span className={`chip ${done.agreed ? "chip-good" : "chip-warn"}`}>{done.agreed ? "Agreed with the AI" : "Overruled the AI"}</span> <span className="muted">{done.reason}{done.note ? `: ${done.note}` : ""}</span></p>
-              <p className="mt-1 muted">{done.by} · {when(done.at)}</p>
-              {done.reported.length > 0 && <p className="mt-2 text-[var(--phone)]">Reported to DoT: {done.reported.length} linked number{done.reported.length > 1 ? "s" : ""} now rated High for banks.</p>}
-            </div>
-          ) : !finished ? (
-            <p className="mt-4 border-t border-[var(--line)] pt-3 text-[13px] muted"><Lock size={13} className="mr-1 inline" aria-hidden />Run the trace to decide.</p>
-          ) : (
-            <ActForm action={telcoDecideAction} hidden={{ alert: a.id }} label="Record decision" variant="phone" testid="telco-decide" className="mt-4 space-y-3 border-t border-[var(--line)] pt-4">
-              <fieldset className="space-y-1.5">
-                <legend className="label mb-1">Your call</legend>
-                {a.options.map((o) => (
-                  <label key={o} className="flex cursor-pointer items-start gap-2.5 rounded-xl px-2.5 py-2 text-[14px] transition-colors hover:bg-white/70 has-[:checked]:bg-[var(--accent-tint)]">
-                    <input type="radio" name="action" value={o} defaultChecked={o === a.ai.suggest} className="mt-1 accent-[var(--phone)]" data-testid={`t-option-${o}`} />
-                    <span>{labels[o]}{o === a.ai.suggest && <span className="chip chip-phone ml-1.5">AI</span>}</span>
-                  </label>
-                ))}
-              </fieldset>
-              <label className="block"><span className="label">Reason</span>
-                <select name="reason" className="input mt-1" defaultValue={reasons[0]} data-testid="t-reason">
-                  {reasons.map((r) => <option key={r}>{r}</option>)}
-                </select>
-              </label>
-              <input name="note" placeholder="Note (what you checked)" className="input" />
-              {a.reportable && linked.length > 0 && (
-                <label className="flex items-start gap-3 rounded-2xl bg-[var(--phone-tint)] px-3.5 py-3 text-[13px]">
-                  <input type="checkbox" name="report" defaultChecked className="switch mt-0.5" data-testid="t-report" />
-                  <span><b>Report to DoT</b> (through DIP). These phones were activated through the same retailer the same week and sit on mule accounts:
-                    <span className="mt-1 block mono text-[12px]">{linked.map((l) => `${l.msisdn} (${l.name}, now ${l.band})`).join(" · ")}</span>
-                    <span className="mt-1 block muted">DoT can raise their fraud-risk rating to High. Banks see only that rating.</span>
-                  </span>
-                </label>
-              )}
-            </ActForm>
-          )}
-        </section>
+        </>}
 
         {a.cases.length > 0 && a.calls.length > 0 && (
           <section className="card p-5" data-testid="police-panel">
             <h2 className="flex items-center gap-2"><ShieldAlert size={17} className="text-[var(--phone)]" aria-hidden />Police packet</h2>
             <p className="mt-1 text-[13.5px] muted">The {a.calls.length} call records, for the investigating officer on {a.cases.join(", ")} only. The bank never receives them.</p>
             {packetAt ? <p className="mt-3 chip chip-good" data-testid="packet-done">Prepared {when(packetAt)}</p>
-              : finished ? <ActForm action={policePacketAction} hidden={{ alert: a.id }} label="Prepare for police" variant="ghost" size="sm" testid="police-packet" className="mt-3" />
-              : <p className="mt-3 text-[13px] muted"><Lock size={13} className="mr-1 inline" aria-hidden />After the trace.</p>}
+              : trace ? <ActForm action={policePacketAction} hidden={{ alert: a.id }} label="Prepare for police" variant="ghost" size="sm" testid="police-packet" className="mt-3" />
+              : <p className="mt-3 text-[13px] muted"><Lock size={13} className="mr-1 inline" aria-hidden />After you save a trace.</p>}
           </section>
         )}
         <p className="text-[12px] muted">Demo clock {when(now)}</p>

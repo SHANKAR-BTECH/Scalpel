@@ -7,6 +7,7 @@ import { W } from "@/lib/server/world";
 import { alertById, traceView, ACTION_LABEL, TREASONS } from "@/lib/server/telco";
 import { NumberTrace } from "@/components/NumberTrace";
 import { userById } from "@/lib/users";
+import { checkTrace } from "@/lib/server/tracecheck";
 
 export default async function TelcoAlert({ params }: { params: Promise<{ id: string }> }) {
   await requireUser("telco");
@@ -16,6 +17,9 @@ export default async function TelcoAlert({ params }: { params: Promise<{ id: str
   const d = await desk();
   const t = d.telcoByAlert.get(a.id);
   const band = (msisdn: string) => d.fri.get(msisdn)?.band ?? W.phones.find((p) => p.msisdn === msisdn)?.fri ?? "LOW";
+  const tr = d.traces.get(a.id);
+  const chk = tr ? checkTrace(a.id, tr.pins) : null;
+  const trace = tr && chk ? { version: tr.version, by: userById(tr.by)?.name ?? tr.by, at: tr.at, pins: tr.pins.length, ...chk } : null;
   const BAND: Record<string, string> = { HIGH: "High", MEDIUM: "Medium", LOW: "Low" };
   return (
     <div>
@@ -29,7 +33,7 @@ export default async function TelcoAlert({ params }: { params: Promise<{ id: str
       </div>
       <div className="mt-5">
         <NumberTrace
-          a={a} view={traceView(a)} labels={ACTION_LABEL} reasons={TREASONS} now={d.now} packetAt={d.packets.get(a.id) ?? null}
+          a={a} view={traceView(a)} labels={ACTION_LABEL} reasons={TREASONS} now={d.now} trace={trace} packetAt={d.packets.get(a.id) ?? null}
           linked={a.linked.map((l) => ({ ...l, band: BAND[band(l.msisdn)] ?? band(l.msisdn) }))}
           done={t ? { action: ACTION_LABEL[t.action], agreed: t.agreed, reason: t.reason, note: t.note, by: userById(t.by)?.name ?? t.by, at: t.at, reported: t.reported } : null}
         />

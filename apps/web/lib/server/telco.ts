@@ -14,6 +14,7 @@
  * Call records never go to the bank; they go to police only, on a police request.
  */
 import { W, model, type WCall } from "./world";
+import { callRecords } from "./lookup";
 
 export type TAction = "BAR_IMEI" | "BLOCK_ROUTE" | "DISCONNECT" | "REVERIFY" | "KEEP_LIVE" | "LABEL_SPAM" | "CLEAR_REPORT" | "GENUINE";
 
@@ -48,7 +49,11 @@ export interface Alert {
 }
 
 const DAY = 86_400_000;
-const pct = (x: number) => `${Math.round(x * 100)}%`;
+const pct = (x: number) => (x > 0 && x < 0.01 ? "under 1%" : `${Math.round(x * 100)}%`);
+/** Counters straight from Telco-A's call records, so the alert page and the workbench never disagree. */
+/** "9 hours", "1 day", "3 days" from a fraction of days. */
+const gap = (d: number) => { const h = Math.max(1, Math.round(d * 24)), n = Math.round(d); return d < 1 ? `${h} hour${h === 1 ? "" : "s"}` : `${n} day${n === 1 ? "" : "s"}`; };
+const rec = (v: string) => callRecords(v, null, null).stats;
 const g = (label: string, text: string, level: number, bad: boolean): Gauge => ({ label, text, level: Math.max(0.04, Math.min(1, level)), bad });
 
 /** The scorecard. Each counter that looks like a SIM box or a fraud line adds weight; the top ones are the drivers. */
@@ -59,7 +64,7 @@ function score(s: { sims: number; inRatio: number; cells: number; distinctPerDay
   if (s.cells === 1) hits.push([0.12, "never moves from one cell tower"]);
   if (s.distinctPerDay > 40) hits.push([0.12, `${s.distinctPerDay} different numbers called a day`]);
   if (s.reports >= 5) hits.push([0.2, `${s.reports} citizen spam reports (Chakshu)`]);
-  if (s.swappedDays !== null && s.swappedDays < 7) hits.push([0.3, `SIM swapped ${s.swappedDays} day${s.swappedDays === 1 ? "" : "s"} before the calls`]);
+  if (s.swappedDays !== null && s.swappedDays < 7) hits.push([0.3, `SIM swapped ${gap(s.swappedDays)} before the calls`]);
   if (s.forwarding) hits.push([0.3, "call forwarding to an unknown number"]);
   const w = hits.reduce((a, [x]) => a + x, 0);
   const confidence = Math.min(0.97, 0.45 + w * 0.6);
@@ -106,11 +111,13 @@ export function alerts(): Alert[] {
     const calls = W.calls.filter((c) => c.imei === r.imei);
     const victims = new Set(calls.map((c) => c.to)).size;
     const avg = Math.round(calls.reduce((s, c) => s + c.seconds, 0) / Math.max(1, calls.length));
-    const perDay = Math.round((victims * 11) / days(calls)) + (r.kind === "simbox" ? 48 : 9);
-    const inRatio = r.kind === "simbox" ? 0.01 : 0.06;
+    // The counters are Telco-A's own records for the handset, the same ones the engineer reads in the workbench.
+    const st = callRecords(r.imei, null, null).stats;
+    const perDay = Math.round(st.perDay);
+    const inRatio = st.inRatio;
     const activations = r.sims.map((s) => s.activatedAt);
     const spread = Math.max(1, Math.round((Math.max(...activations) - Math.min(...activations)) / DAY));
-    const sc = score({ sims: r.sims.length, inRatio, cells: 1, distinctPerDay: perDay, avgSec: avg, reports: 0, swappedDays: null, forwarding: false, route: r.route });
+    const sc = score({ sims: r.sims.length, inRatio, cells: st.towers.length, distinctPerDay: perDay, avgSec: avg, reports: 0, swappedDays: null, forwarding: false, route: r.route });
     const cases = m.casesOfRig.get(r.id) ?? [];
     const suggest: TAction = r.route ? "BLOCK_ROUTE" : "BAR_IMEI";
     const clash = r.route && r.genuineLinesOnRoute > 0
@@ -124,12 +131,12 @@ export function alerts(): Alert[] {
         g("SIMs in this handset", `${r.sims.length}`, r.sims.length / 50, r.sims.length > 5),
         g("Incoming calls", pct(inRatio), inRatio * 4, inRatio < 0.12),
         g("Different numbers a day", `${perDay}`, perDay / 120, perDay > 40),
-        g("Cell towers seen", "1", 0.15, true),
+        g("Cell towers seen", `${st.towers.length}`, Math.min(1, st.towers.length / 8), st.towers.length <= 1),
         g("SIMs activated within", `${spread} days, one retailer`, 1 - spread / 60, spread < 30),
         g("Data and SMS use", "none", 0.05, true),
       ],
       ai: { suggest, confidence: sc.confidence, drivers: sc.drivers }, options: r.route ? ["BLOCK_ROUTE", "BAR_IMEI", "KEEP_LIVE"] : ["BAR_IMEI", "KEEP_LIVE"],
-      facts: [`${calls.length} calls to ${victims} people, ${avg >= 120 ? `${Math.round(avg / 60)} min` : `${avg} s`} on average`, `Linked to bank cases ${cases.join(", ") || "none"}`, r.route ? `Calls leave through ${r.route}` : "No gateway route"],
+      facts: [`${calls.length} of its calls reached ${victims} people who later reported fraud, ${avg >= 120 ? `${Math.round(avg / 60)} min` : `${avg} s`} on average`, `Linked to bank cases ${cases.join(", ") || "none"}`, r.route ? `Calls leave through ${r.route}` : "No gateway route"],
       clash, cases, sims: r.sims.map((s) => ({ msisdn: s.msisdn, kycName: s.kycName, activatedAt: s.activatedAt, calls: calls.filter((c) => c.realSim === s.msisdn).length })),
       calls: traceCalls(calls), linked: linkedFor(cases), reportable: true,
     });
@@ -137,18 +144,19 @@ export function alerts(): Alert[] {
   W.soloSims.forEach((s, i) => {
     const calls = W.calls.filter((c) => c.imei === s.imei);
     const first = Math.min(...calls.map((c) => c.at));
-    const swappedDays = Math.max(0, Math.round((first - s.swappedAt) / DAY));
+    const swappedDays = Math.max(0, (first - s.swappedAt) / DAY);
     const longOwner = i === 1; // planted: this number has had one owner for 9 years before the swap
-    const sc = score({ sims: 1, inRatio: 0.2, cells: 3, distinctPerDay: 14, avgSec: 0, reports: 0, swappedDays, forwarding: false, route: null });
+    const st = rec(s.msisdn);
+    const sc = score({ sims: 1, inRatio: st.inRatio, cells: st.towers.length, distinctPerDay: Math.round(st.perDay), avgSec: 0, reports: 0, swappedDays, forwarding: false, route: null });
     const cases = m.casesOfRig.get(s.msisdn) ?? [];
     list.push({
       id: `SIM-${i + 1}`, kind: "MSISDN", value: s.msisdn, tone: longOwner ? "lookalike" : "fraud",
       title: "One SIM, swapped just before the calls", sub: `${s.msisdn} · IMEI ${s.imei}`, rule: "SIM swap followed by calls to victims",
       gauges: [
-        g("SIM swapped before calls", `${swappedDays} days`, 1 - swappedDays / 10, swappedDays < 7),
+        g("SIM swapped before calls", gap(swappedDays), 1 - swappedDays / 10, swappedDays < 7),
         g("Number owned for", longOwner ? "9 years" : "12 days", longOwner ? 0.95 : 0.05, !longOwner),
-        g("Incoming calls", "20%", 0.4, false),
-        g("Cell towers seen", "3", 0.3, false),
+        g("Incoming calls", pct(st.inRatio), st.inRatio * 2, st.inRatio < 0.12),
+        g("Cell towers seen", `${st.towers.length}`, Math.min(1, st.towers.length / 12), st.towers.length <= 1),
         g("Victims called", `${new Set(calls.map((c) => c.to)).size}`, calls.length / 50, true),
       ],
       ai: { suggest: "DISCONNECT", confidence: sc.confidence, drivers: sc.drivers }, options: ["DISCONNECT", "REVERIFY", "KEEP_LIVE"],
@@ -163,15 +171,16 @@ export function alerts(): Alert[] {
   if (mulePhone) {
     const v = m.accounts.get(mulePhone.account)!;
     const caseId = m.caseOfAccount.get(mulePhone.account) ?? null;
-    const sc = score({ sims: 1, inRatio: 0.3, cells: 2, distinctPerDay: 6, avgSec: 60, reports: 0, swappedDays: null, forwarding: true, route: null });
+    const st = rec(mulePhone.msisdn);
+    const sc = score({ sims: 1, inRatio: st.inRatio, cells: st.towers.length, distinctPerDay: Math.round(st.perDay), avgSec: 60, reports: 0, swappedDays: null, forwarding: true, route: null });
     list.push({
       id: "FWD-1", kind: "MSISDN", value: mulePhone.msisdn, tone: "fraud",
       title: "Bank-account phone forwarding its calls", sub: `${mulePhone.msisdn} · IMEI ${mulePhone.imei}`, rule: "Call forwarding on a number tied to a reported account",
       gauges: [
         g("Call forwarding", "on, to an unknown number", 0.9, true),
         g("OTP messages forwarded", "11 in 3 days", 0.7, true),
-        g("Incoming calls", "30%", 0.6, false),
-        g("Cell towers seen", "2", 0.2, false),
+        g("Incoming calls", pct(st.inRatio), st.inRatio, st.inRatio < 0.12),
+        g("Cell towers seen", `${st.towers.length}`, Math.min(1, st.towers.length / 12), st.towers.length <= 1),
       ],
       ai: { suggest: "DISCONNECT", confidence: sc.confidence, drivers: sc.drivers }, options: ["DISCONNECT", "KEEP_LIVE"],
       facts: [`Registered to the holder of account ${mulePhone.account} at Bharat Demo Bank`, caseId ? `That account is on ${caseId}` : "No bank case yet", "Police letter on file: keep the line live, the gang is being traced through it"],
@@ -179,18 +188,20 @@ export function alerts(): Alert[] {
       cases: caseId ? [caseId] : [], sims: [], calls: [], linked: [{ msisdn: mulePhone.msisdn, account: mulePhone.account, name: v.a.holder.name, caseId }], reportable: true,
     });
   }
+  const biz = rec("006120774318842"), spam = rec("+91 08012 44770");
+  const bizDay = Math.round(biz.perDay), spamDay = Math.round(spam.perDay);
   list.push({
     id: "BIZ-1", kind: "IMEI", value: "006120774318842", tone: "lookalike",
     title: "SIM bank with 24 SIMs", sub: "IMEI 006120774318842 · cell TA-KA-0112", rule: "Bypass rule: many SIMs, one device, no incoming",
     gauges: [
       g("SIMs in this handset", "24", 24 / 50, true),
-      g("Incoming calls", "8%", 0.32, true),
-      g("Different numbers a day", "310", 1, true),
+      g("Incoming calls", pct(biz.inRatio), biz.inRatio * 4, true),
+      g("Different numbers a day", `${bizDay}`, Math.min(1, bizDay / 120), true),
       g("Cell towers seen", "1", 0.15, true),
       g("SIMs registered to", "one company (enterprise KYC)", 0.9, false),
       g("Data and SMS use", "SMS with registered header", 0.7, false),
     ],
-    ai: { suggest: "BAR_IMEI", confidence: 0.86, drivers: ["24 SIMs used in one handset", "almost no incoming calls (8%)", "310 different numbers called a day"] },
+    ai: { suggest: "BAR_IMEI", confidence: 0.86, drivers: ["24 SIMs used in one handset", `almost no incoming calls (${pct(biz.inRatio)})`, `${bizDay} different numbers called a day`] },
     options: ["BAR_IMEI", "GENUINE", "REVERIFY"],
     facts: ["SIMs registered under enterprise KYC to Swift Parcel Logistics Pvt Ltd, Bengaluru", "Messages go out under a registered DLT header (SWFTPL)", "Called numbers are customers with a delivery that day; 0 fraud complaints"],
     clash: "Every counter looks like a SIM box, but this is a delivery company's call centre calling its own customers, on SIMs registered to the company. Barring it stops deliveries, not fraud.",
@@ -201,11 +212,11 @@ export function alerts(): Alert[] {
     title: "Number reported as spam 14 times", sub: "+91 08012 44770 · City Care Hospital, Pune", rule: "Spam reports above the review threshold",
     gauges: [
       g("Citizen spam reports", "14 in 7 days", 0.8, true),
-      g("Different numbers a day", "180", 0.9, true),
-      g("Average call", "38 s", 0.3, false),
+      g("Different numbers a day", `${spamDay}`, Math.min(1, spamDay / 160), true),
+      g("Average call", `${spam.avgSec} s`, 0.3, false),
       g("Registered sender", "yes, transactional (DLT)", 0.9, false),
     ],
-    ai: { suggest: "LABEL_SPAM", confidence: 0.74, drivers: ["14 citizen spam reports (Chakshu)", "180 different numbers called a day"] },
+    ai: { suggest: "LABEL_SPAM", confidence: 0.74, drivers: ["14 citizen spam reports (Chakshu)", `${spamDay} different numbers called a day`] },
     options: ["LABEL_SPAM", "CLEAR_REPORT"],
     facts: ["Registered to City Care Hospital as a transactional sender", "Calls are appointment reminders to patients on the hospital's list", "Reports started after a reminder campaign for a vaccination drive"],
     clash: "Citizens reported it, but it is a registered hospital line sending appointment reminders. Labelling it spam means patients ignore real reminders.",

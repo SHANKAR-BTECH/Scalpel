@@ -84,20 +84,48 @@ test("each person only reaches their own pages", async ({ browser }) => {
   await expect(anon).toHaveURL(/\/login/);
 });
 
-test("Telco-A traces a SIM box, decides with its AI, reports to DoT; the bank's AI updates; spoofed numbers are refused", async ({ browser }) => {
+test("Telco-A engineer builds the trace, the decision opens only when the evidence fits, DoT gets the report; spoofed numbers are refused", async ({ browser }) => {
   const imran = await as(browser, "imran");
   await expect(imran.getByTestId("alert-card")).toHaveCount(8);
-  await imran.getByTestId("alert-card").first().getByTestId("open-trace").click();
-  await imran.getByTestId("run-trace").click();
-  await expect(imran.getByTestId("trace-done")).toBeVisible({ timeout: 15_000 });
-  await expect(imran.getByTestId("telco-clash")).toContainText("genuine business lines");
+  await imran.goto("/telco/RIG-1");
+  // Reset leaves a half-built trace: handset and tower only. Barring the handset is not open yet.
+  await expect(imran.getByTestId("trace-saved")).toContainText("2 pins");
+  await expect(imran.getByTestId("opt-BAR_IMEI")).toHaveAttribute("data-ready", "no");
+  await expect(imran.getByTestId("opt-BAR_IMEI")).toContainText("SIMs");
+  await expect(imran.getByTestId("telco-clash")).toHaveCount(0);
+  await imran.getByTestId("open-workbench").click();
+  await imran.waitForURL("**/telco/work?alert=RIG-1");
+  await expect(imran.getByTestId("trace-step")).toHaveCount(2);
+  // Handset: look it up and pin all its SIMs.
+  await imran.getByTestId("tool-run").click();
+  await imran.getByTestId("pin-all-sims").click();
+  // Call records on the handset, then pin the statistics.
+  const imei = await imran.getByTestId("tool-input").inputValue();
+  await imran.getByTestId("tool-cdr").click();
+  await imran.getByTestId("tool-input").fill(imei);
+  await imran.getByTestId("tool-run").click();
+  await expect(imran.getByTestId("cdr-stats")).toBeVisible();
+  await imran.getByTestId("pin-stats").click();
+  await imran.getByTestId("tick-many").check();
+  await imran.getByTestId("ai-check").click();
+  await expect(imran.getByTestId("ready-BAR_IMEI")).toHaveAttribute("data-ready", "true");
+  await imran.getByTestId("save-trace").click();
+  await expect(imran.getByTestId("save-result")).toContainText("version 2");
+  await imran.goto("/telco/RIG-1");
+  await expect(imran.getByTestId("opt-BAR_IMEI")).toHaveAttribute("data-ready", "yes");
   await imran.getByTestId("t-option-BAR_IMEI").check();
   await imran.getByTestId("t-reason").selectOption("Would cut off genuine customers");
+  await imran.getByTestId("t-ceir").check();
   await imran.getByTestId("telco-decide").click();
   await expect(imran.getByTestId("telco-decided")).toContainText("Overruled the AI", { timeout: 10_000 });
   await expect(imran.getByTestId("telco-decided")).toContainText("Reported to DoT");
+  await expect(imran.getByTestId("telco-clash")).toContainText("genuine business lines");
+  await imran.getByTestId("replay-trace").click();
+  await expect(imran.getByTestId("trace-done")).toBeVisible({ timeout: 15_000 });
   await imran.getByTestId("police-packet").click();
   await expect(imran.getByTestId("packet-done")).toBeVisible({ timeout: 10_000 });
+  await imran.goto("/telco/work?alert=RIG-1");
+  await expect(imran.getByTestId("save-locked")).toBeVisible();
   await imran.goto("/telco");
   const spoof = imran.getByTestId("spoofed").locator("li").first();
   await spoof.getByTestId("try-spoof").click();
@@ -106,6 +134,8 @@ test("Telco-A traces a SIM box, decides with its AI, reports to DoT; the bank's 
   await expect(imran.getByTestId("sim-check-result")).toContainText("swapped");
   const meera = await as(browser, "meera");
   await expect(meera.getByTestId("telco-ledger-row")).toHaveCount(1);
+  await expect(meera.getByTestId("telco-evidence")).toContainText("Trace v2");
+  await expect(meera.getByTestId("telco-evidence")).toContainText("CEIR");
 });
 
 test("evidence file downloads and verifies; a changed file is caught", async ({ browser }) => {
@@ -153,6 +183,8 @@ test("pages fit a phone screen", async ({ browser }) => {
   await fits();
   await p.goto("/telco/work");
   await fits();
+  await p.goto("/telco/work?alert=RIG-1");
+  await fits();
 });
 
 test("officer and AI decide together; an overrule goes to the supervisor, who sends it back; compliance sees it", async ({ browser }) => {
@@ -190,37 +222,31 @@ test("officer and AI decide together; an overrule goes to the supervisor, who se
   await expect(meera.getByTestId("flash")).toContainText("caught it");
 });
 
-test("Telco-A engineer builds a SIM trace by hand; the AI only checks the pins", async ({ browser }) => {
+test("an alert with no trace keeps the decision locked; the free workbench only looks things up", async ({ browser }) => {
   const imran = await as(browser, "imran");
+  await imran.goto("/telco/SIM-2");
+  await expect(imran.getByTestId("trace-empty")).toBeVisible();
+  await expect(imran.getByTestId("decide-locked")).toBeVisible();
+  await expect(imran.getByTestId("ai-locked")).toBeVisible();
+  await expect(imran.getByTestId("telco-decide")).toHaveCount(0);
+  await expect(imran.getByTestId("police-packet")).toHaveCount(0);
+  // Free workbench: leads, lookups and pins, but no check or save outside an alert.
   await imran.goto("/telco/work");
   await expect(imran.getByTestId("pins-empty")).toBeVisible();
-  await expect(imran.getByTestId("ai-check")).toBeDisabled();
-  // Handset lookup from a lead: the engineer pins the handset, its tower and its SIMs.
-  await imran.getByTestId("lead").filter({ hasText: "RIG-1" }).click();
+  await imran.getByTestId("lead").filter({ hasText: "RIG-2" }).click();
   await imran.getByTestId("tool-run").click();
   await expect(imran.getByTestId("imei-sim").first()).toBeVisible();
-  await imran.getByTestId("result-imei").getByTestId("pin").nth(0).click();
-  await imran.getByTestId("result-imei").getByTestId("pin").nth(1).click();
-  const sims = imran.getByTestId("imei-sim");
-  for (let i = 0; i < 5; i++) await sims.nth(i).getByTestId("pin").click();
-  // A first check: the AI says what is still missing (call records), never fills it in.
-  await imran.getByTestId("ai-check").click();
-  await expect(imran.getByTestId("ai-missing")).toContainText("call");
-  // Subscriber lookup on one SIM, then its call records.
-  const first = (await sims.first().locator("button.link").textContent())!.trim();
-  await sims.first().locator("button.link").click();
+  await imran.getByTestId("pin-handset").click();
+  await expect(imran.getByTestId("trace-step")).toHaveCount(1);
+  await expect(imran.getByTestId("ai-check")).toHaveCount(0);
+  await expect(imran.getByTestId("save-panel")).toHaveCount(0);
+  // On an alert: a subscriber lookup from a SIM, pin the number, and the check says what is still missing.
+  await imran.goto("/telco/work?alert=SIM-2");
   await imran.getByTestId("tool-run").click();
   await expect(imran.getByTestId("result-sub")).toContainText("Telco-A subscriber");
-  await imran.getByTestId("tool-cdr").click();
-  await imran.getByTestId("tool-input").fill(first);
-  await imran.getByTestId("tool-run").click();
-  const rows = imran.getByTestId("cdr-row");
-  await expect(rows.first()).toBeVisible();
-  const n = Math.min(5, await rows.count());
-  for (let i = 0; i < n; i++) await rows.nth(i).getByTestId("pin").click();
-  await imran.getByTestId("tick-many").check();
-  await imran.getByTestId("tick-tower").check();
+  await imran.getByTestId("result-sub").getByTestId("pin").first().click();
   await imran.getByTestId("ai-check").click();
   await expect(imran.getByTestId("ai-result")).toContainText("only your");
-  await expect(imran.getByTestId("trace-step").first()).toBeVisible();
+  await expect(imran.getByTestId("ready-REVERIFY")).toHaveAttribute("data-ready", "false");
+  await expect(imran.getByTestId("ready-REVERIFY")).toContainText("swap");
 });

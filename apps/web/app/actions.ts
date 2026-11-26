@@ -8,6 +8,7 @@ import { model } from "@/lib/server/world";
 import { USERS } from "@/lib/users";
 import { store } from "@/lib/server/store";
 import * as L from "@/lib/server/lookup";
+import { checkTrace, cleanPins } from "@/lib/server/tracecheck";
 
 export interface Result { ok: boolean; message: string; at?: number }
 
@@ -57,7 +58,7 @@ export async function telcoActAction(_: Result | null, f: FormData) {
   return run(async () => D.telcoAct(await me(), str(f, "kind") as "IMEI", str(f, "value")));
 }
 export async function telcoDecideAction(_: Result | null, f: FormData) {
-  return run(async () => D.telcoDecide(await me(), str(f, "alert"), str(f, "action"), str(f, "reason"), str(f, "note"), str(f, "report") === "on"));
+  return run(async () => D.telcoDecide(await me(), str(f, "alert"), str(f, "action"), str(f, "reason"), str(f, "note"), str(f, "report") === "on", str(f, "ceir") === "on"));
 }
 export async function policePacketAction(_: Result | null, f: FormData) {
   return run(async () => D.policePacket(await me(), str(f, "alert")));
@@ -117,5 +118,14 @@ async function telcoOnly() {
   if (!u || u.role !== "telco") throw new Error("Only Telco-A staff can use these tools.");
 }
 export async function lookupSubscriber(n: string) { await telcoOnly(); return L.subscriber(n); }
-export async function lookupCalls(n: string, fromDay: number | null, toDay: number | null) { await telcoOnly(); return L.callRecords(n, fromDay, toDay); }
+export async function lookupCalls(n: string, from: string | null, to: string | null) { await telcoOnly(); return L.callRecords(n, from, to); }
 export async function lookupHandset(imei: string) { await telcoOnly(); return L.handset(imei); }
+export async function lookupShop(pos: string) { await telcoOnly(); return L.shopLookup(pos); }
+export async function lookupTower(id: string) { await telcoOnly(); return L.tower(id); }
+export async function lookupSwitch(n: string) { await telcoOnly(); return L.switchLog(n); }
+export async function lookupRoute(id: string) { await telcoOnly(); return L.route(id); }
+export async function lookupDoc(doc: string) { await telcoOnly(); return L.kycDoc(doc); }
+export async function checkTraceAction(alert: string, pins: unknown) { await telcoOnly(); return checkTrace(alert, cleanPins(pins)); }
+export async function saveTraceAction(alert: string, pins: unknown, ticks: string[], note: string): Promise<Result> {
+  return run(async () => D.saveTrace(await me(), alert, pins, Array.isArray(ticks) ? ticks.filter((t) => typeof t === "string") : [], String(note ?? "")));
+}
