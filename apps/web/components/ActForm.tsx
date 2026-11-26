@@ -5,9 +5,9 @@ import type { Result } from "@/app/actions";
 
 type Act = (prev: Result | null, f: FormData) => Promise<Result>;
 
-export function ActForm({ action, children, label, variant = "primary", size, className = "", hidden, testid, pendingLabel }: {
+export function ActForm({ action, children, label, variant = "primary", size, className = "", hidden, testid, pendingLabel, disabled = false }: {
   action: Act; children?: React.ReactNode; label: React.ReactNode; variant?: "primary" | "ghost" | "danger" | "phone"; size?: "sm";
-  className?: string; hidden?: Record<string, string | number>; testid?: string; pendingLabel?: string;
+  className?: string; hidden?: Record<string, string | number>; testid?: string; pendingLabel?: string; disabled?: boolean;
 }) {
   const form = useRef<HTMLFormElement>(null);
   const [state, run, pending] = useActionState(async (prev: Result | null, f: FormData) => {
@@ -29,7 +29,7 @@ export function ActForm({ action, children, label, variant = "primary", size, cl
     }}>
       {hidden && Object.entries(hidden).map(([k, v]) => <input key={k} type="hidden" name={k} value={String(v)} />)}
       {children}
-      <button type="submit" disabled={pending} data-testid={testid} className={`btn btn-${variant} ${size === "sm" ? "btn-sm" : ""}`}>
+      <button type="submit" disabled={pending || disabled} data-testid={testid} className={`btn btn-${variant} ${size === "sm" ? "btn-sm" : ""}`}>
         {pending ? (pendingLabel ?? "Saving…") : label}
       </button>
       {shown && (

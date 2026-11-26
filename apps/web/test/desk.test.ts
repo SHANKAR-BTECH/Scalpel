@@ -7,6 +7,7 @@ import { decide, desk, holderReply, moveClock, phoneTarget, proposeHold, propose
 import { model, W } from "@/lib/server/world";
 import { userById } from "@/lib/users";
 
+const CHECKED = { checks: ["path", "amount", "police", "impact"], spot: null, seconds: 45, code: "" };
 const priya = userById("priya")!, vikram = userById("vikram")!, imran = userById("imran")!, asha = userById("asha")!;
 const target = () => [...model().accounts.values()].find((v) => v.traced > 500_000 && v.role === "mule")!;
 
@@ -17,8 +18,9 @@ async function flow() {
   let d = await desk();
   const p = d.proposals[0]!;
   await expect(decide(priya, p.pid, true, "")).rejects.toThrow(/supervisor/);
-  await decide(vikram, p.pid, true, "ok");
-  await expect(decide(vikram, p.pid, true, "twice")).rejects.toThrow(/already decided/);
+  await expect(decide(vikram, p.pid, true, "no checks")).rejects.toThrow(/Check all four/);
+  await decide(vikram, p.pid, true, "ok", CHECKED);
+  await expect(decide(vikram, p.pid, true, "twice", CHECKED)).rejects.toThrow(/already decided/);
   d = await desk();
   const h = d.holds[0]!;
   expect(h.hold.amount).toBe(v.traced);
@@ -54,7 +56,7 @@ describe("desk on Postgres (PGlite)", () => {
     const v = target();
     await proposeHold(priya, v.a.id, v.traced, "");
     const pid = (await desk()).proposals[0]!.pid;
-    const r = await Promise.allSettled([decide(vikram, pid, true, ""), decide(vikram, pid, true, "")]);
+    const r = await Promise.allSettled([decide(vikram, pid, true, "", CHECKED), decide(vikram, pid, true, "", CHECKED)]);
     expect(r.filter((x) => x.status === "fulfilled").length).toBe(1);
     expect((await desk()).holds.length).toBe(1);
   });
@@ -391,5 +393,55 @@ describe("Imran's signs come from his clues", () => {
     expect(r.signals.find((x) => x.key === "many")!.seen).toBe(true);
     expect(r.signals.find((x) => x.key === "many")!.why).toMatch(/\d+ SIMs/);
     expect(r.signals.find((x) => x.key === "owner")!.seen).toBe(false);
+  });
+});
+
+import { holdReview, spotAnswer } from "@/lib/server/review";
+import { holderName } from "@/lib/server/world";
+
+describe("Vikram checks the evidence before approving", () => {
+  beforeEach(() => useStore(new MemoryStore()));
+  async function proposed() {
+    const c = model().cases[0]!;
+    const v = [...model().accounts.values()].find((x) => c.accounts.includes(x.a.id) && aiView(x, START).suggest === "HOLD" && x.traced > 5000_00)!;
+    await saveTrail(priya, c.id, fullPins(c.id), {}, "");
+    await decideAccount(priya, v.a.id, "HOLD", "Evidence matches the suggestion", "");
+    const d = await desk();
+    return { d, pid: d.pendingByAccount.get(v.a.id)!.pid, v };
+  }
+  it("shows the path back to a victim, the pinned rows, and a spot-check whose answer stays on the server", async () => {
+    const { d, pid, v } = await proposed();
+    const r = holdReview(d, pid)!;
+    expect(r.path.at(-1)!.to).toBe(holderName(v.a));
+    expect(r.path[0]!.kind).toBe("payment");
+    expect(r.rows.length).toBeGreaterThan(0);
+    expect(JSON.stringify(r)).not.toContain('"expected"');
+    if (r.spot) {
+      const ans = spotAnswer(d, pid)!;
+      expect(Math.abs(Math.round((r.spot.amount * r.spot.victimBefore) / r.spot.balanceBefore) - ans)).toBeLessThanOrEqual(100);
+    }
+  });
+  it("approve needs all four checks and the spot-check; a wrong answer needs a note; send back needs a reason", async () => {
+    const { d, pid, v } = await proposed();
+    const ans = spotAnswer(d, pid);
+    await expect(decide(vikram, pid, true, "", { ...CHECKED, checks: ["path", "amount"] })).rejects.toThrow(/police request, holder impact/);
+    if (ans !== null) {
+      await expect(decide(vikram, pid, true, "", CHECKED)).rejects.toThrow(/spot-check/);
+      await expect(decide(vikram, pid, true, "", { ...CHECKED, spot: ans + 5000_00 })).rejects.toThrow(/doesn't match/);
+    }
+    await expect(decide(vikram, pid, false, "", { ...CHECKED, code: "" })).rejects.toThrow(/sending it back/);
+    await decide(vikram, pid, true, "", { ...CHECKED, spot: ans });
+    const p = (await desk()).proposals.find((x) => x.pid === pid)!;
+    expect(p.status).toBe("approved");
+    expect(p.review!.checks.length).toBe(4);
+    if (ans !== null) expect(p.review!.spot!.ok).toBe(true);
+    expect((await desk()).holdByAccount.has(v.a.id)).toBe(true);
+  });
+  it("sending back reopens the account for the officer with the reason", async () => {
+    const { pid, v } = await proposed();
+    await decide(vikram, pid, false, "check the second hop", { ...CHECKED, code: "Amount doesn't match the trail" });
+    const d = await desk();
+    expect(d.decisionByAccount.has(v.a.id)).toBe(false);
+    expect(d.returned.get(v.a.id)!.signoff!.note).toMatch(/Amount doesn't match the trail: check the second hop/);
   });
 });

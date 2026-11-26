@@ -6,6 +6,8 @@ import Link from "next/link";
 import { Check, ChevronRight, TriangleAlert, X } from "lucide-react";
 import { ActForm } from "./ActForm";
 import { decideAction, signoffAction } from "@/app/actions";
+import { HoldReview } from "./HoldReview";
+import type { HoldReview as Review } from "@/lib/server/review";
 
 export interface ApprovalItem {
   key: string; kind: "HOLD" | "RELEASE" | "OVERRULE";
@@ -14,7 +16,7 @@ export interface ApprovalItem {
   agreed: boolean | null; aiText: string | null; clash: string | null;
   traced: string; withinTraced: boolean | null; rules: string | null; score: string | null;
   officerChoice: string | null; reason: string | null; note: string | null;
-  pid?: string; did?: string;
+  pid?: string; did?: string; review?: Review | null;
 }
 
 const KIND: Record<ApprovalItem["kind"], string> = { HOLD: "Hold", RELEASE: "Release", OVERRULE: "Overrule" };
@@ -66,7 +68,7 @@ export function ApprovalBoard({ items }: { items: ApprovalItem[] }) {
           </div>
 
           <dl className="mt-5 grid gap-x-8 gap-y-4 text-[14px] md:grid-cols-2">
-            {cur.withinTraced !== null && (
+            {cur.withinTraced !== null && !cur.review && (
               <Row k="Right size">
                 {cur.withinTraced ? <span className="inline-flex items-center gap-1.5 text-[var(--good)]"><Check size={15} aria-hidden />Not more than the victims&apos; money</span>
                   : <span className="inline-flex items-center gap-1.5 text-[var(--bad)]"><X size={15} aria-hidden />More than the victims&apos; money</span>}
@@ -76,9 +78,9 @@ export function ApprovalBoard({ items }: { items: ApprovalItem[] }) {
             {cur.officerChoice && <Row k="Officer chose">{cur.officerChoice}</Row>}
             {cur.reason && <Row k="Officer's reason">{cur.reason}{cur.note ? <span className="block text-[13px] muted">&ldquo;{cur.note}&rdquo;</span> : null}</Row>}
             {cur.score && <Row k="Mule score">{cur.score}</Row>}
-            {cur.rules && <Row k="Rules">{cur.rules}</Row>}
+            {cur.rules && !cur.review && <Row k="Rules">{cur.rules}</Row>}
           </dl>
-          {cur.clash && <p className="mt-4 rounded-xl bg-[var(--warn-tint)] px-3 py-2 text-[13.5px] text-[var(--warn)]"><b>Evidence clashes:</b> {cur.clash}</p>}
+          {cur.clash && !cur.review && <p className="mt-4 rounded-xl bg-[var(--warn-tint)] px-3 py-2 text-[13.5px] text-[var(--warn)]"><b>Evidence clashes:</b> {cur.clash}</p>}
 
           <div className="mt-5 border-t border-[var(--line)] pt-4">
             {cur.mine ? <p className="chip chip-warn">You proposed this. Another supervisor must decide.</p>
@@ -89,7 +91,7 @@ export function ApprovalBoard({ items }: { items: ApprovalItem[] }) {
                     <input name="note" placeholder="Why (the officer sees this)" className="input flex-1 py-2" />
                   </ActForm>
                 </div>
-              ) : (
+              ) : cur.review ? <HoldReview pid={cur.pid!} r={cur.review} /> : (
                 <div className="flex flex-wrap items-start gap-3">
                   <ActForm action={decideAction} hidden={{ pid: cur.pid!, approve: "yes", note: "" }} label="Approve" testid="approve" />
                   <ActForm action={decideAction} hidden={{ pid: cur.pid!, approve: "no" }} label="Reject" variant="danger" testid="reject" className="flex min-w-[320px] flex-1 items-center gap-2">

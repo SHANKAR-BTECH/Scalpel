@@ -45,7 +45,10 @@ export async function proposeHoldAction(_: Result | null, f: FormData) {
   return run(async () => D.proposeHold(await me(), str(f, "account"), f.get("amount") ? rupeesToPaise(str(f, "amount")) : Number(str(f, "paise")), str(f, "note")));
 }
 export async function decideAction(_: Result | null, f: FormData) {
-  return run(async () => D.decide(await me(), str(f, "pid"), str(f, "approve") === "yes", str(f, "note")));
+  const spot = str(f, "spot").trim();
+  return run(async () => D.decide(await me(), str(f, "pid"), str(f, "approve") === "yes", str(f, "note"), {
+    checks: f.getAll("check").map(String), spot: spot ? rupeesToPaise(spot) : null, seconds: Number(str(f, "seconds")) || 0, code: str(f, "code"),
+  }));
 }
 export async function proposeReleaseAction(_: Result | null, f: FormData) {
   return run(async () => D.proposeRelease(await me(), str(f, "hold"), str(f, "note")));

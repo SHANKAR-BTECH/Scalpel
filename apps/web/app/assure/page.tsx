@@ -50,7 +50,7 @@ export default async function Assure() {
             </ul>
             <div className="mt-3 overflow-x-auto">
               <table className="table">
-                <thead><tr><th>When</th><th>Account</th><th>AI said</th><th>Person chose</th><th>Reason</th><th>Supervisor</th></tr></thead>
+                <thead><tr><th>When</th><th>Account</th><th>AI said</th><th>Person chose</th><th>Reason</th><th>Supervisor check</th></tr></thead>
                 <tbody>
                   {[...d.decisions].reverse().slice(0, 30).map((x) => (
                     <tr key={x.did} data-testid="ledger-row">
@@ -59,7 +59,12 @@ export default async function Assure() {
                       <td>{CHOICE_LABEL[x.ai.suggest]} <span className="muted">({Math.round(x.ai.confidence * 100)}%)</span></td>
                       <td><span className={`chip ${x.agreed ? "chip-good" : "chip-warn"}`}>{CHOICE_LABEL[x.choice]}</span> <span className="muted">by {userById(x.by)?.name ?? x.by}</span></td>
                       <td>{x.reason}{x.note ? <span className="muted">: {x.note}</span> : null}</td>
-                      <td>{x.signoff ? (x.signoff.approved ? <span className="text-[var(--good)]">agreed</span> : <span className="text-[var(--bad)]">sent back: {x.signoff.note}</span>) : x.needsSignoff || x.pid ? <span className="muted">waiting</span> : <span className="muted">not needed</span>}</td>
+                      <td>{x.signoff ? (x.signoff.approved ? <span className="text-[var(--good)]">agreed</span> : <span className="text-[var(--bad)]">sent back: {x.signoff.note}</span>) : x.needsSignoff || x.pid ? <span className="muted">waiting</span> : <span className="muted">not needed</span>}{(() => {
+                        const rv = x.pid ? d.proposals.find((q) => q.pid === x.pid)?.review : undefined;
+                        if (!rv) return null;
+                        const sp = rv.spot ? (rv.spot.ok ? "spot-check matched" : rv.spot.ok === false ? "spot-check DIFFERED" : "") : "no spot-check";
+                        return <span className={`block text-[12px] ${rv.seconds < 20 || rv.spot?.ok === false ? "text-[var(--warn)]" : "muted"}`} data-testid="review-trace">{rv.checks.length}/4 checks · {sp} · {rv.seconds < 60 ? `${rv.seconds} s` : `${Math.round(rv.seconds / 60)} min`}{rv.seconds < 20 ? " (very fast)" : ""}</span>;
+                      })()}</td>
                     </tr>
                   ))}
                 </tbody>

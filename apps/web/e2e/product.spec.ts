@@ -32,6 +32,21 @@ async function buildTrail(p: Page, upto = 6) {
   await p.goto("/case/CASE-001");
 }
 
+/** The supervisor's checks: open each piece of evidence, tick it, work out the spot-check share, then approve. */
+async function reviewAndApprove(p: Page) {
+  for (const k of ["path", "amount", "police", "impact"]) {
+    await p.getByTestId(`open-${k}`).click();
+    if (k === "amount" && (await p.getByTestId("spot").count())) {
+      const s = p.getByTestId("spot");
+      const [a, b, v] = await Promise.all(["data-amount", "data-before", "data-victim"].map((x) => s.getAttribute(x)));
+      await p.getByTestId("spot-in").fill(String((Number(a) * Number(v)) / Number(b) / 100));
+    }
+    await p.getByTestId(`checked-${k}`).check();
+  }
+  await expect(p.getByTestId("approve")).toBeEnabled();
+  await p.getByTestId("approve").click();
+}
+
 test.beforeEach(async ({ browser }) => {
   const admin = await as(browser, "asha");
   await admin.getByTestId("reset").click();
@@ -65,7 +80,9 @@ test("officer proposes, supervisor is notified live and approves, holder explain
   // Vikram's page updates by itself: bell count and the waiting item.
   await expect(vikram.getByTestId("bell-count")).toHaveText("1", { timeout: 12_000 });
   await expect(vikram.getByTestId("pending-item")).toHaveCount(1, { timeout: 12_000 });
-  await vikram.getByTestId("approve").click();
+  // Vikram can't approve from the summary: he opens each check, ticks it, and redoes the spot-check share.
+  await expect(vikram.getByTestId("approve")).toBeDisabled();
+  await reviewAndApprove(vikram);
   await expect(vikram.getByTestId("flash")).toContainText("Hold H-");
 
   await expect(priya.locator(`[data-account=${acct}]`).getByTestId("held-chip")).toBeVisible({ timeout: 12_000 });

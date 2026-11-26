@@ -15,6 +15,9 @@ import { aiView, REASONS, SIGNOFF_AT, CHOICE_LABEL, type Choice } from "./judge"
 import { alertById, ACTION_LABEL, TREASONS, type TAction } from "./telco";
 import { checkTrace, cleanPins, traceHash, type PinRef } from "./tracecheck";
 import { checkTrail, cleanTrail, reachedOf, trailHash } from "./trailcheck";
+import type { Json } from "@scalpel/engine";
+import { REVIEW_CHECKS, SEND_BACK_CODES, spotAnswer } from "./review";
+const REVIEW_LABEL: Record<string, string> = { path: "money path", amount: "amount", police: "police request", impact: "holder impact" };
 import type { TrailPin, TrailHolds } from "@/lib/trail";
 
 export const DAY = 86_400_000;
@@ -27,6 +30,7 @@ export async function demoNow(s?: Store): Promise<number> {
 export interface Proposal {
   pid: string; kind: "HOLD" | "RELEASE"; account: string; caseId: string; amount: number; holdId?: string; note: string;
   by: string; at: number; status: "pending" | "approved" | "rejected"; decidedBy?: string; decidedAt?: number; decisionNote?: string;
+  review?: { checks: string[]; spot: { typed: number | null; expected: number; ok: boolean | null } | null; seconds: number; code: string | null };
 }
 export interface HoldRow { hold: Hold; ref: string; caseId: string; requestId: string; clocks: ClockView[]; reply?: { text: string; fileName: string; at: number }; grmUploaded: boolean; placedBy: string; approvedBy: string }
 export interface TelcoAsk { aid: string; caseId: string; kind: "IMEI" | "MSISDN" | "ROUTE"; value: string; note: string; by: string; at: number; done?: TelcoAction }
@@ -98,7 +102,7 @@ export function fold(chain: AuditEntry[], now: number): Desk {
         break;
       case "DECIDE": {
         const x = proposals.get(p.pid);
-        if (x) Object.assign(x, { status: p.approved ? "approved" : "rejected", decidedBy: e.actor, decidedAt: e.at, decisionNote: p.note ?? "" });
+        if (x) Object.assign(x, { status: p.approved ? "approved" : "rejected", decidedBy: e.actor, decidedAt: e.at, decisionNote: p.note ?? "", review: p.review });
         // Deciding the hold that came from a decision is also the sign-off on that decision.
         for (const dd of decisions.values()) if (dd.pid === p.pid && dd.open) {
           dd.signoff = { by: e.actor, at: e.at, approved: p.approved, note: p.note ?? "" };
@@ -295,7 +299,9 @@ export async function proposeRelease(u: User, holdId: string, note: string): Pro
   return { message: `Release of ${row.ref} sent to the supervisor.` };
 }
 
-export async function decide(u: User, pid: string, approved: boolean, note: string): Promise<ActionResult> {
+export interface ReviewInput { checks: string[]; spot: number | null; seconds: number; code: string }
+
+export async function decide(u: User, pid: string, approved: boolean, note: string, review: ReviewInput = { checks: [], spot: null, seconds: 0, code: "" }): Promise<ActionResult> {
   must(u.role === "supervisor", "Only the supervisor approves.");
   const s = await store();
   const now = await demoNow(s);
@@ -306,7 +312,26 @@ export async function decide(u: User, pid: string, approved: boolean, note: stri
   must(pre, "Unknown proposal.");
   must(pre.by !== u.id, "You proposed this yourself. Someone else must approve it (two-person rule).");
   const v = model().accounts.get(pre.account)!;
-  const drafts: Omit<AuditEntry, "seq" | "prevHash" | "hash">[] = [{ at: now, actor: u.id, type: "DECIDE", caseId: pre.caseId, payload: { pid, approved, note } }];
+  // A hold is approved only after the supervisor has checked the evidence himself (four checks and a spot-check).
+  let rv: { [k: string]: Json } | null = null;
+  if (pre.kind === "HOLD") {
+    const d0 = fold(chain, now);
+    const checks = REVIEW_CHECKS.filter((c) => review.checks.includes(c));
+    const expected = spotAnswer(d0, pid);
+    const typed = review.spot;
+    const spotOk = expected === null ? null : typed !== null && Math.abs(typed - expected) <= 100_00;
+    if (approved) {
+      must(checks.length === REVIEW_CHECKS.length, `Check all four before approving: ${REVIEW_CHECKS.filter((c) => !checks.includes(c)).map((c) => REVIEW_LABEL[c]).join(", ")}.`);
+      must(expected === null || typed !== null, "Work out the spot-check share first.");
+      must(spotOk !== false || note.trim().length >= 5, "Your spot-check doesn't match the officer's trail. Write a note on why you still approve.");
+    } else {
+      must((SEND_BACK_CODES as readonly string[]).includes(review.code), "Pick why you are sending it back.");
+      must(review.code !== "Other" || note.trim().length >= 5, "Write a short note for 'Other'.");
+    }
+    rv = { checks: [...checks], spot: expected === null ? null : { typed, expected, ok: spotOk }, seconds: Math.max(0, Math.min(36_000, Math.round(review.seconds))), code: approved ? null : review.code };
+  }
+  const why = approved ? note : [review.code, note.trim()].filter(Boolean).join(": ");
+  const drafts: Omit<AuditEntry, "seq" | "prevHash" | "hash">[] = [{ at: now, actor: u.id, type: "DECIDE", caseId: pre.caseId, payload: { pid, approved, note: why, ...(rv ? { review: rv } : {}) } }];
   if (approved && pre.kind === "HOLD") {
     const holdId = id("HOLD");
     const seq = chain.length + 1;
@@ -324,8 +349,8 @@ export async function decide(u: User, pid: string, approved: boolean, note: stri
     notes.push({ to: pre.by, text: `${u.name} approved the release on ${holderName(v.a)}.`, link: "/holds" });
     msg = "Approved. Hold released and the holder told.";
   } else {
-    notes.push({ to: pre.by, text: `${u.name} rejected your ${pre.kind === "HOLD" ? "hold" : "release"} on ${holderName(v.a)}${note ? `: "${note}"` : ""}`, link: `/case/${pre.caseId}` });
-    msg = "Rejected. The officer has been told.";
+    notes.push({ to: pre.by, text: `${u.name} sent back your ${pre.kind === "HOLD" ? "hold" : "release"} on ${holderName(v.a)}${why ? `: "${why}"` : ""}`, link: `/case/${pre.caseId}` });
+    msg = "Sent back. The officer has been told.";
   }
   await s.append(drafts, (c) => {
     const p = fold(c, now).proposals.find((x) => x.pid === pid);

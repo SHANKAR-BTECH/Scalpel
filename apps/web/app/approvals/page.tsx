@@ -7,6 +7,7 @@ import { suggestion } from "@/components/AccountRow";
 import { CHOICE_LABEL } from "@/lib/server/judge";
 import { ago, inr } from "@/lib/format";
 import { userById } from "@/lib/users";
+import { holdReview } from "@/lib/server/review";
 
 export default async function Approvals() {
   const u = await requireUser("supervisor");
@@ -37,13 +38,14 @@ export default async function Approvals() {
         traced: inr(v.traced), withinTraced: p.amount <= v.traced, rules: p.kind === "HOLD" ? suggestion(v).text : null,
         score: v.a.score ? `${Math.round(v.a.score.muleScore * 100)}/100: ${v.a.score.reasons.join(" · ")}` : null,
         officerChoice: null, reason: x?.reason ?? null, note: (x ? x.note : p.note) || null,
+        review: p.kind === "HOLD" ? holdReview(d, p.pid) : null,
       };
     }),
   ];
   return (
     <div>
       <h1>{items.length ? `${items.length} waiting for you` : "Nothing waiting"}</h1>
-      <p className="mt-1 max-w-[760px] muted">Nothing is held or released until you approve it, and you can never approve your own proposal. When the officer overrules a confident AI, you check it too.</p>
+      <p className="mt-1 max-w-[760px] muted">Nothing is held or released until you approve it, and you can never approve your own proposal. Before you approve a hold, check its money path, amount, police request and what it leaves the holder, and redo one share yourself.</p>
       <div className="mt-5" data-testid="pending-list">{items.length > 0 ? <ApprovalBoard items={items} /> : <p className="sheet p-4 text-[14px] muted">When the officer proposes a hold or overrules the AI, it lands here.</p>}</div>
       {done.length > 0 && (
         <section className="mt-10 max-w-[760px]">
