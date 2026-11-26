@@ -8,6 +8,7 @@ import { model } from "@/lib/server/world";
 import { USERS } from "@/lib/users";
 import { store } from "@/lib/server/store";
 import * as L from "@/lib/server/lookup";
+import * as G from "@/lib/server/telcogroup";
 import { checkTrace, cleanPins } from "@/lib/server/tracecheck";
 import * as B from "@/lib/server/bank";
 import { checkTrail, cleanTrail } from "@/lib/server/trailcheck";
@@ -63,7 +64,13 @@ export async function telcoActAction(_: Result | null, f: FormData) {
   return run(async () => D.telcoAct(await me(), str(f, "kind") as "IMEI", str(f, "value")));
 }
 export async function telcoDecideAction(_: Result | null, f: FormData) {
-  return run(async () => D.telcoDecide(await me(), str(f, "alert"), str(f, "action"), str(f, "reason"), str(f, "note"), str(f, "report") === "on", str(f, "ceir") === "on"));
+  return run(async () => D.telcoDecide(await me(), str(f, "alert"), str(f, "action"), str(f, "reason"), str(f, "note"), str(f, "report") === "on", str(f, "ceir") === "on", str(f, "second")));
+}
+export async function telcoGroupAction(_: Result | null, f: FormData) {
+  return run(async () => D.telcoGroup(await me(), str(f, "alert"), str(f, "anchor"), str(f, "action"), f.getAll("sim").map(String), str(f, "note")));
+}
+export async function telcoShopAction(_: Result | null, f: FormData) {
+  return run(async () => D.telcoShop(await me(), str(f, "alert"), str(f, "pos")));
 }
 export async function policePacketAction(_: Result | null, f: FormData) {
   return run(async () => D.policePacket(await me(), str(f, "alert")));
@@ -131,6 +138,7 @@ export async function lookupTower(id: string) { await telcoOnly(); return L.towe
 export async function lookupSwitch(n: string) { await telcoOnly(); return L.switchLog(n); }
 export async function lookupRoute(id: string) { await telcoOnly(); return L.route(id); }
 export async function lookupDoc(doc: string) { await telcoOnly(); return L.kycDoc(doc); }
+export async function lookupSisters(n: string) { await telcoOnly(); return G.sisters(n); }
 export async function checkTraceAction(alert: string, pins: unknown) { await telcoOnly(); return checkTrace(alert, cleanPins(pins)); }
 export async function saveTraceAction(alert: string, pins: unknown, ticks: string[], note: string): Promise<Result> {
   return run(async () => D.saveTrace(await me(), alert, pins, Array.isArray(ticks) ? ticks.filter((t) => typeof t === "string") : [], String(note ?? "")));

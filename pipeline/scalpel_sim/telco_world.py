@@ -147,10 +147,12 @@ def build() -> dict:
     switch: list[dict] = []      # presented caller ID per call, for calls that carried one other than the SIM's own
 
     # ---- rigs: SIMs bought in batches at one shop on a few ID documents ----
+    rig_docs: dict[str, list[str]] = {}
     rig_shop = {"RIG-1": rogue[0], "RIG-2": rogue[1], "RIG-3": rogue[0]}
     for r in w["rigs"]:
         shop = rig_shop.get(r["id"], rogue[0])
         docs = [doc() for _ in range(max(2, len(r["sims"]) // 9))]
+        rig_docs[r["id"]] = docs
         for j, s in enumerate(r["sims"]):
             # a few SIMs came from a clean shop to muddy the picture
             pos = shops[(j * 7) % 14]["pos"] if j % 11 == 5 else shop["pos"]
@@ -293,6 +295,31 @@ def build() -> dict:
             call_cell[c["id"]] = rig_tower[c["imei"]]
         else:
             call_cell[c["id"]] = rng.choice(by_district["Patna"] + by_district["Nalanda"])
+
+    # ---- the person whose ID was stolen (added last, on its own random stream, so nothing above changes) ----
+    # The gang bought most of RIG-3's SIMs on one real person's Aadhaar. That person has had their own SIM on it
+    # for six years, from a clean shop, with an ordinary two-way life. A "block every SIM on this ID" sweep cuts
+    # them off: the analyst has to spot them, and the server refuses a group action that includes them.
+    r2 = random.Random(SEED + 1)
+    if "RIG-3" in rig_docs:
+        counts: dict[str, int] = {}
+        for x in subs.values():
+            if x["kycDoc"] in rig_docs["RIG-3"]:
+                counts[x["kycDoc"]] = counts.get(x["kycDoc"], 0) + 1
+        stolen = max(counts, key=lambda k: counts[k])
+        n = "+91 94311 27608"
+        assert norm(n) not in used
+        imei = f"35{h(n) % 10**13:013d}"
+        home = shops[2]
+        add_sub(n, kycName="Lakshmi Kumari", kycDoc=stolen, pos=home["pos"], activatedAt=now - 6 * 365 * DAY - 40 * DAY, plan="Postpaid",
+                recharges=[{"at": now - k * 30 * DAY, "amount": 39900, "pos": home["pos"], "payRef": f"BILL-{k}"} for k in range(1, 5)])
+        attach.append({"msisdn": n, "imei": imei, "from": now - 2 * 365 * DAY, "to": None})
+        for k in range(36):
+            at = now - r2.randrange(45) * DAY - r2.randrange(DAY)
+            inc = r2.random() < 0.5
+            other = fmt("9" + "".join(str(r2.randrange(10)) for _ in range(9)))
+            cdr.append({"id": f"ID{k+1:05d}", "at": at, "from": other if inc else n, "to": n if inc else other,
+                        "seconds": r2.randrange(20, 700), "imei": imei, "cell": r2.choice(by_district[home["district"]])})
 
     tac = {k: {"model": m, "kind": kind} for k, (m, kind) in TAC.items()}
     return {

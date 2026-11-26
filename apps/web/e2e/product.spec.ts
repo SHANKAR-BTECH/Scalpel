@@ -354,3 +354,47 @@ test("Priya follows the money herself; decisions open only for accounts her save
   await expect(card).toBeVisible();
   await expect(priya.getByTestId("case-log")).toContainText("saved the money trail, version 2");
 });
+
+test("Imran hunts the linked SIMs, spares the real owner of a stolen ID, and suspends the shop", async ({ browser }) => {
+  const imran = await as(browser, "imran");
+  await imran.goto("/telco/work?alert=RIG-3");
+  await imran.getByTestId("tool-run").click(); // the handset
+  await imran.getByTestId("pin-handset").click();
+  await imran.getByTestId("tool-group").click();
+  await imran.getByTestId("tool-input").fill("+91 88375 00012");
+  await imran.getByTestId("tool-run").click();
+  await expect(imran.getByTestId("over-limit")).toBeVisible();
+  await expect(imran.getByTestId("result-group")).toContainText("Lakshmi Kumari");
+  await imran.getByTestId("pin-group").click();
+  // The shop that sold it, and the reused ID.
+  await imran.getByTestId("tool-sub").click();
+  await imran.getByTestId("tool-input").fill("+91 88375 00012");
+  await imran.getByTestId("tool-run").click();
+  await imran.getByTestId("result-sub").getByRole("button", { name: /^XXXX/ }).click();
+  await imran.getByTestId("tool-run").click();
+  await imran.getByTestId("pin-doc").click();
+  await imran.getByTestId("result-doc").getByRole("button", { name: /^POS-/ }).first().click();
+  await imran.getByTestId("tool-run").click();
+  await imran.getByTestId("pin-shop").click();
+  await imran.getByTestId("save-trace").click();
+  await expect(imran.getByTestId("save-result")).toContainText("version");
+  await imran.goto("/telco/RIG-3");
+  // Block everyone: refused, naming her.
+  await imran.getByTestId("group-all").click();
+  await imran.getByTestId("group-BLOCK").check();
+  await imran.getByTestId("group-act").click();
+  await expect(imran.getByTestId("group-act-result")).toContainText("Lakshmi Kumari");
+  // Untick her and block the rest.
+  await imran.getByRole("checkbox", { name: "Tick +91 94311 27608" }).uncheck();
+  await imran.getByTestId("group-act").click();
+  await expect(imran.getByTestId("group-log-row").first()).toHaveAttribute("data-outcome", "REFUSED");
+  await expect(imran.locator('[data-testid="group-log-row"][data-outcome="DONE"]')).toHaveCount(1);
+  await imran.getByTestId("shop-suspend").click();
+  await expect(imran.getByTestId("shop-done")).toBeVisible();
+  // Who else gets cut off, under each option.
+  await expect(imran.getByTestId("blast-BAR_IMEI")).toContainText("SIMs inside this handset");
+  const meera = await as(browser, "meera");
+  await meera.goto("/assure");
+  await expect(meera.getByTestId("group-ledger-row")).toHaveCount(2);
+  await expect(meera.getByTestId("shop-ledger-row")).toHaveCount(1);
+});

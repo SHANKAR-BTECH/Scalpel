@@ -445,3 +445,67 @@ describe("Vikram checks the evidence before approving", () => {
     expect(d.returned.get(v.a.id)!.signoff!.note).toMatch(/Amount doesn't match the trail: check the second hop/);
   });
 });
+
+import { telcoGroup, telcoShop } from "@/lib/server/desk";
+import { sisters, protectedReason, blast } from "@/lib/server/telcogroup";
+
+describe("Imran works beyond one alert: linked SIMs, the shop, who else gets cut off", () => {
+  beforeEach(() => useStore(new MemoryStore()));
+  const rig3 = () => W.rigs.find((r) => r.id === "RIG-3")!;
+  const owner = T.subscribers.find((s) => s.kycName === "Lakshmi Kumari")!;
+  const anchor = () => rig3().sims.map((s) => s.msisdn).find((n) => T.subscribers.find((x) => x.msisdn === n)?.kycDoc === owner.kycDoc)!;
+
+  it("the linked-SIM hunt finds the real owner of the stolen ID, over DoT's limit", () => {
+    const g = sisters(anchor());
+    expect(g.found).toBe(true);
+    expect(g.docCount).toBeGreaterThan(9);
+    expect(g.overLimit).toBe(true);
+    expect(g.rows.some((r) => r.msisdn === owner.msisdn && r.why.includes("same ID"))).toBe(true);
+    expect(protectedReason(owner.msisdn)).toMatch(/long-time customer/);
+    expect(protectedReason(anchor())).toBeNull();
+    expect(checkTrace("RIG-3", [pin("group", anchor())]).signals.find((x) => x.key === "limit")!.seen).toBe(true);
+  });
+
+  it("a group block that sweeps up the owner is refused and logged; without her it goes through", async () => {
+    const all = sisters(anchor()).rows.map((r) => r.msisdn);
+    await expect(telcoGroup(imran, "RIG-3", anchor(), "BLOCK", all, "")).rejects.toThrow(/save a trace/i);
+    await saveTrace(imran, "RIG-3", [pin("handset", rig3().imei), pin("group", anchor())], [], "");
+    await expect(telcoGroup(imran, "RIG-3", anchor(), "BLOCK", [...all, "+91 99999 00000"], "")).rejects.toThrow(/not in this group/);
+    await expect(telcoGroup(imran, "RIG-3", anchor(), "BLOCK", all, "")).rejects.toThrow(/Lakshmi Kumari/);
+    let d = await desk();
+    expect(d.groups.at(-1)!.outcome).toBe("REFUSED");
+    const rest = all.filter((n) => n !== owner.msisdn);
+    await telcoGroup(imran, "RIG-3", anchor(), "BLOCK", rest, "stolen ID, real owner left alone");
+    await telcoGroup(imran, "RIG-3", anchor(), "LEAVE", [owner.msisdn], "her own SIM");
+    d = await desk();
+    expect(d.groups.filter((g) => g.outcome === "DONE").map((g) => g.action)).toEqual(["BLOCK", "LEAVE"]);
+    await expect(telcoGroup(imran, "RIG-3", anchor(), "REVERIFY", rest.slice(0, 1), "")).rejects.toThrow(/already/);
+  });
+
+  it("a shop is suspended only on its own evidence; the enterprise desk never", async () => {
+    const pos = T.subscribers.find((s) => s.msisdn === anchor())!.pos;
+    await saveTrace(imran, "RIG-3", [pin("handset", rig3().imei), pin("shop", pos)], [], "");
+    await expect(telcoShop(imran, "RIG-3", pos)).rejects.toThrow(/reused ID/);
+    await saveTrace(imran, "RIG-3", [pin("handset", rig3().imei), pin("shop", pos), pin("doc", owner.kycDoc)], [], "");
+    const r = await telcoShop(imran, "RIG-3", pos);
+    expect(r.message).toMatch(/suspended/);
+    await expect(telcoShop(imran, "RIG-3", pos)).rejects.toThrow(/already/);
+    expect((await desk()).shops.map((x) => x.outcome)).toEqual(["REFUSED", "SUSPENDED"]);
+  });
+
+  it("shows who else gets cut off, and a route block with genuine lines needs a second person", async () => {
+    const a = alerts().find((x) => x.id === "RIG-1")!;
+    const b = blast(a, "BLOCK_ROUTE");
+    expect(b.second).toBe(true);
+    expect(b.lines.join(" ")).toMatch(/genuine line/);
+    expect(blast(a, "BAR_IMEI").second).toBe(false);
+    expect(blast(alerts().find((x) => x.id === "SIM-2")!, "DISCONNECT").genuine).toBe(1);
+    const r = T.routes.find((x) => x.devices.includes(a.value))!;
+    await saveTrace(imran, a.id, [...rigPins(), pin("route", r.id)], [], "");
+    await expect(telcoDecide(imran, a.id, "BLOCK_ROUTE", "Signals match the suggestion", "", false)).rejects.toThrow(/second person/);
+    await telcoDecide(imran, a.id, "BLOCK_ROUTE", "Signals match the suggestion", "", false, false, "Anita Rao, network lead");
+    const t = (await desk()).telcoByAlert.get(a.id)!;
+    expect(t.second).toBe("Anita Rao, network lead");
+    expect(t.cutOff).toBeGreaterThan(0);
+  });
+});

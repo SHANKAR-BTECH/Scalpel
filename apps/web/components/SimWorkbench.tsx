@@ -10,16 +10,18 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Pin, X, Search, Save, ShieldCheck } from "lucide-react";
 import {
-  lookupSubscriber, lookupCalls, lookupHandset, lookupShop, lookupTower, lookupSwitch, lookupRoute, lookupDoc, checkTraceAction, saveTraceAction,
+  lookupSubscriber, lookupCalls, lookupHandset, lookupShop, lookupTower, lookupSwitch, lookupRoute, lookupDoc, lookupSisters, checkTraceAction, saveTraceAction,
 } from "@/app/actions";
 import type { SubscriberResult, CallRow, CallStats, HandsetResult, ShopResult, TowerResult, SwitchRow } from "@/lib/server/lookup";
 import type { TraceCheck } from "@/lib/server/tracecheck";
+import type { SisterResult } from "@/lib/server/telcogroup";
 import { PIN_TITLE, type PinKind, type PinRef } from "@/lib/pins";
 
-type Tool = "sub" | "cdr" | "imei" | "shop" | "tower" | "switch" | "route" | "doc";
+type Tool = "sub" | "cdr" | "imei" | "shop" | "tower" | "switch" | "route" | "doc" | "group";
 const TOOLS: [Tool, string, string][] = [
   ["sub", "Subscriber", "Phone number"], ["cdr", "Call records", "Phone number or IMEI"], ["imei", "Handset", "IMEI (15 digits)"], ["shop", "Shop", "Point of sale ID, e.g. POS-BR-4471"],
   ["tower", "Tower", "Tower ID, e.g. TA-BR-0747"], ["switch", "Switch log", "Phone number that made the calls"], ["route", "Route", "Route, e.g. TA-GW-56"], ["doc", "KYC document", "ID document as shown on a SIM"],
+  ["group", "Linked SIMs", "One SIM's number: finds SIMs on the same ID or from the same batch"],
 ];
 const fmt = (t: number) => new Date(t).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
 const dayOf = (t: number) => new Date(t + 19_800_000).toISOString().slice(0, 10);
@@ -31,6 +33,7 @@ type Results = {
   imei?: HandsetResult; shop?: ShopResult; tower?: TowerResult; switch?: { found: boolean; note: string; rows: SwitchRow[] };
   route?: { found: boolean; note: string; id: string; lines: { owner: string; kind: string }[]; devices: string[] };
   doc?: { found: boolean; note: string; doc: string; sims: { msisdn: string; kycName: string; pos: string; at: number }[] };
+  group?: SisterResult;
 };
 
 
@@ -54,10 +57,11 @@ export function SimWorkbench({ alert, leads, start, firstDay, lastDay, saved, lo
   const router = useRouter();
   const startTool: Tool = alert ? (alert.kind === "IMEI" ? "imei" : "sub") : "sub";
   const [tool, setTool] = useState<Tool>(startTool);
-  const [q, setQ] = useState<Record<Tool, string>>({ sub: "", cdr: "", imei: "", shop: "", tower: "", switch: "", route: "", doc: "", [startTool]: alert?.value ?? start ?? "" });
+  const [q, setQ] = useState<Record<Tool, string>>({ sub: "", cdr: "", imei: "", shop: "", tower: "", switch: "", route: "", doc: "", group: "", [startTool]: alert?.value ?? start ?? "" });
   const [from, setFrom] = useState(dayOf(firstDay));
   const [to, setTo] = useState(dayOf(lastDay));
   const [dir, setDir] = useState<"all" | "out" | "in">("all");
+  const [sw, setSw] = useState<"all" | "other" | "gateway">("all");
   const [res, setRes] = useState<Results>({});
   const [pins, setPins] = useState<PinRef[]>(saved?.pins ?? []);
   const [check, setCheck] = useState<TraceCheck | null>(null);
@@ -85,6 +89,7 @@ export function SimWorkbench({ alert, leads, start, firstDay, lastDay, saved, lo
     if (t === "switch") { const r = await lookupSwitch(v); setRes((x) => ({ ...x, switch: r })); }
     if (t === "route") { const r = await lookupRoute(v); setRes((x) => ({ ...x, route: r })); }
     if (t === "doc") { const r = await lookupDoc(v); setRes((x) => ({ ...x, doc: r })); }
+    if (t === "group") { const r = await lookupSisters(v); setRes((x) => ({ ...x, group: r })); }
   });
   /** Put a value into a tool and open it. He still presses Look up. */
   const fill = (t: Tool, v: string) => { setQ((x) => ({ ...x, [t]: v })); setTool(t); };
@@ -167,6 +172,7 @@ export function SimWorkbench({ alert, leads, start, firstDay, lastDay, saved, lo
                     {r.sub.police && <p className="mt-3 border-l-2 border-[#0d0d0d] pl-3 text-[13.5px]"><span className="label">Police letter on file · {r.sub.police.ref}</span><span className="block">{r.sub.police.text}</span></p>}
                     <div className="mt-3 flex flex-wrap gap-2">
                       <PinBtn on={has("number", r.sub.msisdn)} label="Pin the number" onClick={() => add({ kind: "number", ref: r.sub!.msisdn, label: `${r.sub!.msisdn} · ${r.sub!.kycName}` })} />
+                      <button type="button" className="btn btn-ghost btn-sm" onClick={() => fill("group", r.sub!.msisdn)} data-testid="find-linked">Find linked SIMs</button>
                       {r.sub.swaps!.length > 0 && <PinBtn on={has("swap", r.sub.msisdn)} label="Pin swap history" onClick={() => add({ kind: "swap", ref: r.sub!.msisdn, label: `${r.sub!.msisdn} swapped ${fmt(r.sub!.swaps!.at(-1)!.at)}` })} />}
                       {r.sub.forwarding && <PinBtn on={has("forwarding", r.sub.msisdn)} label="Pin call forwarding" onClick={() => add({ kind: "forwarding", ref: r.sub!.msisdn, label: `forwards to ${r.sub!.forwarding}` })} />}
                       {r.sub.dlt && <PinBtn on={has("dlt", r.sub.msisdn)} label="Pin sender registration" onClick={() => add({ kind: "dlt", ref: r.sub!.msisdn, label: `${r.sub!.dlt!.header} · ${r.sub!.dlt!.entity}` })} />}
@@ -277,10 +283,17 @@ export function SimWorkbench({ alert, leads, start, firstDay, lastDay, saved, lo
                 <p className={r.switch.found ? "" : "muted"}>{r.switch.note}</p>
                 {r.switch.found && (
                   <>
-                    <PinBtn testid="pin-switch" on={has("spoof", q.switch.trim())} label="Pin the switch log" onClick={() => add({ kind: "spoof", ref: q.switch.trim(), label: `${q.switch.trim()}: ${r.switch!.note}` })} />
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <PinBtn testid="pin-switch" on={has("spoof", q.switch.trim())} label="Pin as spoofed calls" onClick={() => add({ kind: "spoof", ref: q.switch.trim(), label: `${q.switch.trim()}: ${r.switch!.rows.filter((x) => !x.matches).length} calls showed another number` })} />
+                      <label className="text-[13px]"><span className="sr-only">Show</span>
+                        <select className="input !py-1 text-[13px]" value={sw} onChange={(e) => setSw(e.target.value as typeof sw)} data-testid="switch-filter">
+                          <option value="all">All calls</option><option value="other">Only calls showing someone else&apos;s number</option><option value="gateway">Came in through a gateway, showing a +91 number</option>
+                        </select>
+                      </label>
+                    </div>
                     <div className="mt-3 max-h-[320px] overflow-auto">
                       <table className="table w-full min-w-[560px] text-[13px]"><thead><tr><th>Time</th><th>Real SIM</th><th>Caller ID carried</th><th>Belongs to</th><th>Entered via</th></tr></thead>
-                        <tbody>{r.switch.rows.map((x) => <tr key={x.call}><td className="whitespace-nowrap">{fmt(x.at)}</td><td className="mono">{x.originSim}</td><td className={`mono ${x.matches ? "" : "font-semibold"}`}>{x.presented}</td><td>{x.presentedBelongsTo}</td><td>{x.entry}</td></tr>)}</tbody></table>
+                        <tbody>{r.switch.rows.filter((x) => sw === "all" || (!x.matches && (sw === "other" || (x.entry !== "Local radio network" && x.presented.startsWith("+91"))))).map((x) => <tr key={x.call} data-testid="switch-row"><td className="whitespace-nowrap">{fmt(x.at)}</td><td className="mono">{x.originSim}</td><td className={`mono ${x.matches ? "" : "font-semibold"}`}>{x.presented}</td><td>{x.presentedBelongsTo}</td><td>{x.entry}</td></tr>)}</tbody></table>
                     </div>
                   </>
                 )}
@@ -307,6 +320,32 @@ export function SimWorkbench({ alert, leads, start, firstDay, lastDay, saved, lo
                     <PinBtn testid="pin-doc" on={has("doc", r.doc.doc)} label="Pin this document" onClick={() => add({ kind: "doc", ref: r.doc!.doc, label: `${r.doc!.doc}: ${r.doc!.sims.length} SIMs` })} />
                     <table className="table mt-3 w-full text-[13px]"><thead><tr><th>SIM</th><th>Name on the SIM</th><th>Shop</th><th>Activated</th></tr></thead>
                       <tbody>{r.doc.sims.map((s) => <tr key={s.msisdn}><td><Go onClick={() => fill("sub", s.msisdn)}>{s.msisdn}</Go></td><td>{s.kycName}</td><td><Go onClick={() => fill("shop", s.pos)}>{s.pos}</Go></td><td>{fmt(s.at)}</td></tr>)}</tbody></table>
+                  </>
+                )}
+              </div>
+            )}
+            {tool === "group" && r.group && (
+              <div>
+                <p className={r.group.found ? "" : "muted"} data-testid="group-note">{r.group.note}</p>
+                {r.group.found && (
+                  <>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      {r.group.overLimit && <span className="chip chip-warn" data-testid="over-limit">Over DoT&apos;s limit: {r.group.docCount} SIMs on one person&apos;s ID (the limit is 9)</span>}
+                      <PinBtn testid="pin-group" on={has("group", r.group.anchor!)} label="Pin this group" onClick={() => add({ kind: "group", ref: r.group!.anchor!, label: `${r.group!.rows.length} SIMs linked to ${r.group!.anchor}` })} />
+                    </div>
+                    <p className="mt-2 text-[12.5px] muted">Read each row before you act on the group. A real person&apos;s own SIM can sit on the same ID if the gang used their stolen document.</p>
+                    <div className="mt-2 max-h-[380px] overflow-auto">
+                      <table className="table w-full min-w-[680px] text-[13px]">
+                        <thead><tr><th>SIM</th><th>Name on the SIM</th><th>Why linked</th><th>Shop</th><th>Activated</th><th>Calls out · in</th><th>Handsets</th></tr></thead>
+                        <tbody>{r.group.rows.map((x) => (
+                          <tr key={x.msisdn} data-testid="group-row" className={x.msisdn === r.group!.anchor ? "font-medium" : ""}>
+                            <td className="whitespace-nowrap"><Go onClick={() => fill("sub", x.msisdn)}>{x.msisdn}</Go></td><td>{x.kycName}</td><td>{x.why.join(", ")}</td>
+                            <td className="whitespace-nowrap"><Go onClick={() => fill("shop", x.pos)}>{x.pos}</Go></td><td className="whitespace-nowrap">{fmt(x.activatedAt)}{x.ownerYears > 0 && <span className="block text-[12px] muted">{x.ownerYears} yr{x.ownerYears > 1 ? "s" : ""} ago</span>}</td>
+                            <td>{x.callsOut} · {x.callsIn}</td><td>{x.handsets.length ? x.handsets.map((h) => <span key={h} className="block"><Go onClick={() => fill("imei", h)}>{h}</Go></span>) : "—"}</td>
+                          </tr>
+                        ))}</tbody>
+                      </table>
+                    </div>
                   </>
                 )}
               </div>

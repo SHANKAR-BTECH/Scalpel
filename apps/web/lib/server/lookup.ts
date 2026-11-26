@@ -150,7 +150,9 @@ export function switchLog(q: string): { found: boolean; note: string; rows: Swit
   });
   if (!rows.length) return { found: false, note: "No switch-log entries for calls from this number in the window kept (30 days).", rows: [] };
   const off = rows.filter((r) => !r.matches).length;
-  return { found: true, note: `${rows.length} calls logged; ${off} carried a caller ID that is not this SIM's own number.`, rows };
+  const gw = rows.filter((r) => !r.matches && r.entry !== "Local radio network" && r.presented.startsWith("+91"));
+  const via = [...new Set(gw.map((r) => r.entry))].join(", ");
+  return { found: true, note: `${rows.length} calls logged; ${off} carried a caller ID that is not this SIM's own number.${gw.length ? ` ${gw.length} of those came in through a gateway (${via}) while showing an Indian +91 number: the pattern of a spoofed call.` : ""}`, rows };
 }
 
 export function route(q: string): { found: boolean; note: string; id: string; lines: { owner: string; kind: string }[]; devices: string[] } {

@@ -17,6 +17,8 @@ import { checkTrace, cleanPins, traceHash, type PinRef } from "./tracecheck";
 import { checkTrail, cleanTrail, reachedOf, trailHash } from "./trailcheck";
 import type { Json } from "@scalpel/engine";
 import { REVIEW_CHECKS, SEND_BACK_CODES, spotAnswer } from "./review";
+import { sisters, protectedReason, shopAbuse, shopDocCount, blast } from "./telcogroup";
+import { norm as tnorm } from "./telcodata";
 const REVIEW_LABEL: Record<string, string> = { path: "money path", amount: "amount", police: "police request", impact: "holder impact" };
 import type { TrailPin, TrailHolds } from "@/lib/trail";
 
@@ -51,8 +53,16 @@ export interface Decision {
 export interface TelcoDecision {
   tid: string; alert: string; by: string; at: number; ai: { suggest: TAction; confidence: number };
   action: TAction; reason: string; note: string; agreed: boolean; reported: string[]; packet: boolean;
-  trace: { version: number; hash: string } | null; ceir: boolean;
+  trace: { version: number; hash: string } | null; ceir: boolean; cutOff: number; second: string | null;
 }
+
+/** A group action on the "sister" SIMs of one alert (bought on the same ID or in the same batch). */
+export interface TelcoGroup { gid: string; alert: string; anchor: string; action: GroupAction; sims: string[]; outcome: "DONE" | "REFUSED"; refused: string[]; note: string; by: string; at: number }
+export const GROUP_ACTIONS = ["BLOCK", "REVERIFY", "LEAVE"] as const;
+export type GroupAction = (typeof GROUP_ACTIONS)[number];
+export const GROUP_LABEL: Record<GroupAction, string> = { BLOCK: "Block them: disconnect and add to the revoked list", REVERIFY: "Stop outgoing calls and re-verify each owner", LEAVE: "Leave them alone" };
+/** A shop (point of sale) suspended and reported to DoT, or a refused attempt. */
+export interface TelcoShop { pos: string; alert: string; outcome: "SUSPENDED" | "REFUSED"; why: string; docs: string[]; by: string; at: number }
 
 /** An engineer's saved trace for one alert (latest version wins; every version stays in the record). */
 export interface SavedTrace { alert: string; version: number; hash: string; pins: PinRef[]; ticks: string[]; note: string; by: string; at: number }
@@ -68,6 +78,7 @@ export interface Desk {
   /** Alerts whose call records were packed for the police, and when. */
   packets: Map<string, number>;
   traces: Map<string, SavedTrace>;
+  groups: TelcoGroup[]; shops: TelcoShop[];
   trails: Map<string, SavedTrail>;
   /** Account -> the saved trail (case) that reached it. */
   trailOfAccount: Map<string, SavedTrail>;
@@ -88,6 +99,8 @@ export function fold(chain: AuditEntry[], now: number): Desk {
   const telco: TelcoDecision[] = [];
   const fri = new Map<string, { band: string; at: number; alert: string }>();
   const packets = new Map<string, number>();
+  const groups: TelcoGroup[] = [];
+  const shops: TelcoShop[] = [];
   const traces = new Map<string, SavedTrace>();
   const trails = new Map<string, SavedTrail>();
   const ev = (row: HoldRow, type: HoldEvent, e: AuditEntry, note?: string) => {
@@ -154,7 +167,7 @@ export function fold(chain: AuditEntry[], now: number): Desk {
         break;
       }
       case "TELCO_DECISION":
-        telco.push({ tid: p.tid, alert: p.alert, by: e.actor, at: e.at, ai: p.ai, action: p.action, reason: p.reason, note: p.note ?? "", agreed: p.agreed, reported: p.reported ?? [], packet: Boolean(p.packet), trace: p.trace ?? null, ceir: Boolean(p.ceir) });
+        telco.push({ tid: p.tid, alert: p.alert, by: e.actor, at: e.at, ai: p.ai, action: p.action, reason: p.reason, note: p.note ?? "", agreed: p.agreed, reported: p.reported ?? [], packet: Boolean(p.packet), trace: p.trace ?? null, ceir: Boolean(p.ceir), cutOff: p.cutOff ?? 0, second: p.second ?? null });
         break;
       case "TRACE_SAVED":
         traces.set(p.alert, { alert: p.alert, version: p.version, hash: p.hash, pins: p.pins, ticks: p.ticks ?? [], note: p.note ?? "", by: e.actor, at: e.at });
@@ -164,6 +177,12 @@ export function fold(chain: AuditEntry[], now: number): Desk {
         break;
       case "DOT_FRI":
         for (const n of p.msisdns as string[]) fri.set(n, { band: p.band, at: e.at, alert: p.alert });
+        break;
+      case "TELCO_GROUP":
+        groups.push({ gid: p.gid, alert: p.alert, anchor: p.anchor, action: p.action, sims: p.sims ?? [], outcome: p.outcome, refused: p.refused ?? [], note: p.note ?? "", by: e.actor, at: e.at });
+        break;
+      case "TELCO_SHOP":
+        shops.push({ pos: p.pos, alert: p.alert, outcome: p.outcome, why: p.why, docs: p.docs ?? [], by: e.actor, at: e.at });
         break;
       case "POLICE_PACKET":
         packets.set(p.alert, e.at);
@@ -191,7 +210,7 @@ export function fold(chain: AuditEntry[], now: number): Desk {
   const telcoByAlert = new Map(telco.map((t) => [t.alert, t] as const));
   const trailOfAccount = new Map<string, SavedTrail>();
   for (const t of trails.values()) for (const a of t.reached) if (!trailOfAccount.has(a)) trailOfAccount.set(a, t);
-  return { now, chain, telco, telcoByAlert, fri, packets, traces, trails, trailOfAccount, decisions: [...decisions.values()], decisionByAccount, returned, proposals: [...proposals.values()], holds: [...holds.values()], asks: [...asks.values()], actions, checks, holdByAccount, pendingByAccount };
+  return { now, chain, telco, telcoByAlert, fri, packets, traces, groups, shops, trails, trailOfAccount, decisions: [...decisions.values()], decisionByAccount, returned, proposals: [...proposals.values()], holds: [...holds.values()], asks: [...asks.values()], actions, checks, holdByAccount, pendingByAccount };
 }
 
 /** Read once per page render: the header and the page share it instead of each asking the database. */
@@ -487,7 +506,7 @@ export async function telcoAct(u: User, kind: TelcoAction["kind"], value: string
 
 /** Imran decides an alert with Telco-A's AI. Reporting to DoT raises the fraud-risk rating banks receive for the
  *  linked numbers; call records never go to the bank (a police packet is a separate, police-only step). */
-export async function telcoDecide(u: User, alertId: string, action: string, reason: string, note: string, report: boolean, ceir = false): Promise<ActionResult> {
+export async function telcoDecide(u: User, alertId: string, action: string, reason: string, note: string, report: boolean, ceir = false, second = ""): Promise<ActionResult> {
   must(u.role === "telco", "Only the Telco-A analyst decides alerts.");
   const a = alertById(alertId);
   must(a, "Unknown alert.");
@@ -501,13 +520,15 @@ export async function telcoDecide(u: User, alertId: string, action: string, reas
   must(tr, "Build and save your trace in the workbench before deciding.");
   const ready = checkTrace(a.id, tr.pins).actions.find((x) => x.action === act);
   must(ready?.ready, `Your saved trace doesn't yet support this. Still missing: ${ready?.missing.join("; ")}.`);
+  const radius = blast(a, act);
+  must(!radius.second || second.trim().length >= 5, `This route also carries ${radius.genuine} genuine line${radius.genuine === 1 ? "" : "s"}. Blocking it needs a second person: write who checked it with you (name and role).`);
   const agreed = act === a.ai.suggest;
   const fraudAction = act === "BAR_IMEI" || act === "BLOCK_ROUTE" || act === "DISCONNECT" || act === "KEEP_LIVE" || act === "REVERIFY";
   const reported = report && fraudAction && a.reportable ? a.linked.map((l) => l.msisdn) : [];
   const tid = id("TD");
   const caseId = a.cases[0] ?? "TELCO";
   const drafts: Omit<AuditEntry, "seq" | "prevHash" | "hash">[] = [
-    { at: now, actor: u.id, type: "TELCO_DECISION", caseId, payload: { tid, alert: a.id, value: a.value, ai: a.ai.suggest === undefined ? null : { suggest: a.ai.suggest, confidence: a.ai.confidence }, action: act, reason, note: note.trim().slice(0, 500), agreed, reported, packet: false, trace: { version: tr.version, hash: tr.hash }, ceir: ceir && act === "BAR_IMEI" } },
+    { at: now, actor: u.id, type: "TELCO_DECISION", caseId, payload: { tid, alert: a.id, value: a.value, ai: a.ai.suggest === undefined ? null : { suggest: a.ai.suggest, confidence: a.ai.confidence }, action: act, reason, note: note.trim().slice(0, 500), agreed, reported, packet: false, trace: { version: tr.version, hash: tr.hash }, ceir: ceir && act === "BAR_IMEI", cutOff: radius.genuine, second: radius.second ? second.trim().slice(0, 120) : null } },
   ];
   if (ceir && act === "BAR_IMEI") drafts.push({ at: now, actor: u.id, type: "CEIR_REQUEST", caseId, payload: { alert: a.id, imei: a.value, to: "DoT (CEIR)", basis: `Telco-A trace v${tr.version}` } });
   if (reported.length) drafts.push({ at: now, actor: "dot", type: "DOT_FRI", caseId, payload: { alert: a.id, msisdns: reported, band: "HIGH", source: "Telco-A report via DIP" } });
@@ -520,6 +541,57 @@ export async function telcoDecide(u: User, alertId: string, action: string, reas
   if (!agreed) notes.push({ at: now, to: "meera", text: `${u.name} (Telco-A) overruled Telco-A's AI on ${a.title}: ${ACTION_LABEL[act].toLowerCase()}.`, link: "/assure" });
   if (notes.length) await s.notify(notes);
   return { message: `Recorded: ${ACTION_LABEL[act].toLowerCase()}.${ceir && act === "BAR_IMEI" ? " National block requested from DoT (CEIR)." : ""}${reported.length ? ` Reported to DoT: ${reported.length} linked number${reported.length > 1 ? "s" : ""} now rated High for banks.` : ""}` };
+}
+
+/** A decision on the whole group of "sister" SIMs: the server refuses it, naming who, if a block or re-verify still
+ *  sweeps up a long-time customer or a registered business. The refusal is kept in the record too. */
+export async function telcoGroup(u: User, alertId: string, anchor: string, action: string, rawSims: string[], note: string): Promise<ActionResult> {
+  must(u.role === "telco", "Only the Telco-A analyst acts on SIMs.");
+  const a = alertById(alertId);
+  must(a, "Unknown alert.");
+  must((GROUP_ACTIONS as readonly string[]).includes(action), "Pick what to do with the group.");
+  const act = action as GroupAction;
+  const s = await store();
+  const now = await demoNow(s);
+  const d = fold(await s.chain(), now);
+  const tr = d.traces.get(a.id);
+  must(tr, "Save a trace in the workbench first.");
+  must(tr.pins.some((p) => p.kind === "group" && tnorm(p.ref) === tnorm(anchor)), "Pin this group in the workbench (Linked SIMs) and save the trace first.");
+  const g = sisters(anchor);
+  must(g.found, g.note);
+  const inGroup = new Map(g.rows.map((r) => [tnorm(r.msisdn), r.msisdn]));
+  const sims = [...new Set(rawSims.map((x) => inGroup.get(tnorm(x))).filter((x): x is string => Boolean(x)))];
+  must(sims.length > 0, "Tick the SIMs this applies to.");
+  must(sims.length === new Set(rawSims.map(tnorm)).size, "Some ticked SIMs are not in this group.");
+  const done = new Set(d.groups.filter((x) => x.outcome === "DONE" && x.action !== "LEAVE").flatMap((x) => x.sims.map(tnorm)));
+  must(act === "LEAVE" || sims.every((x) => !done.has(tnorm(x))), "Some of these SIMs already have an action on record.");
+  const refused = act === "LEAVE" ? [] : sims.map((x) => protectedReason(x)).filter((x): x is string => Boolean(x));
+  const gid = id("TG");
+  await s.append([{ at: now, actor: u.id, type: "TELCO_GROUP", caseId: a.cases[0] ?? "TELCO", payload: { gid, alert: a.id, anchor, action: act, sims, outcome: refused.length ? "REFUSED" : "DONE", refused, note: note.trim().slice(0, 500), docCount: g.docCount, overLimit: g.overLimit } }]);
+  if (refused.length) throw new DeskError(`Refused, nothing was changed: ${refused.join("; ")}. Untick ${refused.length === 1 ? "it" : "them"} and try again.`);
+  return { message: act === "LEAVE" ? `Recorded: ${sims.length} SIM${sims.length === 1 ? "" : "s"} left alone.` : `Recorded: ${GROUP_LABEL[act].split(":")[0]!.toLowerCase()} on ${sims.length} SIM${sims.length === 1 ? "" : "s"}.` };
+}
+
+/** Suspend a shop and report it to DoT. Needs the shop and a reused ID document from it pinned in the saved trace,
+ *  and the shop's own records must show the abuse. */
+export async function telcoShop(u: User, alertId: string, pos: string): Promise<ActionResult> {
+  must(u.role === "telco", "Only the Telco-A analyst suspends shops.");
+  const a = alertById(alertId);
+  must(a, "Unknown alert.");
+  const s = await store();
+  const now = await demoNow(s);
+  const d = fold(await s.chain(), now);
+  const tr = d.traces.get(a.id);
+  must(tr, "Save a trace in the workbench first.");
+  must(tr.pins.some((p) => p.kind === "shop" && p.ref === pos), "Pin this shop in the workbench and save the trace first.");
+  must(!d.shops.some((x) => x.pos === pos && x.outcome === "SUSPENDED"), "This shop is already suspended.");
+  const docs = tr.pins.filter((p) => p.kind === "doc").map((p) => p.ref).filter((doc) => shopDocCount(pos, doc) >= 3);
+  const abuse = shopAbuse(pos);
+  const why = !abuse.ok ? abuse.why : docs.length === 0 ? "Pin one of the reused ID documents from this shop too: the suspension needs it as evidence." : abuse.why;
+  const ok = abuse.ok && docs.length > 0;
+  await s.append([{ at: now, actor: u.id, type: "TELCO_SHOP", caseId: a.cases[0] ?? "TELCO", payload: { pos, alert: a.id, outcome: ok ? "SUSPENDED" : "REFUSED", why, docs, to: ok ? "DoT (point-of-sale report)" : null } }]);
+  if (!ok) throw new DeskError(`Not suspended: ${why}`);
+  return { message: `${pos} suspended: no new SIMs can be sold there. Reported to DoT with ${docs.length} reused ID document${docs.length === 1 ? "" : "s"}.` };
 }
 
 /** Call records for one alert, prepared for the police (never for the bank). Needs a police request on a linked case. */

@@ -10,6 +10,7 @@ import type { Alert, TAction, TraceView, TNode } from "@/lib/server/telco";
 import { ActForm } from "./ActForm";
 import { policePacketAction, telcoDecideAction } from "@/app/actions";
 import { inr, when } from "@/lib/format";
+import { TelcoGroup, type GroupView, type GroupLogView, type ShopView } from "./TelcoGroup";
 
 const PACE = 1500;
 const STEPS = 6;
@@ -21,10 +22,14 @@ export interface TraceSummary {
 }
 export interface LinkedView { msisdn: string; name: string; account: string; caseId: string | null; band: string }
 
-export function NumberTrace({ a, view, labels, reasons, done, packetAt, linked, now, trace, needs }: {
+export interface BlastView { lines: string[]; genuine: number; second: boolean }
+
+export function NumberTrace({ a, view, labels, reasons, done, packetAt, linked, now, trace, needs, blasts = {}, groups = [], groupLog = [], shops = [], groupLabels = {} }: {
   a: Alert; view: TraceView; labels: Record<TAction, string>; reasons: readonly string[];
   done: DoneView | null; packetAt: number | null; linked: LinkedView[]; now: number; trace: TraceSummary | null; needs?: TraceSummary["actions"];
+  blasts?: Partial<Record<TAction, BlastView>>; groups?: GroupView[]; groupLog?: GroupLogView[]; shops?: ShopView[]; groupLabels?: Record<string, string>;
 }) {
+  const needSecond = Object.values(blasts).some((b) => b?.second);
   // The replay only exists after the decision; before it the engineer works from his own pins.
   const [step, setStep] = useState(0);
   const running = step > 0 && step < STEPS;
@@ -114,7 +119,7 @@ export function NumberTrace({ a, view, labels, reasons, done, packetAt, linked, 
                 {trace.actions.map((x) => (
                   <li key={x.action} data-testid={`opt-${x.action}`} data-ready="no" className="flex items-start gap-2.5 rounded-xl px-2.5 py-2 opacity-70">
                     <input type="radio" disabled className="mt-1" aria-label={labels[x.action]} />
-                    <span><span className="font-medium">{labels[x.action]}</span>{x.action === a.ai.suggest && <span className="chip chip-phone ml-1.5">AI</span>}<span className="mt-0.5 block text-[12px] muted">Still needs: {x.missing.join("; ")}</span></span>
+                    <span><span className="font-medium">{labels[x.action]}</span>{x.action === a.ai.suggest && <span className="chip chip-phone ml-1.5">AI</span>}<span className="mt-0.5 block text-[12px] muted">Still needs: {x.missing.join("; ")}</span><BlastLine b={blasts[x.action]} action={x.action} /></span>
                   </li>
                 ))}
               </ul>
@@ -130,6 +135,7 @@ export function NumberTrace({ a, view, labels, reasons, done, packetAt, linked, 
                     <input type="radio" name="action" value={x.action} disabled={!x.ready} defaultChecked={x.action === pick} className="mt-1 accent-[var(--phone)]" data-testid={`t-option-${x.action}`} />
                     <span>{labels[x.action]}{x.action === a.ai.suggest && <span className="chip chip-phone ml-1.5">AI</span>}
                       {!x.ready && <span className="mt-0.5 block text-[12px] muted">Still missing: {x.missing.join("; ")}</span>}
+                      <BlastLine b={blasts[x.action]} action={x.action} />
                     </span>
                   </label>
                 ))}
@@ -140,6 +146,12 @@ export function NumberTrace({ a, view, labels, reasons, done, packetAt, linked, 
                 </select>
               </label>
               <input name="note" placeholder="Note (what you checked)" className="input" />
+              {needSecond && (
+                <label className="block rounded-2xl bg-[var(--warn-tint)] px-3.5 py-3 text-[13px]">
+                  <b>Blocking the route needs a second person.</b> It also cuts off genuine lines, so someone else must check it with you. Leave empty for any other choice.
+                  <input name="second" className="input mt-2" placeholder="Who checked it with you (name and role)" data-testid="t-second" />
+                </label>
+              )}
               {a.options.includes("BAR_IMEI") && (
                 <label className="flex items-start gap-3 rounded-2xl bg-[var(--phone-tint)] px-3.5 py-3 text-[13px]">
                   <input type="checkbox" name="ceir" className="switch mt-0.5" data-testid="t-ceir" />
@@ -158,6 +170,8 @@ export function NumberTrace({ a, view, labels, reasons, done, packetAt, linked, 
             </ActForm>
           )}
         </section>
+
+        {trace && <TelcoGroup alert={a.id} groups={groups} log={groupLog} shops={shops} labels={groupLabels} />}
 
         {done && (
         <section className="card p-5" data-testid="trace">
@@ -273,6 +287,15 @@ export function NumberTrace({ a, view, labels, reasons, done, packetAt, linked, 
         <p className="text-[12px] muted">Demo clock {when(now)}</p>
       </aside>
     </div>
+  );
+}
+
+function BlastLine({ b, action }: { b?: BlastView; action: TAction }) {
+  if (!b) return null;
+  return (
+    <span className={`mt-1 block rounded-lg px-2 py-1 text-[12px] ${b.genuine ? "bg-[var(--warn-tint)] text-[var(--warn)]" : "bg-white/60 muted"}`} data-testid={`blast-${action}`} data-genuine={b.genuine}>
+      <b>Who else gets cut off:</b> {b.lines.join(" ")}
+    </span>
   );
 }
 

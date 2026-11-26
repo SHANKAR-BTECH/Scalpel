@@ -7,6 +7,7 @@
 import { createHash } from "node:crypto";
 import { alertById, ACTION_LABEL, type TAction } from "./telco";
 import { T, norm, I } from "./telcodata";
+import { sisters, DOT_SIM_LIMIT } from "./telcogroup";
 import { callRecords, subscriber, handset, shopLookup, kycDoc, switchLog, route, tower } from "./lookup";
 
 import { PIN_KINDS, PIN_TITLE, type PinKind, type PinRef } from "@/lib/pins";
@@ -33,7 +34,7 @@ function belongs(p: PinRef, s: NonNullable<ReturnType<typeof scope>>): boolean {
   const key = p.ref.split("|")[0]!;
   switch (p.kind) {
     case "handset": case "sims": return s.imeis.has(key);
-    case "number": case "sim": case "spoof": case "police": case "dlt": case "chakshu": case "swap": case "forwarding": return s.numbers.has(norm(key));
+    case "group": case "number": case "sim": case "spoof": case "police": case "dlt": case "chakshu": case "swap": case "forwarding": return s.numbers.has(norm(key));
     case "stats": return s.imeis.has(key) || s.numbers.has(norm(key));
     case "tower": return s.towers.has(key);
     case "shop": return s.shops.has(key);
@@ -63,6 +64,7 @@ function holds(p: PinRef): boolean {
     case "doc": return kycDoc(key).found;
     case "route": return route(key).found;
     case "call": return I().calls.some((x) => x.id === key);
+    case "group": return sisters(key).rows.length > 1;
   }
 }
 
@@ -99,6 +101,8 @@ export function checkTrace(alertId: string, pins: PinRef[]): TraceCheck {
   for (const p of inPins.filter((x) => x.kind === "doc")) { const r = kycDoc(p.ref); if (r.found) shows.push(`ID document ${r.doc}: ${r.note}`); }
   for (const p of inPins.filter((x) => x.kind === "spoof")) { const r = switchLog(p.ref); if (r.found) shows.push(`Switch log for ${p.ref}: ${r.note}`); }
   for (const p of inPins.filter((x) => x.kind === "route")) { const r = route(p.ref); if (r.found) shows.push(`${r.id}: ${r.note}`); }
+  const groupsF = inPins.filter((x) => x.kind === "group").map((p) => sisters(p.ref)).filter((r) => r.found);
+  for (const r of groupsF) shows.push(`Linked SIMs of ${r.anchor}: ${r.note}`);
   const sub = (p: PinRef) => subscriber(p.ref);
   for (const p of inPins.filter((x) => x.kind === "police")) { const r = sub(p); if (r.police) shows.push(`Police letter ${r.police.ref} on ${r.msisdn}: ${r.police.text}`); }
   for (const p of inPins.filter((x) => x.kind === "dlt")) { const r = sub(p); if (r.dlt) shows.push(`${r.msisdn} is a registered sender (${r.dlt.header}, ${r.dlt.entity}).`); }
@@ -132,7 +136,8 @@ export function checkTrace(alertId: string, pins: PinRef[]): TraceCheck {
   const maxSims = Math.max(0, ...hsF.map((h) => h.sims.length));
   const minIn = st.length ? Math.min(...st.map((r) => r.stats.inRatio)) : 1;
   const oneTower = st.some((r) => r.stats.total >= 20 && r.stats.towers.length === 1);
-  const reused = shopsF.some((r) => r.docsReused.length > 0) || docsF.some((r) => r.sims.length > 1);
+  const reused = shopsF.some((r) => r.docsReused.length > 0) || docsF.some((r) => r.sims.length > 1) || groupsF.some((r) => r.docCount > 1);
+  const maxDoc = Math.max(0, ...docsF.map((r) => r.sims.length), ...groupsF.map((r) => (r.overLimit || r.docCount <= DOT_SIM_LIMIT ? r.docCount : 0)));
   const swapNo = inPins.find((p) => p.kind === "swap"), spoofNo = inPins.find((p) => p.kind === "spoof"), dltNo = inPins.find((p) => p.kind === "dlt");
   const signals: TraceSignal[] = [
     sig("many", "Many SIMs used in one device", maxSims > 5, `${maxSims} SIMs have sat in the pinned handset.`, hsF.length ? `The pinned handset holds ${maxSims} SIM${maxSims === 1 ? "" : "s"} (a phone holds 1 or 2).` : "look up the handset and pin it.", hsF.length > 0),
@@ -140,6 +145,7 @@ export function checkTrace(alertId: string, pins: PinRef[]): TraceCheck {
     sig("noin", "Almost no incoming calls", st.length > 0 && minIn < 0.05, minIn === 0 ? "None of the calls in your statistics came in; they all went out." : `Only ${minIn < 0.01 ? "under 1%" : `${Math.round(minIn * 100)}%`} of the calls in your statistics came in.`, st.length ? `${Math.round(minIn * 100)}% of calls came in, a normal share.` : "call statistics (look up call records and pin the statistics).", st.length > 0),
     sig("tower", "Never moves from one tower", oneTower, "All calls in your statistics used one tower.", st.length ? "Calls used more than one tower." : "call statistics.", st.length > 0),
     sig("batch", "SIMs bought in a batch at one shop, on reused IDs", reused, "A pinned shop or ID document shows one ID used for several SIMs.", shopsF.length + docsF.length ? "The pinned shop or document shows no reused ID." : "the shop that sold the SIMs, or the ID document on a SIM.", shopsF.length + docsF.length > 0),
+    sig("limit", `One person's ID holds more than ${DOT_SIM_LIMIT} SIMs (DoT's limit)`, maxDoc > DOT_SIM_LIMIT, `A pinned ID document or linked-SIM group shows ${maxDoc} SIMs on one person's ID.`, docsF.length + groupsF.length ? `The most SIMs on one pinned ID is ${maxDoc}.` : "the ID document on a SIM, or its linked SIMs.", docsF.length + groupsF.length > 0),
     sig("spoof", "Calls carried someone else's caller ID", Boolean(spoofNo), `The switch log for ${spoofNo?.ref ?? ""} shows calls that carried another number.`, "the switch log for the number victims saw.", false),
     sig("business", "Registered business traffic", Boolean(dltNo), `${dltNo?.ref ?? ""} is a registered business sender.`, "the number's business sender registration (on the subscriber record).", false),
     sig("owner", "Long-time owner lost the SIM (swap)", Boolean(swapNo), `${swapNo?.ref ?? ""} was swapped; the owner had it for years.`, "the SIM swap history (on the subscriber record).", false),

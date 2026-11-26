@@ -10,6 +10,7 @@ import { CHOICE_LABEL, REASONS } from "@/lib/server/judge";
 import { holderName } from "@/lib/server/world";
 import { userById } from "@/lib/users";
 import { alertById, ACTION_LABEL } from "@/lib/server/telco";
+import { GROUP_LABEL } from "@/lib/server/desk";
 
 const GROUP: Record<string, string> = { small_shop: "Small shops", salaried: "Salaried", gig_worker: "Gig workers", student: "Students", pensioner: "Pensioners", homemaker: "Homemakers", other: "Others" };
 
@@ -90,13 +91,30 @@ export default async function Assure() {
                     <td>{alertById(x.alert)?.title ?? x.alert} <span className="mono muted">{x.alert}</span></td>
                     <td>{ACTION_LABEL[x.ai.suggest]} <span className="muted">({Math.round(x.ai.confidence * 100)}%)</span></td>
                     <td><span className={`chip ${x.agreed ? "chip-good" : "chip-warn"}`}>{ACTION_LABEL[x.action]}</span> <span className="muted">by {userById(x.by)?.name ?? x.by}</span></td>
-                    <td data-testid="telco-evidence">{x.trace ? <>Trace v{x.trace.version} · {d.traces.get(x.alert)?.pins.length ?? "?"} pins <span className="mono muted">{x.trace.hash.slice(0, 8)}</span>{x.ceir ? <span className="block muted">National block asked (CEIR)</span> : null}</> : <span className="text-[var(--warn)]">no trace</span>}</td>
+                    <td data-testid="telco-evidence">{x.trace ? <>Trace v{x.trace.version} · {d.traces.get(x.alert)?.pins.length ?? "?"} pins <span className="mono muted">{x.trace.hash.slice(0, 8)}</span>{x.ceir ? <span className="block muted">National block asked (CEIR)</span> : null}{x.cutOff > 0 ? <span className="block text-[var(--warn)]">Cut off {x.cutOff} genuine line{x.cutOff > 1 ? "s" : ""}{x.second ? `; second check: ${x.second}` : ""}</span> : null}</> : <span className="text-[var(--warn)]">no trace</span>}</td>
                     <td>{x.reason}{x.note ? <span className="muted">: {x.note}</span> : null}</td>
                     <td>{x.reported.length ? `${x.reported.length} number${x.reported.length > 1 ? "s" : ""}` : <span className="muted">none</span>}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+        {(d.groups.length > 0 || d.shops.length > 0) && (
+          <div className="mt-4 border-t border-[var(--line)] pt-3" data-testid="telco-group-ledger">
+            <p className="label">Linked SIMs and shops</p>
+            <ul className="mt-1.5 space-y-1.5 text-[13px]">
+              {[...d.groups].reverse().map((g) => (
+                <li key={g.gid} data-testid="group-ledger-row" data-outcome={g.outcome}>
+                  <span className={`chip ${g.outcome === "DONE" ? "chip-good" : "chip-warn"} mr-1.5`}>{g.outcome === "DONE" ? "Done" : "Refused"}</span>
+                  {GROUP_LABEL[g.action].split(":")[0]} on {g.sims.length} SIM{g.sims.length === 1 ? "" : "s"} linked to <span className="mono">{g.anchor}</span> ({g.alert}) · {userById(g.by)?.name ?? g.by} · {ago(g.at, d.now)}
+                  {g.refused.length > 0 && <span className="block text-[12.5px] text-[var(--warn)]">{g.refused.join("; ")}</span>}
+                </li>
+              ))}
+              {[...d.shops].reverse().map((x, i) => (
+                <li key={`s${i}`} data-testid="shop-ledger-row"><span className={`chip ${x.outcome === "SUSPENDED" ? "chip-good" : "chip-warn"} mr-1.5`}>{x.outcome === "SUSPENDED" ? "Shop suspended" : "Refused"}</span><span className="mono">{x.pos}</span> ({x.alert}): {x.why} · {ago(x.at, d.now)}</li>
+              ))}
+            </ul>
           </div>
         )}
       </section>
