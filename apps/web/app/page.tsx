@@ -1,62 +1,48 @@
 import Link from "next/link";
-import { demo } from "@/lib/data";
-import { formatRupees } from "@/lib/money";
-import { HeadlineCards } from "@/components/HeadlineCards";
-import { Provenance } from "@/components/Provenance";
-import { POLICY_KEYS } from "@/lib/demo-schema";
-import { POLICY_LABEL, ratioText } from "@/lib/policies";
+import { model, W } from "@/lib/server/world";
+import { CountUp } from "@/components/CountUp";
 
 export default function Home() {
-  const w = demo.world;
-  const shop = demo.memo.cases.find((c) => c.account === "D00191") ?? demo.memo.cases[0]!;
+  const m = model();
+  const rig = W.rigs.reduce((a, b) => (b.sims.length > a.sims.length ? b : a));
+  const reported = m.cases.reduce((s, c) => s + c.reported, 0);
+  const catchable = m.cases.reduce((s, c) => s + c.catchable, 0);
   return (
-    <>
-      <h1 className="text-2xl sm:text-3xl font-semibold">Every hold carries the record a court asks for.</h1>
-      <Link href={`/memo?a=${shop.account}`} className="block mt-3 card p-4 hover:underline" data-testid="lead-hold">
-        <span className="text-xl font-semibold">Hold {formatRupees(shop.heldPaise)} of {formatRupees(shop.balancePaise)}.</span>{" "}
-        <span>The other {formatRupees(shop.balancePaise - shop.heldPaise)} stays usable.</span>
-        <span className="block text-sm muted mt-1">A business current account that received a little scam money: how much, under which rule, until when, and who approved it. Open the memo →</span>
-      </Link>
-      <p className="mt-2 max-w-3xl muted">
-        When fraud is reported, banks often freeze whole accounts. Innocent people lose access to far more than the disputed money.
-        Scalpel holds only the traced amount, checks every hold against the rules, and shows its working.
-        It holds the same money as a plain exact hold; what it adds is the legal checks, the deadlines and the proof.
-      </p>
-      <p className="mt-2 text-sm muted">
-        Demo world: {w.accounts} invented accounts, {w.victims} victims, {w.complaints} complaints ({Math.round(w.reportRate * 100)}% of victims reported).
-      </p>
-
-      <h2 className="mt-6 mb-3 text-lg font-semibold">Two numbers, always together</h2>
-      <HeadlineCards headline={demo.headline} />
-
-
-      <section className="mt-6 card p-4">
-        <h2 className="font-semibold">On the 5 unseen test worlds (about 3,000 accounts each)</h2>
-        <div className="overflow-x-auto">
-          <table className="mt-2 w-full text-sm">
-            <thead><tr className="text-left muted"><th className="py-1 pr-3">Policy</th><th className="pr-3">Held ÷ reported</th><th className="pr-3">Held ÷ all victim money</th><th className="pr-3">Victim money missed</th><th className="pr-3">Innocent money locked</th><th>People wrongly restricted</th></tr></thead>
-            <tbody>
-              {POLICY_KEYS.map((k) => {
-                const h = demo.headlineV2[k];
-                return (
-                  <tr key={k} className="border-t" style={{ borderColor: "var(--line)" }}>
-                    <td className="py-1 pr-3">{POLICY_LABEL[k]}</td><td className="pr-3">{ratioText(h.reportedRatio)}</td><td className="pr-3">{ratioText(h.freezeRatio)}</td>
-                    <td className="pr-3">{formatRupees(h.victimMoneyMissedPaise)} of {formatRupees(h.victimMoneyPaise)}</td>
-                    <td className="pr-3">{formatRupees(h.innocentHeldPaise)}</td><td>{h.peopleWronglyRestricted}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+    <div>
+      <section className="grid gap-8 py-6 lg:grid-cols-[1.25fr_0.75fr] lg:items-center">
+        <div>
+          <p className="label">Bharat Demo Bank · Telco-A</p>
+          <h1 className="display mt-3">Hold the scam money,<br /><span className="text-[#9a9a9a]">not the account.</span><br />Block the scam phone,<br /><span className="text-[#9a9a9a]">not the number.</span></h1>
+          <p className="mt-4 max-w-[560px] text-[16.5px] muted">Scalpel follows money from the victim through every mule account, and the calls back to the phone that made them. It suggests the smallest lawful action, a second person approves it, and every step is written into a record nobody can quietly change.</p>
+          <div className="mt-6 flex flex-wrap gap-2">
+            <Link href="/login" className="btn btn-primary">Sign in to the demo</Link>
+            <Link href="/portal" className="btn btn-ghost">My money is on hold</Link>
+            <Link href="/verify" className="btn btn-ghost">Verify an evidence file</Link>
+          </div>
+        </div>
+        <div className="card p-5">
+          <h2>Right now at Bharat Demo Bank</h2>
+          <dl className="mt-3 grid grid-cols-2 gap-4">
+            <div><dt className="label">Fraud complaints</dt><dd className="money text-[30px]"><CountUp value={W.complaints.length} /></dd></div>
+            <div><dt className="label">Linked into cases</dt><dd className="money text-[30px]"><CountUp value={m.cases.length} /></dd></div>
+            <div><dt className="label">Victims reported</dt><dd className="money text-[30px]"><CountUp value={reported} format="inrShort" /></dd></div>
+            <div><dt className="label">Still in accounts</dt><dd className="money text-[30px]"><CountUp value={catchable} format="inrShort" /></dd></div>
+          </dl>
+          <p className="mt-4 border-t border-[var(--line)] pt-3 text-[13.5px]">One SIM box with {rig.sims.length} SIMs made the calls behind {m.casesOfRig.get(rig.id)?.length ?? 0} separate cases.</p>
         </div>
       </section>
-
-      <nav className="no-print mt-6 grid gap-3 sm:grid-cols-3">
-        <Link href="/replay" className="card p-4 hover:underline">▶ Watch the same 30 days, four ways</Link>
-        <Link href="/memo" className="card p-4 hover:underline">📄 Read a hold memo, rule by rule</Link>
-        <Link href="/order" className="card p-4 hover:underline">⏱ Who should the officer act on first?</Link>
-      </nav>
-      <Provenance />
-    </>
+      <section className="mt-10">
+        <h2>How a case moves</h2>
+        <ol className="steps mt-4">
+          {[
+            ["Follow", "Police requests and complaints arrive at the bank. Scalpel joins complaints that share accounts or phones into one case and traces where the money went next. Telco-A traces the calls back to the phone."],
+            ["Decide", "For every account the AI suggests the exact amount to hold, never the whole balance, and the officer decides with it. Telco-A's analyst decides on the handset or SIM box, never a spoofed number."],
+            ["Prove", "A supervisor approves, the account holder is told and can explain online, deadlines are tracked, and compliance downloads an evidence file anyone can verify."],
+          ].map(([t, d]) => (
+            <li key={t} className="step"><h3>{t}</h3><p className="mt-1 text-[14px] muted">{d}</p></li>
+          ))}
+        </ol>
+      </section>
+    </div>
   );
 }

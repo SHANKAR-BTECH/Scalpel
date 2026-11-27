@@ -1,0 +1,231 @@
+import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
+import { notFound } from "next/navigation";
+import { requireUser } from "@/lib/server/auth";
+import { desk, phoneTarget } from "@/lib/server/desk";
+import { caseById, model, holderName, W } from "@/lib/server/world";
+import { caseGraph } from "@/lib/server/graph";
+import { TrailGraph } from "@/components/TrailGraph";
+import { AccountRow } from "@/components/AccountRow";
+import { ActForm } from "@/components/ActForm";
+import { CountUp } from "@/components/CountUp";
+import { CaseWork, type PointItem, type ClearItem, type DoneItem, type PhoneHelp } from "@/components/CaseWork";
+import { aiView } from "@/lib/server/judge";
+import { askTelcoAction } from "@/app/actions";
+import { ago, inr, when } from "@/lib/format";
+import { userById } from "@/lib/users";
+
+export default async function CasePage({ params }: { params: Promise<{ id: string }> }) {
+  const u = await requireUser("officer", "supervisor");
+  const { id } = await params;
+  const c = caseById(id);
+  if (!c) notFound();
+  const m = model();
+  const d = await desk();
+  const g = caseGraph(c, d);
+  // Priya's own saved trail decides what she sees: only accounts it reaches can be decided.
+  const trail = d.trails.get(c.id);
+  const reach = new Set((trail?.reached ?? []).filter((a) => c.accounts.includes(a)));
+  const txById = new Map(W.txns.map((t) => [t.id, t]));
+  const victimOf = new Map(c.complaints.map((x) => [x.txnId, x.victim]));
+  const goneKeys = new Set((trail?.pins ?? []).filter((p) => p.kind === "gone" || p.kind === "payment").map((p) => {
+    const t = txById.get(p.ref);
+    return !t ? "" : p.kind === "payment" ? `V:${victimOf.get(t.id)}>${t.to}` : `${t.from}>${t.to}`;
+  }));
+  const mine = trail ? caseGraph(c, d, reach, goneKeys) : null;
+  const accts = c.accounts.filter((a) => reach.has(a)).map((a) => m.accounts.get(a)!).sort((a, b) => (a.hop ?? 9) - (b.hop ?? 9) || b.traced - a.traced);
+  // Below the Rs 1,000 minimum a hold isn't allowed anyway: list those accounts briefly instead of as full cards.
+  const withMoney = accts.filter((v) => v.traced >= 1000_00);
+  const rest = accts.filter((v) => v.traced < 1000_00);
+  const points: PointItem[] = [], clear: ClearItem[] = [], done: DoneItem[] = [];
+  const YEAR = 365 * 86_400_000;
+  for (const v of withMoney) {
+    const ai = aiView(v, d.now, d.fri.get(v.phone?.msisdn ?? "")?.band);
+    const dec = d.decisionByAccount.get(v.a.id);
+    if (dec) {
+      const pr = dec.pid ? d.proposals.find((p) => p.pid === dec.pid) : undefined;
+      const status = d.holdByAccount.has(v.a.id) ? "held" : pr?.status === "pending" ? "with supervisor" : dec.needsSignoff && !dec.signoff ? "waiting sign-off" : dec.signoff?.approved ? "signed off" : "recorded";
+      done.push({ id: v.a.id, name: holderName(v.a), choice: dec.choice, agreed: dec.agreed, status });
+      continue;
+    }
+    if (d.holdByAccount.has(v.a.id) || d.pendingByAccount.has(v.a.id)) continue;
+    const back = d.returned.get(v.a.id);
+    const returned = back?.signoff ? { by: userById(back.signoff.by)?.name ?? back.signoff.by, note: back.signoff.note } : null;
+    if (ai.point || returned) {
+      const age = d.now - v.a.openedAt;
+      points.push({ ai, returned, acct: {
+        id: v.a.id, name: holderName(v.a), sub: `${v.a.type === "CURRENT" ? "Current" : v.a.type === "SALARY" ? "Salary" : "Savings"}, ${v.a.holder.city}`,
+        traced: v.traced, balance: v.balance, asked: "amount" in v.asked ? inr(v.asked.amount) : "Whole a/c", score: v.a.score?.muleScore ?? null,
+        age: age > YEAR ? `${Math.floor(age / YEAR)} yr ago` : `${Math.max(1, Math.round(age / 86_400_000))} days ago`, phone: v.phone?.msisdn,
+        mine: trail?.holds[v.a.id] ?? null, trail: trail?.version ?? 0,
+      } });
+    } else clear.push({ id: v.a.id, name: holderName(v.a), suggest: ai.suggest, amount: ai.amount, confidence: ai.confidence });
+  }
+  // Sent-back accounts first, so the supervisor's note is dealt with before anything new.
+  points.sort((a, b) => Number(Boolean(b.returned)) - Number(Boolean(a.returned)));
+  const heldTotal = withMoney.reduce((s, v) => s + (d.holdByAccount.get(v.a.id)?.hold.amount ?? 0), 0);
+  const tracedTotal = withMoney.reduce((s, v) => s + v.traced, 0);
+  const decidedN = withMoney.filter((v) => d.decisionByAccount.has(v.a.id)).length;
+  const heldN = withMoney.filter((v) => d.holdByAccount.has(v.a.id)).length;
+  const waitingN = withMoney.filter((v) => d.pendingByAccount.has(v.a.id)).length;
+  const linked = [...new Set(c.rigs.flatMap((r) => (m.casesOfRig.get(r) ?? []).filter((x) => x !== c.id)))];
+  const lead = c.rigs.map((r) => W.rigs.find((x) => x.id === r)).find(Boolean);
+  const bands = accts.map((v) => v.phone?.fri).filter(Boolean) as string[];
+  const BAND: Record<string, string> = { VERY_HIGH: "Very high", HIGH: "High", MEDIUM: "Medium", LOW: "Low" };
+  const top = ["VERY_HIGH", "HIGH", "MEDIUM", "LOW"].find((b) => bands.includes(b));
+  const phoneHelp: PhoneHelp | null = c.calls.length ? {
+    device: lead ? `${lead.kind === "simbox" ? "SIM box" : "handset"} with ${lead.sims.length} SIMs` : "recently swapped SIM",
+    victims: new Set(c.calls.map((k) => k.to)).size, calls: c.calls.length, band: top ? `${BAND[top]} on the mule phones` : "not rated",
+  } : null;
+  const log = d.chain.filter((e) => e.caseId === c.id).reverse();
+  const asks = d.asks.filter((a) => a.caseId === c.id);
+  const rigTargets = c.rigs.map((r) => {
+    const rig = W.rigs.find((x) => x.id === r);
+    return rig ? { rig, t: phoneTarget("IMEI", rig.imei, d.now, d.checks), kind: "IMEI" as const, value: rig.imei } : { rig: null, t: phoneTarget("MSISDN", r, d.now, d.checks), kind: "MSISDN" as const, value: r };
+  });
+  return (
+    <div>
+      <Link href="/inbox" className="inline-flex items-center gap-1 text-[13px] muted hover:text-[var(--fg)]"><ChevronLeft size={15} aria-hidden />Inbox</Link>
+      <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="label"><span className="mono">{c.id}</span> · {c.complaints.length} complaints · first {when(c.firstAt)}</p>
+          <h1 className="mt-1">{c.scamType}: {c.complaints.length} victims</h1>
+          <p className="mt-1 max-w-[720px] muted">&ldquo;{c.complaints[0]!.story}&rdquo;</p>
+        </div>
+        <dl className="grid grid-cols-3 gap-4 text-right">
+          <div><dt className="text-[12px] muted">Reported lost</dt><dd className="money text-[20px]"><CountUp value={c.reported} format="inr" /></dd></div>
+          <div><dt className="text-[12px] muted">Accounts on your trail</dt><dd className="money text-[20px] text-[var(--accent)]" data-testid="on-trail">{trail ? reach.size : "Not started"}</dd></div>
+          <div><dt className="text-[12px] muted">Held so far</dt><dd className="money text-[20px]" data-testid="held-total">{inr(heldTotal)}</dd></div>
+        </dl>
+      </div>
+
+      <section className="card mt-5 p-5" data-testid="trail-card">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="min-w-0">
+            <h2>{trail ? `Your money trail, version ${trail.version}` : "Follow the money first"}</h2>
+            {trail ? (
+              <p className="mt-1 text-[14px] muted">Saved by {userById(trail.by)?.name ?? trail.by} {ago(trail.at, d.now)}: {trail.pins.length} pins, {reach.size} of this case&apos;s accounts reached{trail.note ? `. "${trail.note}"` : ""}. You can decide any account your saved trail reaches; follow the money further to decide more.</p>
+            ) : (
+              <p className="mt-1 text-[14px] muted">Start from the victims&apos; payments, read each account&apos;s statement, and pin where the money went. Decisions open for the accounts your saved trail reaches.</p>
+            )}
+          </div>
+          <Link href={`/case/${c.id}/work`} className="btn btn-primary" data-testid="open-trail">{trail ? "Continue the money trail" : "Open the money trail workbench"}</Link>
+        </div>
+        {!trail && (
+          <ul className="mt-4 grid gap-1.5 text-[13.5px] sm:grid-cols-2" data-testid="complaint-list">
+            {c.complaints.map((x, i) => <li key={x.id} className="flex items-center gap-2"><span className="font-medium">{c.victims[i]!.name}</span><span className="mono muted">{x.txnId}</span><span className="money ml-auto">{inr(txById.get(x.txnId)!.amount)}</span></li>)}
+          </ul>
+        )}
+      </section>
+
+      {trail && <div className="mt-5"><CaseWork caseId={c.id} graph={g} points={points} clear={clear} done={done} canDecide={u.role === "officer"} phone={phoneHelp} /></div>}
+
+      {mine && (
+        <section className="mt-6">
+          <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+            <h2>Your trail: where the calls came from and where the money went</h2>
+            <p className="text-[13px] muted">Drawn from your pins only. Money usually moves on from the first accounts in about {c.minutesToCashOut} minutes.</p>
+          </div>
+          <TrailGraph g={mine} />
+        </section>
+      )}
+
+      <section className="mt-6 grid gap-4 lg:grid-cols-[1fr_340px]">
+        <div className="min-w-0">
+          {!trail ? <div className="panel p-4 text-[14px] muted" data-testid="board-locked">The case board fills in as your trail reaches accounts. Each account&apos;s mule score and the AI&apos;s suggestion open once it is on your saved trail, as a second opinion.</div> : <>
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2>Case board</h2>
+            <p className="text-[13px] muted">{decidedN} of {withMoney.length} decided · {heldN} held · {waitingN} waiting approval</p>
+          </div>
+          <div className="thread mt-2" aria-label={`${inr(heldTotal)} of ${inr(tracedTotal)} victims' money held`}>
+            <span className="thread-fill" style={{ width: `${tracedTotal ? Math.min(100, (heldTotal / tracedTotal) * 100) : 0}%` }} />
+          </div>
+          <p className="mt-1.5 text-[13px] muted"><span className="money text-[var(--fg)]">{inr(heldTotal)}</span> of <span className="money text-[var(--fg)]">{inr(tracedTotal)}</span> victims&apos; money in these accounts is held. A hold is never more than the victims&apos; money in the account.</p>
+          <div id="accounts" className="card board mt-3 scroll-mt-24" data-testid="accounts">
+            <div className="board-head"><span>Account</span><span>Layer</span><span>Mule score</span><span className="text-right">Victims&apos; money</span><span className="text-right">Status</span><span /></div>
+            {withMoney.map((v) => <AccountRow key={v.a.id} v={v} desk={d} />)}
+          </div>
+          {rest.length > 0 && (
+            <details className="mt-3 panel p-3">
+              <summary className="text-[14px] font-medium">{rest.length} more accounts on your trail have less than ₹1,000 of victims&apos; money left (below the minimum hold)</summary>
+              <ul className="mt-2 grid gap-1 text-[13.5px] sm:grid-cols-2">{rest.map((v) => <li key={v.a.id}>{holderName(v.a)} <span className="mono muted">{v.a.id}</span> <span className="money muted">{inr(v.traced)}</span></li>)}</ul>
+            </details>
+          )}
+          </>}
+        </div>
+
+        <aside className="space-y-3">
+          <div className="card p-4" data-testid="phone-panel">
+            <h2 className="text-[var(--phone)]">The phone behind it</h2>
+            <p className="mt-1 text-[14px]">{c.calls.length} scam calls reached these victims.</p>
+            <ul className="mt-3 space-y-3">
+              {rigTargets.map(({ rig, t, kind, value }) => {
+                const ask = asks.find((a) => a.kind === kind && a.value === value);
+                const done = d.actions.find((a) => a.kind === kind && a.value === value && a.outcome === "BLOCKED");
+                return (
+                  <li key={value} className="rounded-xl bg-[var(--phone-tint)] p-3 text-[13.5px]">
+                    <p className="font-semibold text-[var(--phone)]">{rig ? `${rig.kind === "simbox" ? "SIM box" : "One handset"} with ${rig.sims.length} SIMs` : "One SIM, swapped recently"}</p>
+                    <p className="mono text-[12px] muted">{kind === "IMEI" ? `IMEI ${value}` : value}</p>
+                    {rig && <p className="mt-1 text-[12.5px] muted">Cell {rig.cell}. {rig.kind === "simbox" ? "Calls go out through a gateway route." : ""}</p>}
+                    {done ? <p className="mt-2 chip chip-good">Blocked by Telco-A {ago(done.at, d.now)}</p>
+                      : ask?.done ? <p className="mt-2 chip chip-bad">Telco-A refused: {ask.done.reasons[0]}</p>
+                      : ask ? <p className="mt-2 chip chip-warn">Asked Telco-A {ago(ask.at, d.now)}</p>
+                      : u.role === "officer" && (
+                        <ActForm action={askTelcoAction} hidden={{ case: c.id, kind, value, note: `Calls behind ${c.id}` }} label={kind === "IMEI" ? "Ask Telco-A to block this handset" : "Ask Telco-A to block this SIM"} variant="phone" size="sm" className="mt-2" testid={`ask-${kind}`} />
+                      )}
+                    {t.signals.length > 0 && <p className="mt-2 text-[12px] muted">Signs: {t.signals.map((s) => SIGN[s] ?? s).join(", ")}</p>}
+                  </li>
+                );
+              })}
+            </ul>
+            {c.shownCallers.filter((s) => s.spoofed).map((s) => (
+              <div key={s.msisdn} className="mt-3 rounded-xl border border-[#f1b8b1] bg-[var(--bad-tint)] p-3 text-[13px]" data-testid="spoof-note">
+                <p className="font-semibold text-[var(--bad)]">Do not block {s.msisdn}</p>
+                <p className="mt-1">Victims saw this number, but the network shows the calls came from the SIMs above. {s.protected ? "It is a registered 1600-series business number (" + (s.owner ?? "a business") + ")." : `It belongs to an innocent customer${s.owner ? ` (${s.owner})` : ""} whose phone made no such call.`} Blocking it would punish the wrong person.</p>
+              </div>
+            ))}
+            {linked.length > 0 && <p className="mt-3 text-[13px]">The same phone is behind {linked.map((l, i) => <span key={l}>{i > 0 && ", "}<Link className="link" href={`/case/${l}`}>{l}</Link></span>)}.</p>}
+          </div>
+
+          <div className="card p-4">
+            <h2>Activity on this case</h2>
+            {log.length === 0 && <p className="mt-2 text-[13.5px] muted">Nothing done yet.</p>}
+            <ol className="mt-2 space-y-2 text-[13px]" data-testid="case-log">
+              {log.slice(0, 12).map((e) => (
+                <li key={e.seq}><span className="muted">{when(e.at)}</span><br />{describe(e)}</li>
+              ))}
+            </ol>
+          </div>
+        </aside>
+      </section>
+    </div>
+  );
+}
+
+const SIGN: Record<string, string> = {
+  HANDSET_GT5_SIMS: "more than 5 SIMs in one handset", SIMBOX_ROUTE: "SIM-box route", SIM_SWAP_LT_72H: "SIM swapped in the last 3 days",
+  GE3_CASE_LINKED_SENDERS: "called 3 or more victims", CALL_FORWARDING_ACTIVE: "call forwarding on", FRI_VERY_HIGH: "DoT fraud-risk rating very high", MNRL_LISTED: "on the revoked-numbers list",
+};
+
+function describe(e: { type: string; actor: string; payload: unknown }): string {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const p = e.payload as Record<string, any>;
+  const who = userById(e.actor)?.name ?? (e.actor.startsWith("holder:") ? "The account holder" : e.actor === "system" ? "Scalpel" : e.actor);
+  const acct = p.account ? holderName(model().accounts.get(p.account)!.a) : "";
+  switch (e.type) {
+    case "PROPOSE": return `${who} proposed ${p.kind === "HOLD" ? `a hold of ${inr(p.amount)}` : "a release"} on ${acct}`;
+    case "DECIDE": return `${who} ${p.approved ? "approved" : "rejected"} it${p.note ? `: "${p.note}"` : ""}`;
+    case "HOLD_PLACED": return `Hold ${p.ref} placed: ${inr(p.amount)} on ${acct}`;
+    case "NOTICE_SENT": return `Account holder told by ${p.channel} (${p.ref})`;
+    case "REPLY_RECEIVED": return `Account holder explained (${p.ref})`;
+    case "GRM_UPLOADED": return `${who} sent the explanation to the police (${p.ref})`;
+    case "RELEASED": return `Hold released`;
+    case "TELCO_ASK": return `${who} asked Telco-A to block ${p.kind === "IMEI" ? "handset" : "number"} ${p.value}`;
+    case "TELCO_ACTION": return `Telco-A ${p.outcome === "BLOCKED" ? "blocked" : "refused to block"} ${p.value}`;
+    case "EVIDENCE_EXPORTED": return `${who} downloaded the evidence file`;
+    case "TRACE_SAVED": return `${who} saved the SIM trace for ${p.alert}, version ${p.version}`;
+    case "TRAIL_SAVED": return `${who} saved the money trail, version ${p.version} (${(p.pins as unknown[]).length} pins)`;
+    case "DECISION": return `${who} decided ${acct}: ${p.choice === "HOLD" ? `hold${p.amount ? ` ${inr(p.amount)}` : ""}` : p.choice === "NO_HOLD" ? "no hold, watch" : "send back to police"}${p.trail ? ` (trail v${p.trail.version})` : ""}`;
+    default: return `${who}: ${e.type}`;
+  }
+}
