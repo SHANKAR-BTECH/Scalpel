@@ -163,8 +163,9 @@ export function SimWorkbench({ alert, leads, start, firstDay, lastDay, saved, lo
                       <div><dt className="label">SIM card ID</dt><dd className="mono">{r.sub.iccid}</dd></div>
                       <div><dt className="label">IMSI</dt><dd className="mono">{r.sub.imsi}</dd></div>
                       <div><dt className="label">Call forwarding</dt><dd>{r.sub.forwarding ? <span className="mono">to {r.sub.forwarding}</span> : "Off"}</dd></div>
-                      <div><dt className="label">Citizen reports</dt><dd>{r.sub.chakshu ?? 0}</dd></div>
+                      <div><dt className="label">Citizen reports</dt><dd>{r.sub.chakshu ?? 0}{r.sub.chakshuKind && <span className="block text-[12.5px] muted">What they said: {r.sub.chakshuKind}</span>}</dd></div>
                       <div><dt className="label">Business sender</dt><dd>{r.sub.dlt ? `${r.sub.dlt.header} · ${r.sub.dlt.entity} (${r.sub.dlt.type})` : "Not registered"}</dd></div>
+                      <div><dt className="label">Company papers</dt><dd data-testid="sub-bulk">{r.sub.bulk ? <>{r.sub.bulk.company} · {r.sub.bulk.regNo}<span className="block text-[12.5px] muted">Signatory {r.sub.bulk.signatory} · letter {r.sub.bulk.letter}. {r.sub.bulk.verified}.</span></> : "None on file"}</dd></div>
                       <div><dt className="label">SIM swaps</dt><dd>{r.sub.swaps!.length ? r.sub.swaps!.map((w) => `${fmt(w.at)} at ${w.shop}`).join("; ") : "None"}</dd></div>
                     </dl>
                     {r.sub.handsets!.length > 0 && <p className="mt-3"><span className="label">Handsets this SIM sat in</span>{r.sub.handsets!.map((h) => <span key={h.imei + h.from} className="mt-1 block"><Go onClick={() => fill("imei", h.imei)}>{h.imei}</Go> <span className="muted">{fmt(h.from)} → {h.to ? fmt(h.to) : "now"}</span></span>)}</p>}
@@ -173,11 +174,15 @@ export function SimWorkbench({ alert, leads, start, firstDay, lastDay, saved, lo
                     <div className="mt-3 flex flex-wrap gap-2">
                       <PinBtn on={has("number", r.sub.msisdn)} label="Pin the number" onClick={() => add({ kind: "number", ref: r.sub!.msisdn, label: `${r.sub!.msisdn} · ${r.sub!.kycName}` })} />
                       <button type="button" className="btn btn-ghost btn-sm" onClick={() => fill("group", r.sub!.msisdn)} data-testid="find-linked">Find linked SIMs</button>
-                      {r.sub.swaps!.length > 0 && <PinBtn on={has("swap", r.sub.msisdn)} label="Pin swap history" onClick={() => add({ kind: "swap", ref: r.sub!.msisdn, label: `${r.sub!.msisdn} swapped ${fmt(r.sub!.swaps!.at(-1)!.at)}` })} />}
-                      {r.sub.forwarding && <PinBtn on={has("forwarding", r.sub.msisdn)} label="Pin call forwarding" onClick={() => add({ kind: "forwarding", ref: r.sub!.msisdn, label: `forwards to ${r.sub!.forwarding}` })} />}
-                      {r.sub.dlt && <PinBtn on={has("dlt", r.sub.msisdn)} label="Pin sender registration" onClick={() => add({ kind: "dlt", ref: r.sub!.msisdn, label: `${r.sub!.dlt!.header} · ${r.sub!.dlt!.entity}` })} />}
-                      {(r.sub.chakshu ?? 0) > 0 && <PinBtn on={has("chakshu", r.sub.msisdn)} label="Pin citizen reports" onClick={() => add({ kind: "chakshu", ref: r.sub!.msisdn, label: `${r.sub!.chakshu} reports` })} />}
-                      {r.sub.police && <PinBtn on={has("police", r.sub.msisdn)} label="Pin police letter" onClick={() => add({ kind: "police", ref: r.sub!.msisdn, label: r.sub!.police!.ref })} />}
+                    </div>
+                    <p className="label mt-4">Pin what each check found, even when it found nothing</p>
+                    <div className="mt-1.5 flex flex-wrap gap-2" data-testid="sub-checks">
+                      <PinBtn on={has("swap", r.sub.msisdn)} label={r.sub.swaps!.length ? "Pin swap history" : "Pin: no swaps"} onClick={() => add({ kind: "swap", ref: r.sub!.msisdn, label: r.sub!.swaps!.length ? `${r.sub!.msisdn} swapped ${fmt(r.sub!.swaps!.at(-1)!.at)}` : `${r.sub!.msisdn}: no swaps` })} />
+                      <PinBtn on={has("forwarding", r.sub.msisdn)} label={r.sub.forwarding ? "Pin call forwarding" : "Pin: no forwarding"} onClick={() => add({ kind: "forwarding", ref: r.sub!.msisdn, label: r.sub!.forwarding ? `forwards to ${r.sub!.forwarding}` : `${r.sub!.msisdn}: forwarding off` })} />
+                      <PinBtn on={has("dlt", r.sub.msisdn)} label={r.sub.dlt ? "Pin sender registration" : "Pin: not a registered sender"} onClick={() => add({ kind: "dlt", ref: r.sub!.msisdn, label: r.sub!.dlt ? `${r.sub!.dlt.header} · ${r.sub!.dlt.entity}` : `${r.sub!.msisdn}: not registered` })} />
+                      <PinBtn on={has("bulk", r.sub.msisdn)} label={r.sub.bulk ? "Pin company papers" : "Pin: no company papers"} onClick={() => add({ kind: "bulk", ref: r.sub!.msisdn, label: r.sub!.bulk ? `${r.sub!.bulk.company} · ${r.sub!.bulk.letter}` : `${r.sub!.msisdn}: no company papers` })} />
+                      <PinBtn on={has("chakshu", r.sub.msisdn)} label={(r.sub.chakshu ?? 0) > 0 ? "Pin citizen reports" : "Pin: no citizen reports"} onClick={() => add({ kind: "chakshu", ref: r.sub!.msisdn, label: (r.sub!.chakshu ?? 0) > 0 ? `${r.sub!.chakshu} reports: ${r.sub!.chakshuKind ?? ""}` : `${r.sub!.msisdn}: no reports` })} />
+                      <PinBtn on={has("police", r.sub.msisdn)} label={r.sub.police ? "Pin police letter" : "Pin: no police letter"} onClick={() => add({ kind: "police", ref: r.sub!.msisdn, label: r.sub!.police ? r.sub!.police.ref : `${r.sub!.msisdn}: no police letter` })} />
                     </div>
                   </>
                 )}

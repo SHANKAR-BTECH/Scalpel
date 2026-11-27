@@ -20,7 +20,7 @@ export function TelcoGroup({ alert, groups, log, shops, labels }: { alert: strin
   return (
     <section className="card p-5" data-testid="group-panel">
       <h2 className="flex items-center gap-2"><Users size={17} className="text-[var(--phone)]" aria-hidden />Beyond this alert: linked SIMs and shops</h2>
-      <p className="mt-0.5 text-[13.5px] muted">From the linked SIMs and shops you pinned. Tick the SIMs an action covers. Telco-A refuses to block or re-verify a long-time customer or a registered business, and names them.</p>
+      <p className="mt-0.5 text-[13.5px] muted">From the linked SIMs and shops you pinned. Tick the SIMs an action covers. Telco-A refuses to block or re-verify a long-time customer or a registered business. It says how many you ticked, not which: you find them.</p>
       {groups.map((g) => <Group key={g.anchor} alert={alert} g={g} labels={labels} />)}
       {log.length > 0 && (
         <div className="mt-4 border-t border-[var(--line)] pt-3">
@@ -28,9 +28,9 @@ export function TelcoGroup({ alert, groups, log, shops, labels }: { alert: strin
           <ul className="mt-1.5 space-y-1.5 text-[13px]" data-testid="group-log">
             {log.map((x, i) => (
               <li key={i} data-testid="group-log-row" data-outcome={x.outcome}>
-                <span className={`chip ${x.outcome === "DONE" ? "chip-good" : "chip-warn"} mr-1.5`}>{x.outcome === "DONE" ? "Done" : "Refused"}</span>
+                <span className={`chip ${x.outcome === "DONE" ? "chip-good" : "chip-warn"} mr-1.5`}>{x.outcome === "DONE" ? "Done" : "Near miss"}</span>
                 {x.action} · {x.sims} SIM{x.sims === 1 ? "" : "s"} · {x.by} · {when(x.at)}
-                {x.refused.length > 0 && <span className="block text-[12.5px] text-[var(--warn)]">{x.refused.join("; ")}</span>}
+                {x.refused.length > 0 && <span className="block text-[12.5px] text-[var(--warn)]">Refused: {x.refused.length} ticked SIM{x.refused.length === 1 ? "" : "s"} looked like a genuine customer. Nothing was changed.</span>}
               </li>
             ))}
           </ul>

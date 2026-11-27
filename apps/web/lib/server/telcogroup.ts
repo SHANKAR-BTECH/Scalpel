@@ -90,26 +90,27 @@ export function blast(a: Alert, act: TAction): Blast {
     const prot = sims.map((n) => protectedReason(n)).filter((x): x is string => Boolean(x));
     genuine = prot.length;
     lines.push(`${sims.length} SIM${sims.length === 1 ? "" : "s"} inside this handset stop working on Telco-A's network.`);
-    if (prot.length) lines.push(`${prot.length} of them ${prot.length === 1 ? "looks" : "look"} genuine: ${prot.slice(0, 2).join("; ")}${prot.length > 2 ? `; and ${prot.length - 2} more` : ""}.`);
+    if (prot.length) lines.push(`${prot.length} of them ${prot.length === 1 ? "looks" : "look"} like a genuine customer (a long-time owner or a registered business). Check the SIM list before you bar it.`);
     else lines.push("None of those SIMs is a registered business or a long-time customer.");
   } else if (act === "BLOCK_ROUTE") {
     const r = T.routes.find((x) => x.devices.includes(a.value));
     genuine = r?.lines.length ?? 0;
     lines.push(`Every call through ${r?.id ?? "the route"} stops, from ${r?.devices.length ?? 0} flagged device${r?.devices.length === 1 ? "" : "s"}.`);
-    if (genuine) lines.push(`${genuine} genuine line${genuine === 1 ? "" : "s"} on the same route go dark too: ${r!.lines.map((l) => l.owner).join(", ")}.`);
+    if (genuine) lines.push(`${genuine} registered business line${genuine === 1 ? "" : "s"} on the same route go dark too. The route lookup shows whose.`);
     else lines.push("No genuine lines use this route.");
   } else if (act === "DISCONNECT" || act === "REVERIFY") {
     const s = I().sub.get(norm(a.value));
     const why = protectedReason(a.value);
     const c = contacts(a.value);
     if (s) lines.push(`${act === "DISCONNECT" ? "The number is cut off and goes on the revoked list" : "Outgoing calls stop until the owner re-verifies; incoming calls still work"}. On record: ${s.kycName}, since ${new Date(s.activatedAt).getFullYear()}.`);
-    if (why) { genuine = 1; lines.push(`This looks like a genuine customer: ${why}.`); }
-    if (c.length) lines.push(`${c.length} number${c.length === 1 ? "" : "s"} called it in the records (family, friends or work), e.g. ${c.slice(0, 2).map(([n]) => n).join(", ")}.`);
+    if (why) { genuine = 1; lines.push("The record has signs of a genuine customer (a long-time owner or a registered business). The subscriber record shows which."); }
+    if (c.length) lines.push(`${c.length} number${c.length === 1 ? "" : "s"} called it in the records (family, friends or work).`);
   } else if (act === "LABEL_SPAM") {
     const s = I().sub.get(norm(a.value));
-    lines.push(`Everyone it calls sees a spam warning.${s?.dlt ? ` It is ${s.dlt.entity}'s registered ${s.dlt.type.toLowerCase()} line.` : ""}`);
-    if (s?.dlt) genuine = 1;
+    lines.push("Everyone it calls sees a spam warning, so they may stop answering it.");
+    if (s?.dlt || s?.bulk) { genuine = 1; lines.push("The record has signs of a registered business on this line."); }
   } else if (act === "KEEP_LIVE") lines.push("No one is cut off. The line stays on and is watched for the police.");
   else lines.push("No one is cut off.");
-  return { lines, genuine, second: act === "BLOCK_ROUTE" && genuine > 0 };
+  // Any action that cuts off lines that look genuine needs a second person, not only a route block.
+  return { lines, genuine, second: genuine > 0 && act !== "KEEP_LIVE" && act !== "GENUINE" && act !== "CLEAR_REPORT" };
 }

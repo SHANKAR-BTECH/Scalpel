@@ -126,7 +126,7 @@ test("each person only reaches their own pages", async ({ browser }) => {
 
 test("Telco-A engineer builds the trace, the decision opens only when the evidence fits, DoT gets the report; spoofed numbers are refused", async ({ browser }) => {
   const imran = await as(browser, "imran");
-  await expect(imran.getByTestId("alert-card")).toHaveCount(8);
+  await expect(imran.getByTestId("alert-card")).toHaveCount(10);
   await imran.goto("/telco/RIG-1");
   // Reset leaves a half-built trace: handset and tower only. Barring the handset is not open yet.
   await expect(imran.getByTestId("trace-saved")).toContainText("2 pins");
@@ -164,8 +164,15 @@ test("Telco-A engineer builds the trace, the decision opens only when the eviden
   expect(text).toContain("Start (IST)");
   expect(text.split("\r\n").length).toBeGreaterThan(14);
   await imran.getByTestId("t-option-BAR_IMEI").check();
+  // Commit first: nothing is pre-ticked, so the button waits until he cites the pins his call rests on.
+  await expect(imran.getByTestId("call-builder")).toBeVisible();
+  await expect(imran.getByTestId("telco-decide")).toBeDisabled();
+  await expect(imran.getByTestId("call-problems")).toContainText("Tick the pins");
+  await imran.locator("[data-testid=cite][data-key^='stats::']").check();
+  await expect(imran.getByTestId("call-ok")).toBeVisible();
   await imran.getByTestId("t-reason").selectOption("Would cut off genuine customers");
   await imran.getByTestId("t-ceir").check();
+  if (await imran.getByTestId("t-second").count()) await imran.getByTestId("t-second").selectOption({ index: 1 });
   await imran.getByTestId("telco-decide").click();
   await expect(imran.getByTestId("telco-decided")).toContainText("Overruled the AI", { timeout: 10_000 });
   await expect(imran.getByTestId("telco-decided")).toContainText("Reported to DoT");
@@ -379,11 +386,13 @@ test("Imran hunts the linked SIMs, spares the real owner of a stolen ID, and sus
   await imran.getByTestId("save-trace").click();
   await expect(imran.getByTestId("save-result")).toContainText("version");
   await imran.goto("/telco/RIG-3");
-  // Block everyone: refused, naming her.
+  // Block everyone: refused as a near miss, with a count but no name. He finds her in the list himself.
   await imran.getByTestId("group-all").click();
   await imran.getByTestId("group-BLOCK").check();
   await imran.getByTestId("group-act").click();
-  await expect(imran.getByTestId("group-act-result")).toContainText("Lakshmi Kumari");
+  await expect(imran.getByTestId("group-act-result")).toContainText("1 of the ticked SIMs");
+  await expect(imran.getByTestId("group-act-result")).not.toContainText("Lakshmi");
+  await expect(imran.getByTestId("group-log-row").first()).toContainText("Near miss");
   // Untick her and block the rest.
   await imran.getByRole("checkbox", { name: "Tick +91 94311 27608" }).uncheck();
   await imran.getByTestId("group-act").click();
@@ -460,4 +469,47 @@ test("a saved trace that is still short keeps the decision button on screen, wit
   await find.click();
   await expect(imran).toHaveURL(/tool=/);
   await expect(imran.getByTestId("tool-run")).toBeVisible();
+});
+
+test("ABUSE-1: real papers tempt a clear; Imran cites the reports, answers his own pins against him, and a colleague checks it", async ({ browser }) => {
+  const imran = await as(browser, "imran");
+  await imran.goto("/telco/work?alert=ABUSE-1");
+  await imran.getByTestId("tool-run").click();
+  const sub = imran.getByTestId("result-sub");
+  await expect(sub).toContainText("QuickRupee");
+  await expect(sub).toContainText("bank's KYC desk");
+  await sub.getByTestId("pin").filter({ hasText: "Pin the number" }).click();
+  const checks = imran.getByTestId("sub-checks");
+  // Every check can be pinned, found or not: the buttons don't give the answer away.
+  await expect(checks.getByTestId("pin")).toHaveCount(6);
+  await checks.getByTestId("pin").filter({ hasText: "sender registration" }).click();
+  await checks.getByTestId("pin").filter({ hasText: "citizen reports" }).click();
+  await checks.getByTestId("pin").filter({ hasText: "police letter" }).click();
+  const num = await imran.getByTestId("tool-input").inputValue();
+  await imran.getByTestId("tool-cdr").click();
+  await imran.getByTestId("tool-input").fill(num);
+  await imran.getByTestId("tool-run").click();
+  await imran.getByTestId("pin-stats").click();
+  await imran.getByTestId("save-trace").click();
+  await expect(imran.getByTestId("save-result")).toBeVisible();
+  await imran.goto("/telco/ABUSE-1");
+  await expect(imran.getByTestId("trace-shows")).toContainText("none on record");
+  await imran.getByTestId("t-option-DISCONNECT").check();
+  await imran.locator("[data-testid=cite][data-key^='chakshu::']").check();
+  await imran.locator("[data-testid=cite][data-key^='stats::']").check();
+  // His own sender-registration pin argues against cutting the line: he must answer it.
+  const row = imran.getByTestId("against-row").first();
+  await expect(row).toContainText("registered business sender");
+  await expect(imran.getByTestId("telco-decide")).toBeDisabled();
+  await row.getByTestId("answer").selectOption({ index: 1 });
+  await expect(imran.getByTestId("call-ok")).toBeVisible();
+  await expect(imran.getByTestId("t-second")).toBeVisible();
+  await imran.getByTestId("telco-decide").click();
+  await expect(imran.getByTestId("telco-decide-result")).toContainText(/second person/);
+  await imran.getByTestId("t-second").selectOption("Arjun Nair, senior analyst");
+  await imran.getByTestId("telco-decide").click();
+  await expect(imran.getByTestId("telco-decided")).toContainText("Agreed with the AI", { timeout: 10_000 });
+  await expect(imran.getByTestId("telco-clash")).toContainText("registration says who owns the line");
+  const meera = await as(browser, "meera");
+  await expect(meera.getByTestId("telco-cited")).toContainText("answered 1 pin against it");
 });

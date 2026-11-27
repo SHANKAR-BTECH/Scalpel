@@ -161,7 +161,16 @@ describe("person and AI decide together", () => {
 import { telcoDecide, policePacket, saveTrace } from "@/lib/server/desk";
 import { alerts, traceView } from "@/lib/server/telco";
 import { T } from "@/lib/server/telcodata";
-import { checkTrace } from "@/lib/server/tracecheck";
+import { checkTrace, checkCall, pinKey } from "@/lib/server/tracecheck";
+import type { TAction } from "@/lib/server/telco";
+/** A careful analyst's form: cite the pins that don't argue against the call, and answer each one that does. */
+const commit = (alert: string, pins: PinRef[], act: TAction) => {
+  const m = checkTrace(alert, pins).pins;
+  const cite = m.filter((x) => !x.against.includes(act) && x.positive).map((x) => x.key);
+  const sup = m.find((x) => x.for.includes(act));
+  const answers = Object.fromEntries(m.filter((x) => x.against.includes(act)).map((x) => [x.key, sup?.key ?? ""]));
+  return { cite, answers };
+};
 import type { PinRef } from "@/lib/pins";
 
 const pin = (kind: PinRef["kind"], ref: string): PinRef => ({ kind, ref, label: ref });
@@ -187,7 +196,8 @@ describe("Telco-A analyst decides with its AI", () => {
     await saveTrace(imran, a.id, rigPins().slice(0, 1), [], "");
     await expect(telcoDecide(imran, a.id, "BAR_IMEI", "Signals match the suggestion", "", true)).rejects.toThrow(/Still missing/);
     await saveTrace(imran, a.id, rigPins(), ["many"], "");
-    const r = await telcoDecide(imran, a.id, "BAR_IMEI", "Would cut off genuine customers", "route has 2 business lines", true);
+    await expect(telcoDecide(imran, a.id, "BAR_IMEI", "Would cut off genuine customers", "", true)).rejects.toThrow(/Tick the pins/);
+    const r = await telcoDecide(imran, a.id, "BAR_IMEI", "Would cut off genuine customers", "route has 2 business lines", true, { ...commit(a.id, rigPins(), "BAR_IMEI"), second: "Ritu Sharma, shift lead" });
     expect(r.message).toMatch(/Reported to DoT/);
     const d = await desk();
     expect(d.telcoByAlert.get(a.id)!.agreed).toBe(false); // AI said block the route
@@ -224,12 +234,13 @@ describe("Telco-A analyst decides with its AI", () => {
     // A forged "police letter" pin on a SIM-box SIM (no letter on file) counts for nothing.
     const sim = T.attach.find((x) => x.imei === W.rigs[0]!.imei)!.msisdn;
     const forged = checkTrace("RIG-1", [...rigPins(), pin("police", sim)]);
-    expect(forged.empty).toHaveLength(1);
+    expect(forged.empty).toHaveLength(0); // a "no letter" pin is a finding, and it backs nothing
+    expect(forged.pins.find((x) => x.kind === "police")!.positive).toBe(false);
     expect(forged.actions.find((x) => x.action === "KEEP_LIVE")?.ready ?? false).toBe(false);
   });
   it("a lookalike is never reported, and call records go only to police", async () => {
     await saveTrace(imran, "BIZ-1", bizPins(), [], "");
-    await telcoDecide(imran, "BIZ-1", "GENUINE", "Registered business traffic", "", true);
+    await telcoDecide(imran, "BIZ-1", "GENUINE", "Registered business traffic", "", true, commit("BIZ-1", bizPins(), "GENUINE"));
     expect((await desk()).fri.size).toBe(0);
     await expect(policePacket(imran, "BIZ-1")).rejects.toThrow(/stay with Telco-A/);
     await expect(policePacket(imran, "RIG-1")).rejects.toThrow(/Save a trace/);
@@ -246,7 +257,7 @@ describe("Telco-A analyst decides with its AI", () => {
       const n = sims[0]!;
       const pins: PinRef[] = [
         ...imeis.flatMap((i) => [pin("handset", i), pin("sims", i), pin("stats", `${i}||`)]),
-        ...["number", "sim", "spoof", "police", "dlt", "chakshu", "swap", "forwarding"].map((k) => pin(k as PinRef["kind"], n)),
+        ...["number", "sim", "spoof", "police", "dlt", "chakshu", "swap", "forwarding", "bulk"].map((k) => pin(k as PinRef["kind"], n)),
         pin("stats", `${n}||`),
         ...T.routes.filter((r) => r.devices.some((d) => imeis.includes(d))).map((r) => pin("route", r.id)),
         ...(alertById(a.id)!.kind === "IMEI" ? [] : []),
@@ -256,6 +267,9 @@ describe("Telco-A analyst decides with its AI", () => {
       const want = checkTrace(a.id, pins).actions.find((x) => x.action === EXPECTED[a.id]);
       expect(want, a.id).toBeTruthy();
       expect(want!.missing, a.id).toEqual([]);
+      // ...and a careful analyst can commit to it: cite what supports it, answer what argues against it.
+      const k = commit(a.id, pins, EXPECTED[a.id]!);
+      expect(checkCall(a.id, pins, EXPECTED[a.id]!, k.cite, k.answers).problems, a.id).toEqual([]);
     }
   });
   it("every alert has a trace to draw", () => {
@@ -471,9 +485,10 @@ describe("Imran works beyond one alert: linked SIMs, the shop, who else gets cut
     await expect(telcoGroup(imran, "RIG-3", anchor(), "BLOCK", all, "")).rejects.toThrow(/save a trace/i);
     await saveTrace(imran, "RIG-3", [pin("handset", rig3().imei), pin("group", anchor())], [], "");
     await expect(telcoGroup(imran, "RIG-3", anchor(), "BLOCK", [...all, "+91 99999 00000"], "")).rejects.toThrow(/not in this group/);
-    await expect(telcoGroup(imran, "RIG-3", anchor(), "BLOCK", all, "")).rejects.toThrow(/Lakshmi Kumari/);
+    await expect(telcoGroup(imran, "RIG-3", anchor(), "BLOCK", all, "")).rejects.toThrow(/1 of the ticked SIMs looks like a genuine customer/);
     let d = await desk();
     expect(d.groups.at(-1)!.outcome).toBe("REFUSED");
+    expect(d.groups.at(-1)!.refused.join(" ")).toMatch(/Lakshmi Kumari/);
     const rest = all.filter((n) => n !== owner.msisdn);
     await telcoGroup(imran, "RIG-3", anchor(), "BLOCK", rest, "stolen ID, real owner left alone");
     await telcoGroup(imran, "RIG-3", anchor(), "LEAVE", [owner.msisdn], "her own SIM");
@@ -497,16 +512,92 @@ describe("Imran works beyond one alert: linked SIMs, the shop, who else gets cut
     const a = alerts().find((x) => x.id === "RIG-1")!;
     const b = blast(a, "BLOCK_ROUTE");
     expect(b.second).toBe(true);
-    expect(b.lines.join(" ")).toMatch(/genuine line/);
-    expect(blast(a, "BAR_IMEI").second).toBe(false);
+    expect(b.lines.join(" ")).toMatch(/business line/);
+    expect(b.lines.join(" ")).not.toMatch(/Hospital|Gramin/); // counts and kinds, never whose
+    expect(blast(a, "BAR_IMEI").second).toBe(blast(a, "BAR_IMEI").genuine > 0);
+    expect(blast(alerts().find((x) => x.id === "SIM-2")!, "DISCONNECT").second).toBe(true); // any step that cuts a genuine line
     expect(blast(alerts().find((x) => x.id === "SIM-2")!, "DISCONNECT").genuine).toBe(1);
     const r = T.routes.find((x) => x.devices.includes(a.value))!;
     await saveTrace(imran, a.id, [...rigPins(), pin("route", r.id)], [], "");
-    await expect(telcoDecide(imran, a.id, "BLOCK_ROUTE", "Signals match the suggestion", "", false)).rejects.toThrow(/second person/);
-    await telcoDecide(imran, a.id, "BLOCK_ROUTE", "Signals match the suggestion", "", false, false, "Anita Rao, network lead");
+    const c = commit(a.id, [...rigPins(), pin("route", r.id)], "BLOCK_ROUTE");
+    await expect(telcoDecide(imran, a.id, "BLOCK_ROUTE", "Signals match the suggestion", "", false, c)).rejects.toThrow(/second person/);
+    await expect(telcoDecide(imran, a.id, "BLOCK_ROUTE", "Signals match the suggestion", "", false, { ...c, second: "Anyone at all" })).rejects.toThrow(/second person/);
+    await telcoDecide(imran, a.id, "BLOCK_ROUTE", "Signals match the suggestion", "", false, { ...c, second: "Ritu Sharma, shift lead" });
     const t = (await desk()).telcoByAlert.get(a.id)!;
-    expect(t.second).toBe("Anita Rao, network lead");
+    expect(t.second).toBe("Ritu Sharma, shift lead");
     expect(t.cutOff).toBeGreaterThan(0);
+  });
+});
+
+describe("Imran commits first: cited pins, answers to the pins against him, and traps no single rule beats", () => {
+  beforeEach(() => useStore(new MemoryStore()));
+  const num = (id: string) => alerts().find((x) => x.id === id)!.value;
+  it("a pin that argues against a call can't be cited for it, and must be answered", () => {
+    const sim = T.attach.find((x) => x.imei === num("BIZ-1"))!.msisdn;
+    const pins = [pin("handset", num("BIZ-1")), pin("sims", num("BIZ-1")), pin("stats", `${num("BIZ-1")}||`), pin("tower", "TA-KA-0112"), pin("dlt", sim)];
+    // Pinning everything opens both, but a bar can't rest on the sender registration.
+    const all = pins.map(pinKey);
+    const bar = checkCall("BIZ-1", pins, "BAR_IMEI", all, {});
+    expect(bar.badCites.join(" ")).toMatch(/sender registration/i);
+    expect(bar.ready).toBe(false);
+    // Calling it genuine: the 24-SIM gateway argues against, and is answered with the registration.
+    const gen = checkCall("BIZ-1", pins, "GENUINE", [pinKey(pins[4]!), pinKey(pins[2]!)], {});
+    expect(gen.against.map((x) => x.label).join(" ")).toMatch(/Handset/);
+    expect(gen.ready).toBe(false);
+    expect(checkCall("BIZ-1", pins, "GENUINE", [pinKey(pins[0]!), pinKey(pins[4]!)], { [pinKey(pins[0]!)]: pinKey(pins[4]!) }).badCites).toHaveLength(1);
+    const ok = checkCall("BIZ-1", pins, "GENUINE", [pinKey(pins[4]!), pinKey(pins[2]!)], { [pinKey(pins[0]!)]: pinKey(pins[4]!) });
+    expect(ok.problems).toEqual([]);
+    // An answer must be a pin that supports the call.
+    expect(checkCall("BIZ-1", pins, "GENUINE", [pinKey(pins[4]!), pinKey(pins[2]!)], { [pinKey(pins[0]!)]: pinKey(pins[3]!) }).ready).toBe(false);
+  });
+  it("a 'no' is a finding: no police letter argues against keeping a line live", () => {
+    const sim = T.attach.find((x) => x.imei === W.rigs[0]!.imei)!.msisdn;
+    const c = checkTrace("RIG-1", [...rigPins(), pin("police", sim)]);
+    expect(c.empty).toHaveLength(0);
+    const m = c.pins.find((x) => x.kind === "police")!;
+    expect(m.positive).toBe(false);
+    expect(m.against).toContain("KEEP_LIVE");
+    expect(c.shows.join(" ")).toMatch(/none on record/);
+  });
+  it("ABUSE-1: real papers and a real sender ID, but the reports say bank impersonation; the AI is right", async () => {
+    const n = num("ABUSE-1");
+    expect(alerts().find((x) => x.id === "ABUSE-1")!.ai.suggest).toBe("DISCONNECT");
+    const pins = [pin("number", n), pin("stats", `${n}||`), pin("chakshu", n), pin("dlt", n), pin("bulk", n)];
+    const c = checkTrace("ABUSE-1", pins);
+    expect(c.actions.find((x) => x.action === "GENUINE")!.ready).toBe(true); // the tempting rule
+    expect(c.actions.find((x) => x.action === "DISCONNECT")!.ready).toBe(true);
+    const gen = checkCall("ABUSE-1", pins, "GENUINE", [pinKey(pins[0]!), pinKey(pins[3]!), pinKey(pins[1]!)], {});
+    expect(gen.badCites.join(" ")).toMatch(/Call statistics/); // 2% incoming can't back "genuine"
+    await saveTrace(imran, "ABUSE-1", pins, [], "");
+    const k = commit("ABUSE-1", pins, "DISCONNECT");
+    expect(Object.keys(k.answers).length).toBeGreaterThanOrEqual(2); // the registration and the papers both argue back
+    await expect(telcoDecide(imran, "ABUSE-1", "DISCONNECT", "Signals match the suggestion", "", false, k)).rejects.toThrow(/second person/);
+    await telcoDecide(imran, "ABUSE-1", "DISCONNECT", "Signals match the suggestion", "", false, { ...k, second: "Arjun Nair, senior analyst" });
+    const t = (await desk()).telcoByAlert.get("ABUSE-1")!;
+    expect(t.agreed).toBe(true);
+    expect(t.answers.length).toBeGreaterThanOrEqual(2);
+  });
+  it("BULK-1: no sender registration, yet genuine on checked company papers; the AI is wrong", () => {
+    const imei = num("BULK-1");
+    const sim = T.attach.find((x) => x.imei === imei)!.msisdn;
+    const noDlt = [pin("handset", imei), pin("stats", `${imei}||`), pin("dlt", sim)];
+    expect(checkTrace("BULK-1", noDlt).actions.find((x) => x.action === "GENUINE")!.ready).toBe(false);
+    const pins = [...noDlt, pin("bulk", sim)];
+    const c = checkTrace("BULK-1", pins);
+    expect(c.actions.find((x) => x.action === "GENUINE")!.ready).toBe(true);
+    expect(c.pins.find((x) => x.kind === "stats")!.for).toContain("GENUINE"); // drivers call back
+    const k = commit("BULK-1", pins, "GENUINE");
+    expect(checkCall("BULK-1", pins, "GENUINE", k.cite, k.answers).ready).toBe(true);
+  });
+  it("a refused group action names no one, but the record keeps who for the audit", async () => {
+    const r3 = W.rigs.find((r) => r.id === "RIG-3")!;
+    const owner = T.subscribers.find((s) => s.kycName === "Lakshmi Kumari")!;
+    const anchor = T.attach.find((x) => x.imei === r3.imei && T.subscribers.find((s) => s.msisdn === x.msisdn)?.kycDoc === owner.kycDoc)!.msisdn;
+    await saveTrace(imran, "RIG-3", [pin("handset", r3.imei), pin("group", anchor)], [], "");
+    const err = await telcoGroup(imran, "RIG-3", anchor, "BLOCK", sisters(anchor).rows.map((x) => x.msisdn), "").catch((e: Error) => e.message);
+    expect(err).toMatch(/near miss/);
+    expect(err).not.toMatch(/Lakshmi|94311/);
+    expect((await desk()).groups[0]!.refused.join(" ")).toMatch(/Lakshmi/);
   });
 });
 

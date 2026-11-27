@@ -8,7 +8,9 @@ import Link from "next/link";
 import { Check, Lock, PhoneOff, Play, ShieldAlert, TriangleAlert, Wrench } from "lucide-react";
 import type { Alert, TAction, TraceView, TNode } from "@/lib/server/telco";
 import { ActForm } from "./ActForm";
-import { policePacketAction, telcoDecideAction } from "@/app/actions";
+import { policePacketAction } from "@/app/actions";
+import { DecideForm } from "./DecideForm";
+import type { PinMeaning } from "@/lib/server/tracecheck";
 import { inr, when } from "@/lib/format";
 import { TelcoGroup, type GroupView, type GroupLogView, type ShopView } from "./TelcoGroup";
 
@@ -17,19 +19,18 @@ const STEPS = 6;
 
 export interface DoneView { action: string; agreed: boolean; reason: string; note: string; by: string; at: number; reported: string[] }
 export interface TraceSummary {
-  version: number; by: string; at: number; pins: number; shows: string[]; offAlert: string[]; empty: string[];
+  version: number; by: string; at: number; pins: number; shows: string[]; offAlert: string[]; empty: string[]; meanings: PinMeaning[];
   actions: { action: TAction; label: string; ready: boolean; missing: string[]; steps?: { text: string; tool: string; q: string }[] }[];
 }
 export interface LinkedView { msisdn: string; name: string; account: string; caseId: string | null; band: string }
 
 export interface BlastView { lines: string[]; genuine: number; second: boolean }
 
-export function NumberTrace({ a, view, labels, reasons, done, packetAt, linked, now, trace, needs, blasts = {}, groups = [], groupLog = [], shops = [], groupLabels = {} }: {
+export function NumberTrace({ a, view, labels, reasons, done, packetAt, linked, now, trace, needs, blasts = {}, groups = [], groupLog = [], shops = [], groupLabels = {}, peers = [] }: {
   a: Alert; view: TraceView; labels: Record<TAction, string>; reasons: readonly string[];
   done: DoneView | null; packetAt: number | null; linked: LinkedView[]; now: number; trace: TraceSummary | null; needs?: TraceSummary["actions"];
-  blasts?: Partial<Record<TAction, BlastView>>; groups?: GroupView[]; groupLog?: GroupLogView[]; shops?: ShopView[]; groupLabels?: Record<string, string>;
+  blasts?: Partial<Record<TAction, BlastView>>; groups?: GroupView[]; groupLog?: GroupLogView[]; shops?: ShopView[]; groupLabels?: Record<string, string>; peers?: readonly string[];
 }) {
-  const needSecond = Object.values(blasts).some((b) => b?.second);
   // The replay only exists after the decision; before it the engineer works from his own pins.
   const [step, setStep] = useState(0);
   const running = step > 0 && step < STEPS;
@@ -40,8 +41,6 @@ export function NumberTrace({ a, view, labels, reasons, done, packetAt, linked, 
   }, [running, step]);
   const finished = step >= STEPS;
   const bench = `/telco/work?alert=${a.id}`;
-  const readyOpts = trace ? trace.actions.filter((x) => x.ready).map((x) => x.action) : [];
-  const pick = readyOpts.includes(a.ai.suggest) ? a.ai.suggest : readyOpts[0];
 
   return (
     <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_400px]">
@@ -115,50 +114,8 @@ export function NumberTrace({ a, view, labels, reasons, done, packetAt, linked, 
               <span className="ml-2 text-[12.5px] muted">Opens when your saved trace supports an option.</span>
             </div>
           ) : (
-            <ActForm action={telcoDecideAction} hidden={{ alert: a.id }} label="Record decision" variant="phone" testid="telco-decide" className="mt-3 space-y-3" disabled={readyOpts.length === 0}>
-              {readyOpts.length === 0 ? (
-                <p className="rounded-xl bg-[var(--warn-tint)] px-3 py-2 text-[13px] text-[var(--warn)]" data-testid="none-ready"><Lock size={13} className="mr-1 inline" aria-hidden />Your trace (version {trace.version}) doesn&apos;t hold enough clues for any option yet. Under each option, &quot;Find it&quot; opens the right tool in the workbench. Pin what you find, save again, and the option opens here.</p>
-              ) : <p className="text-[12.5px] muted">Based on your trace, version {trace.version}. An action opens only when your pins hold the evidence it needs.</p>}
-              <fieldset className="space-y-1.5">
-                <legend className="label mb-1">Your call</legend>
-                {trace.actions.map((x) => (
-                  <label key={x.action} data-ready={x.ready ? "yes" : "no"} data-testid={`opt-${x.action}`} className={`flex items-start gap-2.5 rounded-xl px-2.5 py-2 text-[14px] transition-colors ${x.ready ? "cursor-pointer hover:bg-white/70 has-[:checked]:bg-[var(--accent-tint)]" : "opacity-60"}`}>
-                    <input type="radio" name="action" value={x.action} disabled={!x.ready} defaultChecked={x.action === pick} className="mt-1 accent-[var(--phone)]" data-testid={`t-option-${x.action}`} />
-                    <span>{labels[x.action]}{x.action === a.ai.suggest && <span className="chip chip-phone ml-1.5">AI</span>}
-                      {!x.ready && <Steps x={x} alert={a.id} prefix="Still missing" />}
-                      <BlastLine b={blasts[x.action]} action={x.action} />
-                    </span>
-                  </label>
-                ))}
-              </fieldset>
-              <label className="block"><span className="label">Reason</span>
-                <select name="reason" className="input mt-1" defaultValue={reasons[0]} data-testid="t-reason">
-                  {reasons.map((r) => <option key={r}>{r}</option>)}
-                </select>
-              </label>
-              <input name="note" placeholder="Note (what you checked)" className="input" />
-              {needSecond && (
-                <label className="block rounded-2xl bg-[var(--warn-tint)] px-3.5 py-3 text-[13px]">
-                  <b>Blocking the route needs a second person.</b> It also cuts off genuine lines, so someone else must check it with you. Leave empty for any other choice.
-                  <input name="second" className="input mt-2" placeholder="Who checked it with you (name and role)" data-testid="t-second" />
-                </label>
-              )}
-              {a.options.includes("BAR_IMEI") && (
-                <label className="flex items-start gap-3 rounded-2xl bg-[var(--phone-tint)] px-3.5 py-3 text-[13px]">
-                  <input type="checkbox" name="ceir" className="switch mt-0.5" data-testid="t-ceir" />
-                  <span><b>Also ask DoT for a national block</b> (CEIR), if you bar the handset. Telco-A&apos;s bar works only on its own network; CEIR blocks the handset on every network in India.</span>
-                </label>
-              )}
-              {a.reportable && linked.length > 0 && (
-                <label className="flex items-start gap-3 rounded-2xl bg-[var(--phone-tint)] px-3.5 py-3 text-[13px]">
-                  <input type="checkbox" name="report" defaultChecked className="switch mt-0.5" data-testid="t-report" />
-                  <span><b>Report to DoT</b> (through DIP). These phones were activated through the same retailer the same week and sit on mule accounts:
-                    <span className="mt-1 block mono text-[12px]">{linked.map((l) => `${l.msisdn} (${l.name}, now ${l.band})`).join(" · ")}</span>
-                    <span className="mt-1 block muted">DoT can raise their fraud-risk rating to High. Banks see only that rating.</span>
-                  </span>
-                </label>
-              )}
-            </ActForm>
+            <DecideForm alert={a.id} aiPick={a.ai.suggest} options={a.options} trace={trace} labels={labels} reasons={reasons} blasts={blasts} peers={peers}
+              ceirOffer={a.options.includes("BAR_IMEI")} linked={linked} reportable={a.reportable} Steps={Steps} BlastLine={BlastLine} />
           )}
         </section>
 

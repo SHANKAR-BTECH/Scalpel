@@ -230,13 +230,16 @@ def build() -> dict:
         }
 
     # ---- BIZ-1: a delivery company's registered SIM bank ----
+    BULK_SWIFT = {"company": "Swift Parcel Logistics Pvt Ltd", "regNo": "CIN U63090KA2019PTC1••••", "signatory": "Meghna Rao, Operations Head", "letter": "ENT/KA/2025/2231",
+                  "verified": "Company documents, authorised signatory and the list of agents using each SIM checked at the enterprise desk", "since": now - 400 * DAY}
     biz_imei = "006120774318842"
     biz_sims = []
     for i in range(24):
         n = fmt(f"80471{82011 + i:05d}")
         biz_sims.append(n)
         add_sub(n, kycName="Swift Parcel Logistics Pvt Ltd", kycDoc="Company PAN AAXCS••••K", pos=enterprise["pos"], plan="Enterprise (business connection)",
-                activatedAt=now - 400 * DAY + i * DAY, endUser=f"Delivery agent: {person()}", dlt={"header": "SWFTPL", "entity": "Swift Parcel Logistics Pvt Ltd", "type": "Transactional"})
+                activatedAt=now - 400 * DAY + i * DAY, endUser=f"Delivery agent: {person()}", dlt={"header": "SWFTPL", "entity": "Swift Parcel Logistics Pvt Ltd", "type": "Transactional"},
+                bulk=BULK_SWIFT)
         attach.append({"msisdn": n, "imei": biz_imei, "from": now - 380 * DAY, "to": None})
     customers = [new_number() for _ in range(320)]
     for k in range(2140):
@@ -250,7 +253,9 @@ def build() -> dict:
     # ---- SPAM-1: a hospital's reminder line ----
     hosp = "+91 20 4477 0812"  # a Pune landline (STD 020), not a mobile
     add_sub(hosp, kycName="City Care Hospital", kycDoc="Company PAN AAACC••••H", pos=enterprise["pos"], plan="Enterprise PRI line", activatedAt=now - 2200 * DAY,
-            chakshu=14, dlt={"header": "CCHPUN", "entity": "City Care Hospital, Pune", "type": "Transactional (SMS reminders)"})
+            chakshu=14, chakshuKind="Unwanted call (no money asked for)", dlt={"header": "CCHPUN", "entity": "City Care Hospital, Pune", "type": "Transactional (SMS reminders)"},
+            bulk={"company": "City Care Hospital", "regNo": "Trust reg. PUN/1187/2004", "signatory": "Dr. Anand Kulkarni, Medical Director", "letter": "ENT/MH/2020/0412",
+                  "verified": "Company documents and authorised signatory checked at the enterprise desk", "since": now - 2200 * DAY})
     patients = [new_number() for _ in range(900)]
     for k in range(1260):
         at = now - rng.randrange(7) * DAY - rng.randrange(9 * 3600_000, 18 * 3600_000)
@@ -320,6 +325,55 @@ def build() -> dict:
             other = fmt("9" + "".join(str(r2.randrange(10)) for _ in range(9)))
             cdr.append({"id": f"ID{k+1:05d}", "at": at, "from": other if inc else n, "to": n if inc else other,
                         "seconds": r2.randrange(20, 700), "imei": imei, "cell": r2.choice(by_district[home["district"]])})
+
+    # ---- two more lookalikes (own random stream, added last so nothing above changes) ----
+    # ABUSE-1: a registered company's line that is really calling people as a fake bank KYC desk. Its sender
+    # registration and company papers are real; the citizen reports say what the calls were. The AI is right here.
+    # BULK-1: a cab company's driver-dispatch gateway with no sender registration at all (dispatch calls are not
+    # commercial messages), but with checked company papers and drivers calling back. The AI is wrong here.
+    r3 = random.Random(SEED + 2)
+    def fresh(first: str) -> str:
+        while True:
+            d = first + "".join(str(r3.randrange(10)) for _ in range(9))
+            if d not in used:
+                used.add(d)
+                return fmt(d)
+    abuse = fresh("7")
+    add_sub(abuse, kycName="QuickRupee Finserv Pvt Ltd", kycDoc="Company PAN AABCQ••••F", pos=enterprise["pos"], plan="Enterprise (business connection)",
+            activatedAt=now - 19 * DAY, chakshu=11, chakshuKind="Pretended to be a bank's KYC desk and asked for an OTP",
+            dlt={"header": "QKRUPE", "entity": "QuickRupee Finserv Pvt Ltd", "type": "Promotional (voice calls)"},
+            bulk={"company": "QuickRupee Finserv Pvt Ltd", "regNo": "CIN U65999MH2026PTC4••••", "signatory": "Rohit Malhotra, Director", "letter": "ENT/MH/2026/3307",
+                  "verified": "Company documents and authorised signatory checked at the enterprise desk", "since": now - 19 * DAY})
+    abuse_imei = f"35{h(abuse) % 10**13:013d}"
+    attach.append({"msisdn": abuse, "imei": abuse_imei, "from": now - 19 * DAY, "to": None})
+    abuse_cell = by_district["Pune"][1] if len(by_district.get("Pune", [])) > 1 else "TA-MH-0410"
+    for k in range(940):
+        at = now - r3.randrange(7) * DAY - r3.randrange(11 * 3600_000, 21 * 3600_000)
+        inc = r3.random() < 0.02
+        other = fmt(r3.choice("6789") + "".join(str(r3.randrange(10)) for _ in range(9)))
+        cdr.append({"id": f"QR{k+1:05d}", "at": at, "from": other if inc else abuse, "to": abuse if inc else other,
+                    "seconds": r3.randrange(60, 420), "imei": abuse_imei, "cell": abuse_cell})
+    cab_imei = "002587629911407"
+    cab_cell = by_district["Bengaluru Urban"][0]
+    BULK_CAB = {"company": "Metro Cabs Pvt Ltd", "regNo": "CIN U60221KA2017PTC1••••", "signatory": "Sunil Hegde, Fleet Manager", "letter": "ENT/KA/2024/0918",
+                "verified": "Company documents, authorised signatory and the list of dispatchers using each SIM checked at the enterprise desk", "since": now - 700 * DAY}
+    cab_sims = []
+    for i in range(8):
+        n = fmt(f"80613{40021 + i:05d}")
+        assert norm(n) not in used
+        used.add(norm(n))
+        cab_sims.append(n)
+        add_sub(n, kycName="Metro Cabs Pvt Ltd", kycDoc="Company PAN AAMCM••••C", pos=enterprise["pos"], plan="Enterprise (business connection)",
+                activatedAt=now - 700 * DAY + i * 3 * DAY, endUser=f"Dispatcher desk {i + 1}", bulk=BULK_CAB)
+        attach.append({"msisdn": n, "imei": cab_imei, "from": now - 690 * DAY, "to": None})
+    drivers = [fmt(r3.choice("6789") + "".join(str(r3.randrange(10)) for _ in range(9))) for _ in range(140)]
+    for k in range(1400):
+        at = now - r3.randrange(7) * DAY - r3.randrange(DAY)
+        inc = r3.random() < 0.34
+        sim = cab_sims[k % 8]
+        dr = drivers[r3.randrange(len(drivers))]
+        cdr.append({"id": f"MC{k+1:05d}", "at": at, "from": dr if inc else sim, "to": sim if inc else dr,
+                    "seconds": r3.randrange(15, 120), "imei": cab_imei, "cell": cab_cell})
 
     tac = {k: {"model": m, "kind": kind} for k, (m, kind) in TAC.items()}
     return {

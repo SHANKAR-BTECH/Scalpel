@@ -64,7 +64,10 @@ export async function telcoActAction(_: Result | null, f: FormData) {
   return run(async () => D.telcoAct(await me(), str(f, "kind") as "IMEI", str(f, "value")));
 }
 export async function telcoDecideAction(_: Result | null, f: FormData) {
-  return run(async () => D.telcoDecide(await me(), str(f, "alert"), str(f, "action"), str(f, "reason"), str(f, "note"), str(f, "report") === "on", str(f, "ceir") === "on", str(f, "second")));
+  const answers: Record<string, string> = {};
+  for (const [k, v] of f.entries()) if (k.startsWith("answer:") && typeof v === "string" && v) answers[k.slice(7)] = v;
+  return run(async () => D.telcoDecide(await me(), str(f, "alert"), str(f, "action"), str(f, "reason"), str(f, "note"), str(f, "report") === "on",
+    { ceir: str(f, "ceir") === "on", second: str(f, "second"), cite: f.getAll("cite").map(String), answers }));
 }
 export async function proofCheckAction(_: Result | null, f: FormData) {
   return run(async () => D.proofCheck(await me(), str(f, "case"), str(f, "pid"), rupeesToPaise(str(f, "amount"))));
@@ -145,6 +148,12 @@ export async function lookupSwitch(n: string) { await telcoOnly(); return L.swit
 export async function lookupRoute(id: string) { await telcoOnly(); return L.route(id); }
 export async function lookupDoc(doc: string) { await telcoOnly(); return L.kycDoc(doc); }
 export async function lookupSisters(n: string) { await telcoOnly(); return G.sisters(n); }
+export async function callCheckAction(alert: string, action: string, cite: unknown, answers: unknown) {
+  const c = Array.isArray(cite) ? cite.filter((x): x is string => typeof x === "string").slice(0, 400) : [];
+  const ans: Record<string, string> = {};
+  if (answers && typeof answers === "object") for (const [k, v] of Object.entries(answers as Record<string, unknown>)) if (typeof v === "string") ans[k] = v;
+  return D.telcoCallCheck(await me(), alert, action, c, ans);
+}
 export async function checkTraceAction(alert: string, pins: unknown) { await telcoOnly(); return checkTrace(alert, cleanPins(pins)); }
 export async function saveTraceAction(alert: string, pins: unknown, ticks: string[], note: string): Promise<Result> {
   return run(async () => D.saveTrace(await me(), alert, pins, Array.isArray(ticks) ? ticks.filter((t) => typeof t === "string") : [], String(note ?? "")));

@@ -15,6 +15,7 @@
  */
 import { W, model, type WCall } from "./world";
 import { callRecords } from "./lookup";
+import { T } from "./telcodata";
 
 export type TAction = "BAR_IMEI" | "BLOCK_ROUTE" | "DISCONNECT" | "REVERIFY" | "KEEP_LIVE" | "LABEL_SPAM" | "CLEAR_REPORT" | "GENUINE";
 
@@ -222,6 +223,50 @@ export function alerts(): Alert[] {
     clash: "Citizens reported it, but it is a registered hospital line sending appointment reminders. Labelling it spam means patients ignore real reminders.",
     cases: [], sims: [], calls: [], linked: [], reportable: false,
   });
+  // ABUSE-1: a registered company's line calling people as a fake bank KYC desk. The scorecard is right; the
+  // sender registration and company papers are real, and tempt the analyst to clear it.
+  const qr = T.subscribers.find((x) => x.kycName === "QuickRupee Finserv Pvt Ltd");
+  if (qr) {
+    const st = rec(qr.msisdn), day = Math.round(st.perDay);
+    const sc = score({ sims: 1, inRatio: st.inRatio, cells: st.towers.length, distinctPerDay: day, avgSec: st.avgSec, reports: qr.chakshu, swappedDays: null, forwarding: false, route: null });
+    list.push({
+      id: "ABUSE-1", kind: "MSISDN", value: qr.msisdn, tone: "fraud",
+      title: `Number reported ${qr.chakshu} times in a week`, sub: `${qr.msisdn} · cell ${st.towers[0] ?? "—"}`, rule: "Spam reports above the review threshold",
+      gauges: [
+        g("Citizen reports", `${qr.chakshu} in 7 days`, 0.75, true),
+        g("Incoming calls", pct(st.inRatio), Math.max(0.05, st.inRatio * 4), true),
+        g("Different numbers a day", `${day}`, Math.min(1, day / 160), true),
+        g("Average call", `${st.avgSec} s`, Math.min(1, st.avgSec / 300), true),
+      ],
+      ai: { suggest: "DISCONNECT", confidence: sc.confidence, drivers: sc.drivers },
+      options: ["DISCONNECT", "LABEL_SPAM", "CLEAR_REPORT", "GENUINE"],
+      facts: ["Registered to QuickRupee Finserv Pvt Ltd under enterprise KYC 19 days ago, with a promotional sender registration", "Citizens reported the caller pretending to be a bank's KYC desk and asking for an OTP", "Two per cent of its calls come in; it calls about a hundred new people a day for several minutes each"],
+      clash: "The papers are real: the company is registered and so is its sender ID. But registration says who owns the line, not what the calls do. The reports describe bank impersonation, so the AI was right and clearing it would leave a fraud line open.",
+      cases: [], sims: [], calls: [], linked: [], reportable: false,
+    });
+  }
+  // BULK-1: a cab company's dispatch gateway. No sender registration (dispatch calls are not commercial messages),
+  // but checked company papers and drivers calling back. The scorecard is wrong.
+  const cab = T.subscribers.filter((x) => x.kycName === "Metro Cabs Pvt Ltd");
+  const cabImei = cab.length ? T.attach.find((x) => x.msisdn === cab[0]!.msisdn)?.imei : undefined;
+  if (cabImei) {
+    const st = rec(cabImei), day = Math.round(st.perDay);
+    list.push({
+      id: "BULK-1", kind: "IMEI", value: cabImei, tone: "lookalike",
+      title: `Gateway with ${cab.length} SIMs`, sub: `IMEI ${cabImei} · cell ${st.towers[0] ?? "—"}`, rule: "Bypass rule: many SIMs, one device, one tower",
+      gauges: [
+        g("SIMs in this handset", `${cab.length}`, cab.length / 50, true),
+        g("Cell towers seen", `${st.towers.length}`, 0.15, true),
+        g("Different numbers a day", `${day}`, Math.min(1, day / 120), true),
+        g("Incoming calls", pct(st.inRatio), st.inRatio, false),
+      ],
+      ai: { suggest: "BAR_IMEI", confidence: 0.81, drivers: [`${cab.length} SIMs used in one handset`, "never moves from one cell tower", `${day} different numbers called a day`] },
+      options: ["BAR_IMEI", "GENUINE", "REVERIFY"],
+      facts: ["SIMs registered under enterprise KYC to Metro Cabs Pvt Ltd; company papers and the authorised signatory were checked at the enterprise desk", "No business sender registration: dispatch calls to its own drivers are not commercial messages", "About a third of the calls come in: drivers calling the dispatch desk back"],
+      clash: "It looks like a SIM box and has no sender registration, so the easy rule says bar it. But its company papers are checked and its drivers call back. Barring it strands a cab fleet, not a gang.",
+      cases: [], sims: [], calls: [], linked: [], reportable: false,
+    });
+  }
   cache = list;
   return list;
 }
@@ -229,7 +274,10 @@ export function alerts(): Alert[] {
 export const alertById = (id: string) => alerts().find((a) => a.id === id);
 
 /** The right call on each alert, for the audit sample only (never shown to the analyst before they decide). */
-export const EXPECTED: Record<string, TAction> = { "RIG-1": "BAR_IMEI", "RIG-2": "BAR_IMEI", "RIG-3": "BLOCK_ROUTE", "SIM-1": "DISCONNECT", "SIM-2": "REVERIFY", "FWD-1": "KEEP_LIVE", "BIZ-1": "GENUINE", "SPAM-1": "CLEAR_REPORT" };
+export const EXPECTED: Record<string, TAction> = { "RIG-1": "BAR_IMEI", "RIG-2": "BAR_IMEI", "RIG-3": "BLOCK_ROUTE", "SIM-1": "DISCONNECT", "SIM-2": "REVERIFY", "FWD-1": "KEEP_LIVE", "BIZ-1": "GENUINE", "SPAM-1": "CLEAR_REPORT", "ABUSE-1": "DISCONNECT", "BULK-1": "GENUINE" };
+
+/** Telco-A colleagues who can be the second person on an action that cuts off genuine lines. */
+export const TELCO_PEERS = ["Ritu Sharma, shift lead", "Arjun Nair, senior analyst"] as const;
 
 // ---- The number trace: what the analyst's screen draws when they open an alert ----
 
@@ -326,6 +374,27 @@ export function traceView(a: Alert): TraceView {
         "180 people called a day; 14 pressed “report spam”",
         "The number shown is the hospital's own registered number",
         "No payments to match: no bank complaints on any called number",
+      ],
+    };
+  }
+  if (a.id === "ABUSE-1" || a.id === "BULK-1") {
+    const st = callRecords(a.value, null, null).stats;
+    const sims: TNode[] = a.id === "BULK-1"
+      ? T.subscribers.filter((x) => x.kycName === "Metro Cabs Pvt Ltd").slice(0, 6).map((x, i) => ({ id: `s:${i}`, label: x.msisdn, sub: `Metro Cabs · ${x.endUser ?? "enterprise KYC"}`, tone: "sim" as const }))
+      : [{ id: "s:0", label: a.value, sub: "QuickRupee Finserv · promotional sender", tone: "sim" }];
+    const who = a.id === "BULK-1" ? "Driver" : "Person called";
+    const people: TNode[] = [0, 1, 2, 3, 4].map((i) => ({ id: `p:${i}`, label: `${who} ${i + 1}`, sub: a.id === "BULK-1" ? (i % 2 ? "called dispatch back" : "trip assigned, 40 s") : i < 2 ? "reported: fake bank KYC call" : "called once, 3 to 6 minutes", tone: "customer" }));
+    return {
+      device: { label: a.id === "BULK-1" ? a.title : a.value, sub: a.id === "BULK-1" ? `IMEI ${a.value}` : "QuickRupee Finserv Pvt Ltd" }, sims, simsMore: Math.max(0, (a.id === "BULK-1" ? 8 : 1) - sims.length), people, peopleMore: Math.max(0, st.others - 5), bank: [],
+      edges: people.map((p, i) => [sims[i % sims.length]!.id, p.id]), shown: [], cash: [],
+      totals: { calls: st.total, people: st.others, paid: 0, medianMins: null },
+      log: [
+        `Read ${st.total.toLocaleString("en-IN")} call records for ${a.kind === "IMEI" ? `IMEI ${a.value}` : a.value}`,
+        a.id === "BULK-1" ? "8 SIMs used inside one gateway, all on one company's papers" : "One SIM on a company connection opened 19 days ago",
+        "Scored the counters against the SIM-box and fraud-line patterns",
+        `${st.others.toLocaleString("en-IN")} different numbers; ${Math.round(st.inRatio * 100)}% of calls came in`,
+        a.id === "BULK-1" ? "Drivers call the desk back: two-way business traffic" : "Citizen reports describe a fake bank KYC desk asking for OTPs",
+        "No payments to match: Telco-A cannot see bank complaints on these numbers",
       ],
     };
   }

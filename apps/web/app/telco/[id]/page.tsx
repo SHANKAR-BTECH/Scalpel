@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/server/auth";
 import { desk } from "@/lib/server/desk";
 import { W } from "@/lib/server/world";
-import { alertById, traceView, ACTION_LABEL, TREASONS } from "@/lib/server/telco";
+import { alertById, traceView, ACTION_LABEL, TREASONS, TELCO_PEERS } from "@/lib/server/telco";
 import { NumberTrace } from "@/components/NumberTrace";
 import { userById } from "@/lib/users";
 import { checkTrace } from "@/lib/server/tracecheck";
@@ -22,7 +22,7 @@ export default async function TelcoAlert({ params }: { params: Promise<{ id: str
   const band = (msisdn: string) => d.fri.get(msisdn)?.band ?? W.phones.find((p) => p.msisdn === msisdn)?.fri ?? "LOW";
   const tr = d.traces.get(a.id);
   const chk = tr ? checkTrace(a.id, tr.pins) : null;
-  const trace = tr && chk ? { version: tr.version, by: userById(tr.by)?.name ?? tr.by, at: tr.at, pins: tr.pins.length, ...chk } : null;
+  const trace = tr && chk ? (({ pins: meanings, ...rest }) => ({ version: tr.version, by: userById(tr.by)?.name ?? tr.by, at: tr.at, pins: tr.pins.length, meanings, ...rest }))(chk) : null;
   const blasts = Object.fromEntries(a.options.map((o) => [o, blast(a, o)]));
   const actedOn = new Map<string, string>();
   for (const g of d.groups) if (g.outcome === "DONE" && g.action !== "LEAVE") for (const n of g.sims) actedOn.set(norm(n), g.action === "BLOCK" ? "Blocked" : "Re-verify");
@@ -50,7 +50,7 @@ export default async function TelcoAlert({ params }: { params: Promise<{ id: str
       <div className="mt-5">
         <NumberTrace
           a={a} view={traceView(a)} labels={ACTION_LABEL} reasons={TREASONS} now={d.now} trace={trace} needs={checkTrace(a.id, []).actions} packetAt={d.packets.get(a.id) ?? null}
-          blasts={blasts} groups={groups} groupLog={groupLog} shops={shops} groupLabels={GROUP_LABEL}
+          blasts={blasts} peers={TELCO_PEERS} groups={groups} groupLog={groupLog} shops={shops} groupLabels={GROUP_LABEL}
           linked={a.linked.map((l) => ({ ...l, band: BAND[band(l.msisdn)] ?? band(l.msisdn) }))}
           done={t ? { action: ACTION_LABEL[t.action], agreed: t.agreed, reason: t.reason, note: t.note, by: userById(t.by)?.name ?? t.by, at: t.at, reported: t.reported } : null}
         />

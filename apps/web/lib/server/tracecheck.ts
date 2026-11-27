@@ -31,11 +31,15 @@ function scope(alertId: string) {
   return { a, numbers, imeis, towers, shops, docs, routes };
 }
 
-function belongs(p: PinRef, s: NonNullable<ReturnType<typeof scope>>): boolean {
+type Scope = NonNullable<ReturnType<typeof scope>>;
+const CHECKS: readonly PinKind[] = ["police", "dlt", "chakshu", "swap", "forwarding", "bulk"];
+export const pinKey = (p: Pick<PinRef, "kind" | "ref">) => `${p.kind}::${p.ref}`;
+
+function belongs(p: PinRef, s: Scope): boolean {
   const key = p.ref.split("|")[0]!;
   switch (p.kind) {
     case "handset": case "sims": return s.imeis.has(key);
-    case "group": case "number": case "sim": case "spoof": case "police": case "dlt": case "chakshu": case "swap": case "forwarding": return s.numbers.has(norm(key));
+    case "group": case "number": case "sim": case "spoof": case "police": case "dlt": case "chakshu": case "swap": case "forwarding": case "bulk": return s.numbers.has(norm(key));
     case "stats": return s.imeis.has(key) || s.numbers.has(norm(key));
     case "tower": return s.towers.has(key);
     case "shop": return s.shops.has(key);
@@ -45,8 +49,9 @@ function belongs(p: PinRef, s: NonNullable<ReturnType<typeof scope>>): boolean {
   }
 }
 
-/** A pin counts only if the record it points to really holds that fact (a "police" pin on a number with no police
- *  letter is nothing). The workbench only offers pins for facts it found, so this guards against a forged request. */
+/** Whether the record a pin points to holds that fact. For the six checks on a number (police letter, sender
+ *  registration, citizen reports, swaps, forwarding, company papers) a "no" is a finding too: he can pin that the
+ *  record holds nothing, and it counts as evidence (against some actions). For the rest, a "no" pin is empty. */
 function holds(p: PinRef): boolean {
   const key = p.ref.split("|")[0]!;
   switch (p.kind) {
@@ -66,6 +71,7 @@ function holds(p: PinRef): boolean {
     case "route": return route(key).found;
     case "call": return I().calls.some((x) => x.id === key);
     case "group": return sisters(key).rows.length > 1;
+    case "bulk": return Boolean(subscriber(key).bulk);
   }
 }
 
@@ -73,18 +79,102 @@ function holds(p: PinRef): boolean {
 export interface TraceSignal { key: string; label: string; seen: boolean; why: string }
 
 export interface TraceCheck {
-  shows: string[]; offAlert: string[]; empty: string[]; signals: TraceSignal[];
+  shows: string[]; offAlert: string[]; empty: string[]; signals: TraceSignal[]; pins: PinMeaning[];
   actions: { action: TAction; label: string; ready: boolean; missing: string[]; steps: { text: string; tool: Tool; q: string }[] }[];
+}
+
+/** What one pin says about each action: evidence for it, against it, or neither. Worked out from the record. */
+export interface PinMeaning { key: string; kind: PinKind; label: string; positive: boolean; says: string; for: TAction[]; against: TAction[] }
+
+const BLOCKS: TAction[] = ["BAR_IMEI", "BLOCK_ROUTE", "DISCONNECT", "LABEL_SPAM"];
+const YEAR = 365 * 86_400_000;
+
+function meaning(p: PinRef, positive: boolean): PinMeaning {
+  const key = p.ref.split("|")[0]!;
+  const m = (says: string, f: TAction[] = [], ag: TAction[] = []): PinMeaning => ({ key: pinKey(p), kind: p.kind, label: `${PIN_TITLE[p.kind]}: ${p.label}`, positive, says, for: f, against: ag });
+  switch (p.kind) {
+    case "dlt": return positive ? m("a registered business sender", ["GENUINE", "CLEAR_REPORT"], BLOCKS) : m(`no sender registration on ${key}`, [], ["GENUINE", "CLEAR_REPORT"]);
+    case "bulk": return positive ? m("company papers checked at the enterprise desk", ["GENUINE"], ["BAR_IMEI", "BLOCK_ROUTE", "DISCONNECT"]) : m(`no company papers on ${key}`, [], ["GENUINE"]);
+    case "police": return positive ? m("a police letter asking to keep the line live", ["KEEP_LIVE"], ["DISCONNECT", "BAR_IMEI", "REVERIFY", "BLOCK_ROUTE"]) : m(`no police letter on ${key}`, [], ["KEEP_LIVE"]);
+    case "chakshu": {
+      if (!positive) return m(`no citizen reports on ${key}`, [], ["LABEL_SPAM"]);
+      const kind = subscriber(key).chakshuKind ?? "";
+      return /pretend|otp|impersonat/i.test(kind) ? m(`citizen reports of a caller who ${kind.charAt(0).toLowerCase()}${kind.slice(1)}`, ["DISCONNECT", "LABEL_SPAM"], ["GENUINE", "CLEAR_REPORT"]) : m(`citizen reports (${kind.toLowerCase() || "no category"})`, ["LABEL_SPAM"]);
+    }
+    case "swap": {
+      if (!positive) return m(`no SIM swap on ${key}`, [], ["REVERIFY"]);
+      const r = subscriber(key);
+      const last = r.swaps?.at(-1)?.at ?? 0;
+      return r.activatedAt && last - r.activatedAt >= YEAR ? m("a long-time owner's SIM was swapped", ["REVERIFY"], ["DISCONNECT"]) : m("a SIM swap on a new connection", ["DISCONNECT", "REVERIFY"]);
+    }
+    case "forwarding": return positive ? m("calls forwarded to an unknown number", ["DISCONNECT", "KEEP_LIVE"]) : m(`no call forwarding on ${key}`);
+    case "stats": {
+      const [k, f, t] = p.ref.split("|");
+      const r = callRecords(k!, f || null, t || null).stats;
+      if (r.total >= 20 && r.inRatio >= 0.2) return m(`${Math.round(r.inRatio * 100)}% of calls come in: two-way traffic`, ["GENUINE"], ["BAR_IMEI", "BLOCK_ROUTE", "LABEL_SPAM", "DISCONNECT"]);
+      if (r.total >= 20 && r.inRatio < 0.05) return m("almost no calls come in", ["BAR_IMEI", "BLOCK_ROUTE", "DISCONNECT"], ["GENUINE", "CLEAR_REPORT"]);
+      return m("call statistics");
+    }
+    case "handset": {
+      const h = handset(key);
+      return h.kind === "gateway" && h.sims.length > 5 ? m(`a multi-SIM gateway with ${h.sims.length} SIMs`, ["BAR_IMEI", "BLOCK_ROUTE"], ["GENUINE"]) : m("the handset");
+    }
+    case "doc": { const r = kycDoc(key); return r.sims.length > DOT_SIM_LIMIT ? m(`${r.sims.length} SIMs on one person's ID`, ["BAR_IMEI", "BLOCK_ROUTE"], ["GENUINE"]) : m("the ID document"); }
+    case "group": { const r = sisters(key); return r.overLimit ? m(`${r.docCount} SIMs on one person's ID`, ["BAR_IMEI", "BLOCK_ROUTE"], ["GENUINE"]) : m("the linked SIMs"); }
+    case "shop": { const r = shopLookup(key); return r.found && (!r.verified || r.docsReused.length > 0) ? m("a shop that reused ID documents or is not verified", ["BAR_IMEI", "BLOCK_ROUTE"]) : m("the shop"); }
+    case "spoof": return m("calls that carried someone else's caller ID", ["BLOCK_ROUTE", "BAR_IMEI"]);
+    default: return m(PIN_TITLE[p.kind].toLowerCase());
+  }
+}
+
+/** The pins of a trace sorted out: what belongs to the alert, what holds, and what each one means. */
+function sortPins(s: Scope, pins: PinRef[]) {
+  const inScope = pins.filter((p) => belongs(p, s));
+  const pos = inScope.filter((p) => holds(p));
+  const neg = inScope.filter((p) => !holds(p) && CHECKS.includes(p.kind));
+  const empty = inScope.filter((p) => !holds(p) && !CHECKS.includes(p.kind));
+  const meanings = [...pos.map((p) => meaning(p, true)), ...neg.map((p) => meaning(p, false))];
+  return { inScope, pos, neg, empty, meanings, offAlert: pins.filter((p) => !belongs(p, s)) };
+}
+
+type Need = [boolean, string, Tool, string];
+/** For each action, the evidence it needs and whether these (holding, in-scope) pins provide it. */
+function needs(s: Scope, inPins: PinRef[]): Record<TAction, Need[]> {
+  const has = (k: PinKind) => inPins.some((p) => p.kind === k);
+  const hs = inPins.filter((p) => p.kind === "handset");
+  const attached = new Set(T.attach.filter((x) => s.imeis.has(x.imei)).map((x) => norm(x.msisdn)));
+  const pinnedSims = new Set<string>();
+  for (const p of inPins) if (p.kind === "sims") for (const x of T.attach) if (x.imei === p.ref) pinnedSims.add(norm(x.msisdn));
+  for (const p of inPins) if (p.kind === "sim") pinnedSims.add(norm(p.ref));
+  const st = inPins.filter((p) => p.kind === "stats").map((p) => { const [k, f, t] = p.ref.split("|"); return callRecords(k!, f || null, t || null); });
+  const statsHandset = st.some((r) => r.by === "handset");
+  const statsAny = st.length > 0;
+  const enoughSims = attached.size <= 1 || pinnedSims.size >= Math.ceil(attached.size / 2);
+  const impersonation = inPins.some((p) => p.kind === "chakshu" && /pretend|otp|impersonat/i.test(subscriber(p.ref).chakshuKind ?? ""));
+  // Where each missing clue is found: the tool and what to type. The AI points the way; he still looks it up and pins it.
+  const imei = s.a.kind === "IMEI" ? s.a.value : [...s.imeis][0] ?? "";
+  const num = s.a.kind === "MSISDN" ? s.a.value : T.attach.find((x) => x.imei === imei)?.msisdn ?? "";
+  const policeSim = (s.a.kind === "MSISDN" ? [s.a.value] : T.attach.filter((x) => x.imei === imei).map((x) => x.msisdn)).find((n) => I().sub.get(norm(n))?.police) ?? num;
+  return {
+    BAR_IMEI: [[hs.length > 0, "the handset (look it up and pin it)", "imei", imei], [enoughSims && pinnedSims.size > 0, "the SIMs in the handset (pin them all)", "imei", imei], [statsHandset, "call statistics for the handset", "cdr", imei], [has("tower"), "the tower it uses (click one of the handset's towers, then pin it)", "imei", imei]],
+    BLOCK_ROUTE: [[has("route"), "the route lookup (who else uses it)", "switch", num], [hs.length > 0, "the handset", "imei", imei], [statsAny, "call statistics", "cdr", imei || num]],
+    KEEP_LIVE: [[has("police"), "the police letter on file", "sub", policeSim], [has("number") || hs.length > 0, "the number or handset", "sub", num]],
+    DISCONNECT: [[has("number"), "the number's subscriber record", "sub", num], [statsAny, "call statistics", "cdr", num], [has("swap") || has("forwarding") || has("spoof") || impersonation, "what makes the line bad (a swap, forwarding, the switch log, or reports of what the calls were)", "sub", num]],
+    REVERIFY: [[has("number"), "the number's subscriber record", "sub", num], [has("swap"), "the SIM swap history", "sub", num]],
+    LABEL_SPAM: [[has("number"), "the number", "sub", num], [has("chakshu"), "the citizen reports", "sub", num], [statsAny, "call statistics", "cdr", num]],
+    CLEAR_REPORT: [[has("number"), "the number", "sub", num], [has("chakshu"), "the citizen reports", "sub", num], [has("dlt"), "the business sender registration", "sub", num]],
+    GENUINE: [[hs.length > 0 || has("number"), "the handset or number", "imei", imei || num], [has("dlt") || has("bulk"), "proof it is a business: the sender registration or the company papers", "sub", num], [statsAny, "call statistics (both directions)", "cdr", imei || num]],
+  };
 }
 
 export function checkTrace(alertId: string, pins: PinRef[]): TraceCheck {
   const s = scope(alertId);
-  if (!s) return { shows: [], offAlert: [], empty: [], signals: [], actions: [] };
+  if (!s) return { shows: [], offAlert: [], empty: [], signals: [], actions: [], pins: [] };
+  const sorted = sortPins(s, pins);
   const name = (p: PinRef) => `${PIN_TITLE[p.kind]} ${p.label}`;
-  const offAlert = pins.filter((p) => !belongs(p, s)).map(name);
-  const empty = pins.filter((p) => belongs(p, s) && !holds(p)).map(name);
-  const inPins = pins.filter((p) => belongs(p, s) && holds(p));
-  const has = (k: PinKind) => inPins.some((p) => p.kind === k);
+  const offAlert = sorted.offAlert.map(name);
+  const empty = sorted.empty.map(name);
+  const inPins = sorted.pos;
   const shows: string[] = [];
 
   // Facts, recomputed from the references.
@@ -111,25 +201,8 @@ export function checkTrace(alertId: string, pins: PinRef[]): TraceCheck {
   for (const p of inPins.filter((x) => x.kind === "swap")) { const r = sub(p); if (r.swaps?.length) shows.push(`${r.msisdn} owned since ${new Date(r.activatedAt!).getFullYear()}, swapped at ${r.swaps.at(-1)!.shop}.`); }
   for (const p of inPins.filter((x) => x.kind === "forwarding")) { const r = sub(p); if (r.forwarding) shows.push(`${r.msisdn} forwards its calls to ${r.forwarding}.`); }
 
-  const statsHandset = st.some((r) => r.by === "handset");
-  const statsAny = st.length > 0;
-  const enoughSims = attached.size <= 1 || pinnedSims.size >= Math.ceil(attached.size / 2);
-  // Where each missing clue is found: the tool and what to type. The AI points the way; he still looks it up and pins it.
-  const imei = s.a.kind === "IMEI" ? s.a.value : [...s.imeis][0] ?? "";
-  const num = s.a.kind === "MSISDN" ? s.a.value : T.attach.find((x) => x.imei === imei)?.msisdn ?? "";
-  const dltSim = T.attach.filter((x) => x.imei === imei).map((x) => x.msisdn).find((n) => I().sub.get(norm(n))?.dlt) ?? num;
-  const policeSim = (s.a.kind === "MSISDN" ? [s.a.value] : T.attach.filter((x) => x.imei === imei).map((x) => x.msisdn)).find((n) => I().sub.get(norm(n))?.police) ?? num;
-  type Need = [boolean, string, Tool, string];
-  const need: Record<TAction, Need[]> = {
-    BAR_IMEI: [[hs.length > 0, "the handset (look it up and pin it)", "imei", imei], [enoughSims && pinnedSims.size > 0, "the SIMs in the handset (pin them all)", "imei", imei], [statsHandset, "call statistics for the handset", "cdr", imei], [has("tower"), "the tower it uses (click one of the handset's towers, then pin it)", "imei", imei]],
-    BLOCK_ROUTE: [[has("route"), "the route lookup (who else uses it)", "switch", num], [hs.length > 0, "the handset", "imei", imei], [statsAny, "call statistics", "cdr", imei || num]],
-    KEEP_LIVE: [[has("police"), "the police letter on file", "sub", policeSim], [has("number") || hs.length > 0, "the number or handset", "sub", num]],
-    DISCONNECT: [[has("number"), "the number's subscriber record", "sub", num], [statsAny, "call statistics", "cdr", num], [has("swap") || has("forwarding") || has("spoof"), "what makes the line bad (swap, forwarding or switch log)", "sub", num]],
-    REVERIFY: [[has("number"), "the number's subscriber record", "sub", num], [has("swap"), "the SIM swap history", "sub", num]],
-    LABEL_SPAM: [[has("number"), "the number", "sub", num], [has("chakshu"), "the citizen reports", "sub", num], [statsAny, "call statistics", "cdr", num]],
-    CLEAR_REPORT: [[has("number"), "the number", "sub", num], [has("chakshu"), "the citizen reports", "sub", num], [has("dlt"), "the business sender registration", "sub", num]],
-    GENUINE: [[hs.length > 0 || has("number"), "the handset or number", "imei", imei], [has("dlt"), "the business sender registration", "sub", dltSim], [statsAny, "call statistics (both directions)", "cdr", imei || num]],
-  };
+  for (const p of sorted.neg) shows.push(`${PIN_TITLE[p.kind]} on ${p.ref}: none on record.`);
+  const need = needs(s, inPins);
   const actions = s.a.options.map((o) => {
     const left = need[o].filter(([ok]) => !ok);
     return { action: o, label: ACTION_LABEL[o], ready: left.length === 0, missing: left.map(([, t]) => t), steps: left.map(([, text, tool, q]) => ({ text, tool, q })) };
@@ -157,7 +230,39 @@ export function checkTrace(alertId: string, pins: PinRef[]): TraceCheck {
     sig("business", "Registered business traffic", Boolean(dltNo), `${dltNo?.ref ?? ""} is a registered business sender.`, "the number's business sender registration (on the subscriber record).", false),
     sig("owner", "Long-time owner lost the SIM (swap)", Boolean(swapNo), `${swapNo?.ref ?? ""} was swapped; the owner had it for years.`, "the SIM swap history (on the subscriber record).", false),
   ];
-  return { shows, offAlert, empty, signals, actions };
+  return { shows, offAlert, empty, signals, actions, pins: sorted.meanings };
+}
+
+/** His call, checked against his own pins: the pins he cites must give the action what it needs and must not argue
+ *  against it, and every pin of his that argues against it needs an answer: another of his pins that supports it. */
+export interface CallCheck {
+  ready: boolean; missing: string[]; badCites: string[]; cited: string[];
+  against: { key: string; label: string; says: string; answer: string | null; options: { key: string; label: string; says: string }[] }[];
+  problems: string[];
+}
+export function checkCall(alertId: string, pins: PinRef[], action: TAction, cited: string[], answers: Record<string, string>): CallCheck {
+  const s = scope(alertId);
+  if (!s) return { ready: false, missing: [], badCites: [], cited: [], against: [], problems: ["Unknown alert."] };
+  const sorted = sortPins(s, pins);
+  const byKey = new Map(sorted.meanings.map((m) => [m.key, m]));
+  const citedSet = new Set(cited.filter((k) => byKey.has(k)));
+  // What the thing is (the handset, the number, its SIMs, tower, route) counts as it is; the evidence must be cited.
+  const IDENTITY: readonly PinKind[] = ["handset", "number", "sim", "sims", "tower", "route", "call"];
+  const citedPins = sorted.pos.filter((p) => citedSet.has(pinKey(p)) || IDENTITY.includes(p.kind));
+  const missing = needs(s, citedPins)[action].filter(([ok]) => !ok).map(([, t]) => t);
+  const badCites = [...citedSet].map((k) => byKey.get(k)!).filter((m) => m.against.includes(action)).map((m) => m.label);
+  const supporters = sorted.meanings.filter((m) => m.for.includes(action));
+  const against = sorted.meanings.filter((m) => m.against.includes(action)).map((m) => {
+    const a = answers[m.key];
+    return { key: m.key, label: m.label, says: m.says, answer: a && supporters.some((x) => x.key === a) ? a : null, options: supporters.map((x) => ({ key: x.key, label: x.label, says: x.says })) };
+  });
+  const verb = ACTION_LABEL[action].toLowerCase();
+  const problems = [
+    ...(citedSet.size === 0 ? ["Tick the pins your call rests on."] : missing.length ? [`The pins you ticked don't yet give it: ${missing.join("; ")}.`] : []),
+    ...badCites.map((l) => `${l} argues against "${verb}", so it can't support it. Untick it.`),
+    ...against.filter((x) => !x.answer).map((x) => x.options.length ? `${x.label} says ${x.says}. Answer it with one of your pins that supports this call.` : `${x.label} says ${x.says}, and none of your pins answers it. Find evidence that does, or choose another action.`),
+  ];
+  return { ready: problems.length === 0, missing, badCites, cited: [...citedSet], against, problems };
 }
 
 export const traceHash = (pins: PinRef[]) => createHash("sha256").update(JSON.stringify(pins.map((p) => [p.kind, p.ref]))).digest("hex").slice(0, 16);

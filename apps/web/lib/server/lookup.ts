@@ -4,7 +4,7 @@
  * None of them traces anything on its own: the engineer decides what to look up next and what to pin.
  * Call records show numbers only: Telco-A's switch does not know who a Telco-B customer is, or whether they lost money.
  */
-import { I, T, norm, same, deviceModel, type TCall } from "./telcodata";
+import { I, T, norm, same, deviceModel, type TCall, type Bulk } from "./telcodata";
 import { W } from "./world";
 
 const DAY = 86_400_000;
@@ -19,6 +19,7 @@ export interface SubscriberResult {
   swaps?: { at: number; shop: string }[]; forwarding?: string | null; recharges?: { at: number; amount: number; shop: string; payRef: string }[];
   chakshu?: number; dlt?: { header: string; entity: string; type: string } | null; police?: { from: string; ref: string; at: number; text: string } | null;
   handsets?: { imei: string; from: number; to: number | null }[];
+  chakshuKind?: string | null; bulk?: Bulk | null;
 }
 
 export function subscriber(q: string): SubscriberResult {
@@ -34,7 +35,7 @@ export function subscriber(q: string): SubscriberResult {
       shop: sh ? { pos: sh.pos, name: sh.name, district: sh.district, verified: sh.verified } : null,
       swaps: s.swaps.map((w) => ({ at: w.at, shop: shop.get(w.pos)?.name ?? w.pos })), forwarding: s.forwarding,
       recharges: s.recharges.map((r) => ({ at: r.at, amount: r.amount, shop: shop.get(r.pos)?.name ?? r.pos, payRef: r.payRef })),
-      chakshu: s.chakshu, dlt: s.dlt, police: s.police,
+      chakshu: s.chakshu, chakshuKind: s.chakshu ? s.chakshuKind ?? "No category given" : null, dlt: s.dlt, police: s.police, bulk: s.bulk ?? null,
       handsets: T.attach.filter((a) => same(a.msisdn, n)).map((a) => ({ imei: a.imei, from: a.from, to: a.to })).sort((a, b) => a.from - b.from),
     };
   }

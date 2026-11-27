@@ -11,7 +11,10 @@ export interface TSub {
   msisdn: string; iccid: string; imsi: string; kycName: string; kycDoc: string; pos: string; plan: string; status: string; activatedAt: number;
   forwarding: string | null; swaps: { at: number; pos: string; reason: string }[]; recharges: { at: number; amount: number; pos: string; payRef: string }[];
   chakshu: number; dlt: { header: string; entity: string; type: string } | null; police: { from: string; ref: string; at: number; text: string } | null; endUser?: string;
+  chakshuKind?: string; bulk?: Bulk | null;
 }
+/** Bulk-connection papers: the company documents and authorised signatory checked at Telco-A's enterprise desk. */
+export interface Bulk { company: string; regNo: string; signatory: string; letter: string; verified: string; since: number }
 export interface TShop { pos: string; name: string; district: string; state: string; verified: boolean; agent: string }
 export interface TTower { id: string; district: string; state: string }
 export interface TCall { id: string; at: number; from: string; to: string; seconds: number; imei: string; cell: string }
