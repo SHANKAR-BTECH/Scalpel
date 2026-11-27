@@ -444,3 +444,20 @@ test("Meera's proof: freeze-as-asked against the team, a sampled line re-checked
   await meera.goto("/assure");
   await expect(meera.getByTestId("proof-link").first()).toContainText("Signed");
 });
+
+test("a saved trace that is still short keeps the decision button on screen, with a Find it link for each missing clue", async ({ browser }) => {
+  const imran = await as(browser, "imran");
+  await imran.goto("/telco/work?alert=RIG-2");
+  await imran.getByTestId("tool-run").click();
+  await imran.getByTestId("pin-handset").click();
+  await imran.getByTestId("save-trace").click();
+  await expect(imran.getByTestId("save-result")).toBeVisible();
+  await imran.goto("/telco/RIG-2");
+  await expect(imran.getByTestId("none-ready")).toBeVisible();
+  await expect(imran.getByTestId("telco-decide")).toBeDisabled();
+  const find = imran.locator("[data-testid^=find-]").first();
+  await expect(find).toHaveAttribute("href", /\/telco\/work\?alert=RIG-2&tool=\w+&q=/);
+  await find.click();
+  await expect(imran).toHaveURL(/tool=/);
+  await expect(imran.getByTestId("tool-run")).toBeVisible();
+});

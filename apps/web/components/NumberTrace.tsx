@@ -18,7 +18,7 @@ const STEPS = 6;
 export interface DoneView { action: string; agreed: boolean; reason: string; note: string; by: string; at: number; reported: string[] }
 export interface TraceSummary {
   version: number; by: string; at: number; pins: number; shows: string[]; offAlert: string[]; empty: string[];
-  actions: { action: TAction; label: string; ready: boolean; missing: string[] }[];
+  actions: { action: TAction; label: string; ready: boolean; missing: string[]; steps?: { text: string; tool: string; q: string }[] }[];
 }
 export interface LinkedView { msisdn: string; name: string; account: string; caseId: string | null; band: string }
 
@@ -107,34 +107,25 @@ export function NumberTrace({ a, view, labels, reasons, done, packetAt, linked, 
                 {(needs ?? []).map((x) => (
                   <li key={x.action} data-testid={`opt-${x.action}`} data-ready="no" className="flex items-start gap-2.5 rounded-xl px-2.5 py-2 opacity-70">
                     <input type="radio" disabled className="mt-1" aria-label={labels[x.action]} />
-                    <span><span className="font-medium">{labels[x.action]}</span><span className="mt-0.5 block text-[12px] muted">Needs: {x.missing.join("; ")}</span></span>
+                    <span><span className="font-medium">{labels[x.action]}</span><Steps x={x} alert={a.id} prefix="Needs" /></span>
                   </li>
                 ))}
               </ul>
-            </div>
-          ) : readyOpts.length === 0 ? (
-            <div className="mt-3" data-testid="none-ready">
-              <p className="text-[13.5px]"><Lock size={13} className="mr-1 inline" aria-hidden />Your trace (version {trace.version}) doesn&apos;t hold enough clues for any option yet. Add what each one needs in the workbench, save again, and it opens here.</p>
-              <ul className="mt-2 space-y-1.5 text-[13.5px]">
-                {trace.actions.map((x) => (
-                  <li key={x.action} data-testid={`opt-${x.action}`} data-ready="no" className="flex items-start gap-2.5 rounded-xl px-2.5 py-2 opacity-70">
-                    <input type="radio" disabled className="mt-1" aria-label={labels[x.action]} />
-                    <span><span className="font-medium">{labels[x.action]}</span>{x.action === a.ai.suggest && <span className="chip chip-phone ml-1.5">AI</span>}<span className="mt-0.5 block text-[12px] muted">Still needs: {x.missing.join("; ")}</span><BlastLine b={blasts[x.action]} action={x.action} /></span>
-                  </li>
-                ))}
-              </ul>
-              <Link href={bench} className="btn btn-phone btn-sm mt-2">Add the missing clues</Link>
+              <button type="button" disabled className="btn btn-phone mt-2" data-testid="telco-decide-off">Record decision</button>
+              <span className="ml-2 text-[12.5px] muted">Opens when your saved trace supports an option.</span>
             </div>
           ) : (
-            <ActForm action={telcoDecideAction} hidden={{ alert: a.id }} label="Record decision" variant="phone" testid="telco-decide" className="mt-3 space-y-3">
-              <p className="text-[12.5px] muted">Based on your trace, version {trace.version}. An action opens only when your pins hold the evidence it needs.</p>
+            <ActForm action={telcoDecideAction} hidden={{ alert: a.id }} label="Record decision" variant="phone" testid="telco-decide" className="mt-3 space-y-3" disabled={readyOpts.length === 0}>
+              {readyOpts.length === 0 ? (
+                <p className="rounded-xl bg-[var(--warn-tint)] px-3 py-2 text-[13px] text-[var(--warn)]" data-testid="none-ready"><Lock size={13} className="mr-1 inline" aria-hidden />Your trace (version {trace.version}) doesn&apos;t hold enough clues for any option yet. Under each option, &quot;Find it&quot; opens the right tool in the workbench. Pin what you find, save again, and the option opens here.</p>
+              ) : <p className="text-[12.5px] muted">Based on your trace, version {trace.version}. An action opens only when your pins hold the evidence it needs.</p>}
               <fieldset className="space-y-1.5">
                 <legend className="label mb-1">Your call</legend>
                 {trace.actions.map((x) => (
                   <label key={x.action} data-ready={x.ready ? "yes" : "no"} data-testid={`opt-${x.action}`} className={`flex items-start gap-2.5 rounded-xl px-2.5 py-2 text-[14px] transition-colors ${x.ready ? "cursor-pointer hover:bg-white/70 has-[:checked]:bg-[var(--accent-tint)]" : "opacity-60"}`}>
                     <input type="radio" name="action" value={x.action} disabled={!x.ready} defaultChecked={x.action === pick} className="mt-1 accent-[var(--phone)]" data-testid={`t-option-${x.action}`} />
                     <span>{labels[x.action]}{x.action === a.ai.suggest && <span className="chip chip-phone ml-1.5">AI</span>}
-                      {!x.ready && <span className="mt-0.5 block text-[12px] muted">Still missing: {x.missing.join("; ")}</span>}
+                      {!x.ready && <Steps x={x} alert={a.id} prefix="Still missing" />}
                       <BlastLine b={blasts[x.action]} action={x.action} />
                     </span>
                   </label>
@@ -287,6 +278,17 @@ export function NumberTrace({ a, view, labels, reasons, done, packetAt, linked, 
         <p className="text-[12px] muted">Demo clock {when(now)}</p>
       </aside>
     </div>
+  );
+}
+
+function Steps({ x, alert, prefix }: { x: TraceSummary["actions"][number]; alert: string; prefix: string }) {
+  if (!x.steps?.length) return <span className="mt-0.5 block text-[12px] muted">{prefix}: {x.missing.join("; ")}</span>;
+  return (
+    <span className="mt-0.5 block text-[12px] muted">{prefix}:{" "}
+      {x.steps.map((st, i) => (
+        <span key={st.text}>{i > 0 && "; "}{st.text} <Link href={`/telco/work?alert=${alert}&tool=${st.tool}&q=${encodeURIComponent(st.q)}`} className="link whitespace-nowrap font-medium text-[var(--phone)]" data-testid={`find-${x.action}`}>Find it</Link></span>
+      ))}
+    </span>
   );
 }
 

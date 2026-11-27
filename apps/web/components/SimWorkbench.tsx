@@ -50,12 +50,12 @@ function Go({ onClick, children }: { onClick: () => void; children: React.ReactN
   return <button type="button" className="link mono" onClick={onClick}>{children}</button>;
 }
 
-export function SimWorkbench({ alert, leads, start, firstDay, lastDay, saved, locked = false }: {
+export function SimWorkbench({ alert, leads, start, firstDay, lastDay, saved, locked = false, startTool: wanted }: {
   alert: { id: string; title: string; kind: "IMEI" | "MSISDN"; value: string } | null;
-  leads: { label: string; value: string; tool: Tool }[]; start: string | null; firstDay: number; lastDay: number; saved: SavedView | null; locked?: boolean;
+  leads: { label: string; value: string; tool: Tool }[]; start: string | null; firstDay: number; lastDay: number; saved: SavedView | null; locked?: boolean; startTool?: string;
 }) {
   const router = useRouter();
-  const startTool: Tool = alert ? (alert.kind === "IMEI" ? "imei" : "sub") : "sub";
+  const startTool: Tool = TOOLS.some(([t]) => t === wanted) ? (wanted as Tool) : alert ? (alert.kind === "IMEI" ? "imei" : "sub") : "sub";
   const [tool, setTool] = useState<Tool>(startTool);
   const [q, setQ] = useState<Record<Tool, string>>({ sub: "", cdr: "", imei: "", shop: "", tower: "", switch: "", route: "", doc: "", group: "", [startTool]: alert?.value ?? start ?? "" });
   const [from, setFrom] = useState(dayOf(firstDay));

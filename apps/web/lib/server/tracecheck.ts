@@ -12,6 +12,7 @@ import { callRecords, subscriber, handset, shopLookup, kycDoc, switchLog, route,
 
 import { PIN_KINDS, PIN_TITLE, type PinKind, type PinRef } from "@/lib/pins";
 export type { PinRef };
+export type Tool = "sub" | "cdr" | "imei" | "shop" | "tower" | "switch" | "route" | "doc" | "group";
 
 /** Everything that belongs to an alert: its handset or number, the SIMs, towers, shops, ID documents and route. */
 function scope(alertId: string) {
@@ -73,7 +74,7 @@ export interface TraceSignal { key: string; label: string; seen: boolean; why: s
 
 export interface TraceCheck {
   shows: string[]; offAlert: string[]; empty: string[]; signals: TraceSignal[];
-  actions: { action: TAction; label: string; ready: boolean; missing: string[] }[];
+  actions: { action: TAction; label: string; ready: boolean; missing: string[]; steps: { text: string; tool: Tool; q: string }[] }[];
 }
 
 export function checkTrace(alertId: string, pins: PinRef[]): TraceCheck {
@@ -113,19 +114,25 @@ export function checkTrace(alertId: string, pins: PinRef[]): TraceCheck {
   const statsHandset = st.some((r) => r.by === "handset");
   const statsAny = st.length > 0;
   const enoughSims = attached.size <= 1 || pinnedSims.size >= Math.ceil(attached.size / 2);
-  const need: Record<TAction, [boolean, string][]> = {
-    BAR_IMEI: [[hs.length > 0, "the handset (look it up and pin it)"], [enoughSims && pinnedSims.size > 0, "the SIMs in the handset (pin them all)"], [statsHandset, "call statistics for the handset"], [has("tower"), "the tower it uses"]],
-    BLOCK_ROUTE: [[has("route"), "the route lookup (who else uses it)"], [hs.length > 0, "the handset"], [statsAny, "call statistics"]],
-    KEEP_LIVE: [[has("police"), "the police letter on file"], [has("number") || hs.length > 0, "the number or handset"]],
-    DISCONNECT: [[has("number"), "the number's subscriber record"], [statsAny, "call statistics"], [has("swap") || has("forwarding") || has("spoof"), "what makes the line bad (swap, forwarding or switch log)"]],
-    REVERIFY: [[has("number"), "the number's subscriber record"], [has("swap"), "the SIM swap history"]],
-    LABEL_SPAM: [[has("number"), "the number"], [has("chakshu"), "the citizen reports"], [statsAny, "call statistics"]],
-    CLEAR_REPORT: [[has("number"), "the number"], [has("chakshu"), "the citizen reports"], [has("dlt"), "the business sender registration"]],
-    GENUINE: [[hs.length > 0 || has("number"), "the handset or number"], [has("dlt"), "the business sender registration"], [statsAny, "call statistics (both directions)"]],
+  // Where each missing clue is found: the tool and what to type. The AI points the way; he still looks it up and pins it.
+  const imei = s.a.kind === "IMEI" ? s.a.value : [...s.imeis][0] ?? "";
+  const num = s.a.kind === "MSISDN" ? s.a.value : T.attach.find((x) => x.imei === imei)?.msisdn ?? "";
+  const dltSim = T.attach.filter((x) => x.imei === imei).map((x) => x.msisdn).find((n) => I().sub.get(norm(n))?.dlt) ?? num;
+  const policeSim = (s.a.kind === "MSISDN" ? [s.a.value] : T.attach.filter((x) => x.imei === imei).map((x) => x.msisdn)).find((n) => I().sub.get(norm(n))?.police) ?? num;
+  type Need = [boolean, string, Tool, string];
+  const need: Record<TAction, Need[]> = {
+    BAR_IMEI: [[hs.length > 0, "the handset (look it up and pin it)", "imei", imei], [enoughSims && pinnedSims.size > 0, "the SIMs in the handset (pin them all)", "imei", imei], [statsHandset, "call statistics for the handset", "cdr", imei], [has("tower"), "the tower it uses (click one of the handset's towers, then pin it)", "imei", imei]],
+    BLOCK_ROUTE: [[has("route"), "the route lookup (who else uses it)", "switch", num], [hs.length > 0, "the handset", "imei", imei], [statsAny, "call statistics", "cdr", imei || num]],
+    KEEP_LIVE: [[has("police"), "the police letter on file", "sub", policeSim], [has("number") || hs.length > 0, "the number or handset", "sub", num]],
+    DISCONNECT: [[has("number"), "the number's subscriber record", "sub", num], [statsAny, "call statistics", "cdr", num], [has("swap") || has("forwarding") || has("spoof"), "what makes the line bad (swap, forwarding or switch log)", "sub", num]],
+    REVERIFY: [[has("number"), "the number's subscriber record", "sub", num], [has("swap"), "the SIM swap history", "sub", num]],
+    LABEL_SPAM: [[has("number"), "the number", "sub", num], [has("chakshu"), "the citizen reports", "sub", num], [statsAny, "call statistics", "cdr", num]],
+    CLEAR_REPORT: [[has("number"), "the number", "sub", num], [has("chakshu"), "the citizen reports", "sub", num], [has("dlt"), "the business sender registration", "sub", num]],
+    GENUINE: [[hs.length > 0 || has("number"), "the handset or number", "imei", imei], [has("dlt"), "the business sender registration", "sub", dltSim], [statsAny, "call statistics (both directions)", "cdr", imei || num]],
   };
   const actions = s.a.options.map((o) => {
-    const missing = need[o].filter(([ok]) => !ok).map(([, t]) => t);
-    return { action: o, label: ACTION_LABEL[o], ready: missing.length === 0, missing };
+    const left = need[o].filter(([ok]) => !ok);
+    return { action: o, label: ACTION_LABEL[o], ready: left.length === 0, missing: left.map(([, t]) => t), steps: left.map(([, text, tool, q]) => ({ text, tool, q })) };
   });
   // Signs, each worked out from what he pinned. "Not pinned yet" names the lookup that would show it, never the answer.
   const hsF = hs.filter((h) => h.found);

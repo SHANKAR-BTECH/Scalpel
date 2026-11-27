@@ -8,9 +8,9 @@ import { userById } from "@/lib/users";
 import { SimWorkbench } from "@/components/SimWorkbench";
 
 /** Imran's SIM trace workbench: he looks things up and builds the trace himself; the AI only checks his pins. */
-export default async function Workbench({ searchParams }: { searchParams: Promise<{ n?: string; alert?: string }> }) {
+export default async function Workbench({ searchParams }: { searchParams: Promise<{ n?: string; alert?: string; tool?: string; q?: string }> }) {
   await requireUser("telco");
-  const { n, alert: alertId } = await searchParams;
+  const { n, alert: alertId, tool, q } = await searchParams;
   const al = alertId ? alertById(alertId) : undefined;
   const d = await desk();
   const leads = [
@@ -25,7 +25,7 @@ export default async function Workbench({ searchParams }: { searchParams: Promis
       <Link href={al ? `/telco/${al.id}` : "/telco"} className="link inline-flex items-center gap-1 text-[13.5px]"><ChevronLeft size={15} aria-hidden />{al ? `Back to ${al.id}` : "All alerts"}</Link>
       <h1 className="mt-2">SIM trace workbench{al ? `: ${al.id}` : ""}</h1>
       <p className="mt-1 max-w-[780px] muted">Look up a number, read its call records, look up the handset it was used in, and pin what matters. Your trace is built only from your pins. When you are ready, ask the AI to check it: it tells you what your evidence supports and what is still missing.</p>
-      <SimWorkbench alert={al ? { id: al.id, title: al.title, kind: al.kind, value: al.value } : null} saved={saved} locked={al ? d.telcoByAlert.has(al.id) : false} leads={leads} start={n ?? (al ? al.value : null)} firstDay={Math.min(...ts)} lastDay={Math.max(...ts)} />
+      <SimWorkbench alert={al ? { id: al.id, title: al.title, kind: al.kind, value: al.value } : null} saved={saved} locked={al ? d.telcoByAlert.has(al.id) : false} leads={leads} start={q ?? n ?? (al ? al.value : null)} startTool={tool} firstDay={Math.min(...ts)} lastDay={Math.max(...ts)} />
     </div>
   );
 }
