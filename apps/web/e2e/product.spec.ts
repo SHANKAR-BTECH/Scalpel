@@ -513,3 +513,53 @@ test("ABUSE-1: real papers tempt a clear; Imran cites the reports, answers his o
   const meera = await as(browser, "meera");
   await expect(meera.getByTestId("telco-cited")).toContainText("answered 1 pin against it");
 });
+
+test("police requests: the hacked mailbox is caught by the call back, the typo number is left out, and Meera sees both", async ({ browser }) => {
+  const imran = await as(browser, "imran");
+  await imran.goto("/telco/police");
+  await expect(imran.getByTestId("lea-row")).toHaveCount(5);
+  // LEA-2: address and case look right; the assistant says it can't tell; the call back can.
+  await imran.goto("/telco/police/LEA-2");
+  await expect(imran.getByTestId("lea-preread")).toContainText("only a call back tells them apart");
+  await imran.getByTestId("lea-callback").click();
+  await expect(imran.getByTestId("lea-callback-result")).toContainText("directory first");
+  await imran.getByTestId("lea-officer-name").fill("Ajay Kumar Singh");
+  await imran.getByTestId("lea-officer").click();
+  await expect(imran.getByTestId("lea-officer-done")).toContainText("Superintendent");
+  await imran.getByTestId("lea-callback").click();
+  await expect(imran.getByTestId("lea-callback-done")).toContainText("sent no such request");
+  await imran.getByTestId("lea-REFUSE").check();
+  await imran.getByTestId("lea-reason").selectOption("The station did not send it");
+  await imran.getByTestId("lea-note").fill("Your office says it sent no such request. Nothing released; please check the mailbox.");
+  await imran.getByTestId("lea-decide").click();
+  await expect(imran.getByTestId("lea-done")).toContainText("Refused", { timeout: 10_000 });
+  // LEA-3: one number is a stranger's. He looks each up and releases the other two.
+  await imran.goto("/telco/police/LEA-3");
+  await imran.getByTestId("lea-officer-name").fill("Meenakshi Iyer");
+  await imran.getByTestId("lea-officer").click();
+  await expect(imran.getByTestId("lea-officer-done")).toBeVisible();
+  await imran.getByTestId("lea-callback").click();
+  await expect(imran.getByTestId("lea-callback-done")).toBeVisible();
+  for (let i = 0; i < 3; i++) {
+    await imran.getByTestId("lea-number-check").first().click();
+    await expect(imran.getByTestId("lea-number-done")).toHaveCount(i + 1);
+  }
+  await expect(imran.getByTestId("lea-number-done").nth(2)).toContainText("Postpaid");
+  await imran.getByTestId("lea-NARROW").check();
+  await imran.getByTestId("lea-pick").nth(0).check();
+  await imran.getByTestId("lea-pick").nth(1).check();
+  await imran.getByTestId("lea-reason").selectOption("Some numbers are not in the case");
+  await imran.getByTestId("lea-note").fill("The third number is an unrelated customer; please recheck it in your file.");
+  await imran.getByTestId("lea-decide").click();
+  await expect(imran.getByTestId("lea-done")).toContainText("Released less", { timeout: 10_000 });
+  const file = imran.waitForEvent("download");
+  await imran.getByTestId("lea-download").click();
+  const chunks: Buffer[] = [];
+  for await (const c of await (await file).createReadStream()) chunks.push(c as Buffer);
+  const text = Buffer.concat(chunks).toString();
+  expect(text).toContain("2 of 3 number(s)");
+  expect(text).toContain("Section 63(4)");
+  const meera = await as(browser, "meera");
+  await meera.goto("/assure");
+  await expect(meera.getByTestId("lea-ledger-row")).toHaveCount(2);
+});

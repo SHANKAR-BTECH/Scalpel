@@ -3,6 +3,7 @@
  * Every action re-reads the log and checks the rules again before it writes, so two people clicking at once
  * cannot approve the same proposal twice or approve their own proposal.
  */
+import { createHash } from "node:crypto";
 import {
   verifyChain, createHold, applyEvent, clockViews, settle, evaluateGate, formatINR,
   type AuditEntry, type Hold, type ClockView, type HoldEvent, type Signal, type GateResult,
@@ -13,6 +14,8 @@ import { model, policyNow, START, W, isProtectedNumber, holderName, type Account
 import type { User } from "@/lib/users";
 import { aiView, REASONS, SIGNOFF_AT, CHOICE_LABEL, type Choice } from "./judge";
 import { alertById, ACTION_LABEL, TREASONS, TELCO_PEERS, type TAction } from "./telco";
+import { leaById, officerLookup, LEA_MAX_DAYS, RANK_OK, type LeaOutcome } from "./lea";
+import { subscriber } from "./lookup";
 import { checkTrace, checkCall, cleanPins, traceHash, type PinRef, type CallCheck } from "./tracecheck";
 import { checkTrail, cleanTrail, reachedOf, trailHash } from "./trailcheck";
 import type { Json } from "@scalpel/engine";
@@ -59,6 +62,12 @@ export interface TelcoDecision {
   cited: string[]; answers: { against: string; with: string | null }[];
 }
 
+/** One check Imran ran on a police request: the officer directory, the call back, or a number lookup. */
+export interface LeaCheck { req: string; kind: "officer" | "callback" | "number"; ref: string; ok: boolean; text: string; by: string; at: number }
+/** His answer to a police request. Flags are mistakes the desk itself can see (never hidden truth). */
+export interface LeaDecision { req: string; outcome: LeaOutcome; numbers: string[]; from: number; to: number; reason: string; note: string; flags: string[]; hash: string | null; by: string; at: number }
+export const LEA_REASONS = ["The request checks out", "Some numbers are not in the case", "Dates wider than the purpose needs", "Rank below Superintendent of Police", "The station did not send it", "No FIR or case behind it", "Other"] as const;
+
 /** A group action on the "sister" SIMs of one alert (bought on the same ID or in the same batch). */
 export interface TelcoGroup { gid: string; alert: string; anchor: string; action: GroupAction; sims: string[]; outcome: "DONE" | "REFUSED"; refused: string[]; note: string; by: string; at: number }
 export const GROUP_ACTIONS = ["BLOCK", "REVERIFY", "LEAVE"] as const;
@@ -85,6 +94,7 @@ export interface Desk {
   traces: Map<string, SavedTrace>;
   groups: TelcoGroup[]; shops: TelcoShop[];
   proofChecks: ProofCheck[]; proofSigned: Map<string, { by: string; at: number; hash: string; issues: number }>;
+  leaChecks: LeaCheck[]; leaByReq: Map<string, LeaDecision>;
   trails: Map<string, SavedTrail>;
   /** Account -> the saved trail (case) that reached it. */
   trailOfAccount: Map<string, SavedTrail>;
@@ -109,6 +119,8 @@ export function fold(chain: AuditEntry[], now: number): Desk {
   const shops: TelcoShop[] = [];
   const proofChecks: ProofCheck[] = [];
   const proofSigned = new Map<string, { by: string; at: number; hash: string; issues: number }>();
+  const leaChecks: LeaCheck[] = [];
+  const leaByReq = new Map<string, LeaDecision>();
   const traces = new Map<string, SavedTrace>();
   const trails = new Map<string, SavedTrail>();
   const ev = (row: HoldRow, type: HoldEvent, e: AuditEntry, note?: string) => {
@@ -195,6 +207,12 @@ export function fold(chain: AuditEntry[], now: number): Desk {
       case "PROOF_CHECK":
         proofChecks.push({ caseId: e.caseId, pid: p.pid, typed: p.typed, ok: p.ok, issues: p.issues ?? [], sentTo: p.sentTo ?? [], by: e.actor, at: e.at });
         break;
+      case "LEA_CHECK":
+        leaChecks.push({ req: p.req, kind: p.kind, ref: p.ref ?? "", ok: Boolean(p.ok), text: p.text ?? "", by: e.actor, at: e.at });
+        break;
+      case "LEA_DECISION":
+        leaByReq.set(p.req, { req: p.req, outcome: p.outcome, numbers: p.numbers ?? [], from: p.from ?? 0, to: p.to ?? 0, reason: p.reason ?? "", note: p.note ?? "", flags: p.flags ?? [], hash: p.hash ?? null, by: e.actor, at: e.at });
+        break;
       case "PROOF_SIGNED":
         proofSigned.set(e.caseId, { by: e.actor, at: e.at, hash: p.hash, issues: p.issues ?? 0 });
         break;
@@ -224,7 +242,7 @@ export function fold(chain: AuditEntry[], now: number): Desk {
   const telcoByAlert = new Map(telco.map((t) => [t.alert, t] as const));
   const trailOfAccount = new Map<string, SavedTrail>();
   for (const t of trails.values()) for (const a of t.reached) if (!trailOfAccount.has(a)) trailOfAccount.set(a, t);
-  return { now, chain, telco, telcoByAlert, fri, packets, traces, groups, shops, proofChecks, proofSigned, trails, trailOfAccount, decisions: [...decisions.values()], decisionByAccount, returned, proposals: [...proposals.values()], holds: [...holds.values()], asks: [...asks.values()], actions, checks, holdByAccount, pendingByAccount };
+  return { now, chain, telco, telcoByAlert, fri, packets, traces, groups, shops, proofChecks, proofSigned, leaChecks, leaByReq, trails, trailOfAccount, decisions: [...decisions.values()], decisionByAccount, returned, proposals: [...proposals.values()], holds: [...holds.values()], asks: [...asks.values()], actions, checks, holdByAccount, pendingByAccount };
 }
 
 /** Read once per page render: the header and the page share it instead of each asking the database. */
@@ -786,3 +804,95 @@ export async function resetDemo(u: User): Promise<ActionResult> {
 }
 
 export type { AccountView };
+
+// ---- Police requests for call records (Telco-A's nodal desk) ----
+
+const LDAY = 86_400_000;
+async function leaState(u: User, reqId: string) {
+  must(u.role === "telco", "Only the Telco-A analyst answers police requests.");
+  const r = leaById(reqId);
+  must(r, "Unknown request.");
+  const s = await store();
+  const now = await demoNow(s);
+  const d = fold(await s.chain(), now);
+  must(!d.leaByReq.has(r.id), "This request has already been answered.");
+  return { r, s, now, d, mine: d.leaChecks.filter((x) => x.req === r.id) };
+}
+
+/** Look the officer up in the directory, by the name he types. The letter's own contact details are never used. */
+export async function leaOfficer(u: User, reqId: string, name: string): Promise<ActionResult> {
+  const { r, s, now } = await leaState(u, reqId);
+  const o = officerLookup(name);
+  const ok = Boolean(o.officer && o.officer.name === r.officer);
+  const text = o.officer ? `${o.officer.name}: ${o.officer.rank}, ${o.officer.station}. Official email ${o.officer.email}; directory phone ${o.officer.phone}.` : o.note;
+  await s.append([{ at: now, actor: u.id, type: "LEA_CHECK", caseId: "LEA", payload: { req: r.id, kind: "officer", ref: o.officer?.name ?? name.slice(0, 80), ok, text } }]);
+  return { message: o.officer ? (ok ? text : `${text} That is not the officer who signed this request.`) : o.note };
+}
+
+/** Call the station back on the directory number found above. */
+export async function leaCallback(u: User, reqId: string): Promise<ActionResult> {
+  const { r, s, now, mine } = await leaState(u, reqId);
+  const off = [...mine].reverse().find((x) => x.kind === "officer" && x.ok);
+  must(off, "Look the officer up in the directory first: you call back on the directory's number, never the one in the email.");
+  must(!mine.some((x) => x.kind === "callback"), "You already called the station back on this request.");
+  await s.append([{ at: now, actor: u.id, type: "LEA_CHECK", caseId: "LEA", payload: { req: r.id, kind: "callback", ref: off.ref, ok: r.callback.sent, text: r.callback.text } }]);
+  return { message: r.callback.text };
+}
+
+/** Look one requested number up in Telco-A's records. Whether it belongs to the case is his call. */
+export async function leaNumber(u: User, reqId: string, msisdn: string): Promise<ActionResult> {
+  const { r, s, now } = await leaState(u, reqId);
+  const n = r.numbers.find((x) => tnorm(x) === tnorm(msisdn));
+  must(n, "That number is not in this request.");
+  const sub = subscriber(n);
+  const text = sub.found
+    ? `${sub.msisdn}: ${sub.kycName}, ${sub.plan}, since ${new Date(sub.activatedAt!).getFullYear()}; shop ${sub.shop?.name ?? "—"}; ${sub.handsets?.length ?? 0} handset${sub.handsets?.length === 1 ? "" : "s"} on record (${(sub.handsets ?? []).map((h) => h.imei).join(", ")}).`
+    : sub.note;
+  await s.append([{ at: now, actor: u.id, type: "LEA_CHECK", caseId: "LEA", payload: { req: r.id, kind: "number", ref: n, ok: sub.found, text } }]);
+  return { message: text };
+}
+
+/** Answer the request: release it as asked, release less (some numbers or fewer days), or refuse. Nothing leaves
+ *  without the directory check and the call back; every released number must have been looked up. Mistakes the
+ *  desk can see for itself are flagged for compliance; the server never decides for him. */
+export async function leaDecide(u: User, reqId: string, outcome: string, numbers: string[], fromDay: string, toDay: string, reason: string, note: string): Promise<ActionResult> {
+  const { r, s, now, mine } = await leaState(u, reqId);
+  must(outcome === "RELEASE" || outcome === "NARROW" || outcome === "REFUSE", "Pick release, release less, or refuse.");
+  must((LEA_REASONS as readonly string[]).includes(reason), "Pick a reason.");
+  const off = [...mine].reverse().find((x) => x.kind === "officer");
+  must(off, "Look the officer up in the directory first.");
+  const cb = mine.find((x) => x.kind === "callback");
+  const looked = new Set(mine.filter((x) => x.kind === "number").map((x) => tnorm(x.ref)));
+  let rel: string[] = [], from = 0, to = 0;
+  if (outcome === "REFUSE") {
+    must(note.trim().length >= 10, "Write the reply to the officer: why it is refused (at least a sentence).");
+  } else {
+    must(cb, "Call the station back on the directory number before anything leaves Telco-A.");
+    const want = outcome === "RELEASE" ? r.numbers : numbers.map((x) => r.numbers.find((y) => tnorm(y) === tnorm(x))).filter((x): x is string => Boolean(x));
+    rel = [...new Set(want)];
+    must(rel.length > 0, "Tick the numbers to release.");
+    const missing = rel.filter((x) => !looked.has(tnorm(x)));
+    must(!missing.length, `Look up every number you release first: ${missing.join(", ")}.`);
+    const day = (v: string, dflt: number) => (/^\d{4}-\d{2}-\d{2}$/.test(v) ? Date.parse(`${v}T00:00:00Z`) - 19_800_000 : dflt);
+    from = outcome === "RELEASE" ? r.from : day(fromDay, r.from);
+    to = outcome === "RELEASE" ? r.to : day(toDay, r.to - LDAY + 1) + LDAY - 1;
+    must(from <= to, "The start date must come before the end date.");
+    must(from >= r.from - LDAY && to <= r.to + LDAY, "You can release less than was asked, never more.");
+    if (outcome === "NARROW") {
+      must(rel.length < r.numbers.length || from > r.from + LDAY || to < r.to - LDAY, "That is everything they asked for: choose release as asked, or leave something out.");
+      must(note.trim().length >= 10, "Write the reply to the officer: what was left out and why.");
+    }
+  }
+  const flags: string[] = [];
+  if (outcome !== "REFUSE") {
+    if (cb && !cb.ok) flags.push("Released after the station said it did not send the request.");
+    const o = officerLookup(r.officer).officer;
+    if (!o || !RANK_OK.test(o.rank)) flags.push(`Released on a request from an officer below Superintendent rank (${o?.rank ?? "not in the directory"}).`);
+    if ((to - from) / LDAY > LEA_MAX_DAYS + 1) flags.push(`Released ${Math.round((to - from) / LDAY)} days of records, over Telco-A's ${LEA_MAX_DAYS}-day line.`);
+  }
+  const hash = rel.length ? createHash("sha256").update(JSON.stringify([r.id, rel, from, to])).digest("hex").slice(0, 16) : null;
+  await s.append([{ at: now, actor: u.id, type: "LEA_DECISION", caseId: "LEA", payload: { req: r.id, outcome, numbers: rel, from, to, reason, note: note.trim().slice(0, 600), flags, hash } }],
+    (c) => must(!fold(c, now).leaByReq.has(r.id), "This request has already been answered."));
+  if (flags.length) await s.notify([{ at: now, to: "meera", text: `${u.name} released call records on ${r.id} with ${flags.length} flag${flags.length > 1 ? "s" : ""}: ${flags[0]}`, link: "/assure" }]);
+  return { message: outcome === "REFUSE" ? `Refused. The reply to ${r.officer} is on record.` : `Released ${rel.length} number${rel.length === 1 ? "" : "s"}, ${Math.round((to - from) / LDAY) || 1} day${Math.round((to - from) / LDAY) === 1 ? "" : "s"}, to ${r.officer} only. The file is ready to download.` };
+}

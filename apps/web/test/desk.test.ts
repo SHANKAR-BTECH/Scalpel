@@ -662,3 +662,71 @@ describe("The proof: harm counted both ways, re-checked by Meera", () => {
     expect(s.issues).toBeGreaterThan(0);
   });
 });
+
+import { leaOfficer, leaCallback, leaNumber, leaDecide } from "@/lib/server/desk";
+import { leaRequests, leaById, leaPreRead, LEA_EXPECTED } from "@/lib/server/lea";
+
+describe("Police requests for call records: Imran vets, then releases, narrows or refuses", () => {
+  beforeEach(() => useStore(new MemoryStore()));
+  it("five requests, each with an expected answer, and the assistant can't spot a hacked mailbox", () => {
+    expect(leaRequests().map((r) => r.id)).toEqual(Object.keys(LEA_EXPECTED));
+    const fake = leaById("LEA-2")!, real = leaById("LEA-1")!;
+    expect(fake.fromEmail).toBe(real.fromEmail);
+    expect(fake.caseRef).toBe(real.caseRef);
+    expect(leaPreRead(fake).join(" ")).toMatch(/hacked mailbox would match too/);
+    // The one-digit slip is a real, unrelated customer.
+    const slip = leaById("LEA-3")!.numbers.at(-1)!;
+    expect(T.subscribers.find((s) => s.msisdn === slip)?.kycName).toBeTruthy();
+    expect(T.attach.some((x) => x.msisdn === slip && W.rigs.some((r) => r.imei === x.imei))).toBe(false);
+  });
+  it("nothing leaves without the directory check, the call back, and every released number looked up", async () => {
+    await expect(leaDecide(priya, "LEA-1", "RELEASE", [], "", "", "The request checks out", "")).rejects.toThrow(/Telco-A/);
+    await expect(leaDecide(imran, "LEA-1", "RELEASE", [], "", "", "The request checks out", "")).rejects.toThrow(/directory/);
+    await expect(leaCallback(imran, "LEA-1")).rejects.toThrow(/directory first/);
+    expect((await leaOfficer(imran, "LEA-1", "ajay kumar")).message).toMatch(/Superintendent/);
+    await expect(leaDecide(imran, "LEA-1", "RELEASE", [], "", "", "The request checks out", "")).rejects.toThrow(/Call the station back/);
+    expect((await leaCallback(imran, "LEA-1")).message).toMatch(/confirms/);
+    await expect(leaDecide(imran, "LEA-1", "RELEASE", [], "", "", "The request checks out", "")).rejects.toThrow(/Look up every number/);
+    for (const n of leaById("LEA-1")!.numbers) await leaNumber(imran, "LEA-1", n);
+    const r = await leaDecide(imran, "LEA-1", "RELEASE", [], "", "", "The request checks out", "");
+    expect(r.message).toMatch(/Released 2 numbers/);
+    const d = (await desk()).leaByReq.get("LEA-1")!;
+    expect(d.flags).toEqual([]);
+    expect(d.hash).toMatch(/^[0-9a-f]{16}$/);
+    await expect(leaNumber(imran, "LEA-1", leaById("LEA-1")!.numbers[0]!)).rejects.toThrow(/already been answered/);
+  });
+  it("the hacked mailbox: only the call back shows it; releasing anyway is flagged for compliance", async () => {
+    await leaOfficer(imran, "LEA-2", "Ajay Kumar Singh");
+    expect((await leaCallback(imran, "LEA-2")).message).toMatch(/sent no such request/);
+    await leaNumber(imran, "LEA-2", leaById("LEA-2")!.numbers[0]!);
+    await leaDecide(imran, "LEA-2", "RELEASE", [], "", "", "The request checks out", "");
+    expect((await desk()).leaByReq.get("LEA-2")!.flags.join(" ")).toMatch(/did not send/);
+  });
+  it("the typo: release less, never more; the Inspector's year-long ask is refused with a reply", async () => {
+    const r = leaById("LEA-3")!;
+    await leaOfficer(imran, "LEA-3", "Meenakshi Iyer");
+    await leaCallback(imran, "LEA-3");
+    for (const n of r.numbers) await leaNumber(imran, "LEA-3", n);
+    const good = r.numbers.slice(0, -1);
+    await expect(leaDecide(imran, "LEA-3", "NARROW", r.numbers, "", "", "Some numbers are not in the case", "Third number is not in the case")).rejects.toThrow(/everything they asked/);
+    await expect(leaDecide(imran, "LEA-3", "NARROW", good, "", "", "Some numbers are not in the case", "")).rejects.toThrow(/reply/);
+    await leaDecide(imran, "LEA-3", "NARROW", good, "", "", "Some numbers are not in the case", "The third number belongs to someone else; please check your file.");
+    expect((await desk()).leaByReq.get("LEA-3")!.numbers).toEqual(good);
+    await leaOfficer(imran, "LEA-4", "Rakesh Tiwari");
+    await expect(leaDecide(imran, "LEA-4", "REFUSE", [], "", "", "Rank below Superintendent of Police", "no")).rejects.toThrow(/reply/);
+    await leaDecide(imran, "LEA-4", "REFUSE", [], "", "", "Rank below Superintendent of Police", "Needs an SP's request and an FIR; a year of a hospital line is far wider than a nuisance complaint.");
+    expect((await desk()).leaByReq.get("LEA-4")!.numbers).toEqual([]);
+  });
+  it("dates can be narrowed but never widened; over the 90-day line is flagged", async () => {
+    const r = leaById("LEA-5")!;
+    await leaOfficer(imran, "LEA-5", "Meenakshi Iyer");
+    await leaCallback(imran, "LEA-5");
+    await leaNumber(imran, "LEA-5", r.numbers[0]!);
+    const day = (t: number) => new Date(t + 19_800_000).toISOString().slice(0, 10);
+    await expect(leaDecide(imran, "LEA-5", "NARROW", r.numbers, day(r.from - 40 * 86_400_000), day(r.to), "Dates wider than the purpose needs", "Only since the account was opened.")).rejects.toThrow(/never more/);
+    await leaDecide(imran, "LEA-5", "NARROW", r.numbers, day(r.to - 14 * 86_400_000), day(r.to), "Dates wider than the purpose needs", "Only the two weeks since the account was opened.");
+    const d = (await desk()).leaByReq.get("LEA-5")!;
+    expect(d.flags).toEqual([]);
+    expect((d.to - d.from) / 86_400_000).toBeLessThan(16);
+  });
+});

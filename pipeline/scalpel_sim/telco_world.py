@@ -375,6 +375,29 @@ def build() -> dict:
         cdr.append({"id": f"MC{k+1:05d}", "at": at, "from": dr if inc else sim, "to": sim if inc else dr,
                     "seconds": r3.randrange(15, 120), "imei": cab_imei, "cell": cab_cell})
 
+    # ---- the stranger behind a one-digit slip (own random stream) ----
+    # A police request for RIG-2's SIMs will carry one number with its last two digits swapped. That number is
+    # a real, ordinary Telco-A customer with nothing to do with the case: releasing it hands a stranger's calls over.
+    r4 = random.Random(SEED + 3)
+    rig2 = next((r for r in w["rigs"] if r["id"] == "RIG-2"), None)
+    if rig2:
+        d = norm(rig2["sims"][0]["msisdn"])
+        slip = d[:-2] + d[-1] + d[-2]
+        if slip != d and slip not in used:
+            used.add(slip)
+            n = fmt(slip)
+            home = shops[r4.randrange(14)]
+            imei = f"35{h(n) % 10**13:013d}"
+            add_sub(n, kycName=f"{r4.choice(FIRST)} {r4.choice(LAST)}", kycDoc=f"XXXX XXXX {r4.randrange(1000, 9999)}", pos=home["pos"],
+                    activatedAt=now - 4 * 365 * DAY - r4.randrange(300) * DAY, plan="Postpaid")
+            attach.append({"msisdn": n, "imei": imei, "from": now - 3 * 365 * DAY, "to": None})
+            for k in range(28):
+                at = now - r4.randrange(40) * DAY - r4.randrange(DAY)
+                inc = r4.random() < 0.5
+                other = fmt(r4.choice("6789") + "".join(str(r4.randrange(10)) for _ in range(9)))
+                cdr.append({"id": f"TY{k+1:05d}", "at": at, "from": other if inc else n, "to": n if inc else other,
+                            "seconds": r4.randrange(20, 600), "imei": imei, "cell": r4.choice(by_district[home["district"]])})
+
     tac = {k: {"model": m, "kind": kind} for k, (m, kind) in TAC.items()}
     return {
         "schema": 1, "seed": SEED, "note": "Telco-A's own records (fictional). Built by pipeline/scalpel_sim/telco_world.py around world.json.",

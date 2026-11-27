@@ -179,3 +179,17 @@ export async function checkTrailAction(caseId: string, pins: unknown, holds: unk
 export async function saveTrailAction(caseId: string, pins: unknown, holds: unknown, note: string): Promise<Result> {
   return run(async () => D.saveTrail(await me(), String(caseId ?? ""), pins, holds, String(note ?? "")));
 }
+
+/* Police requests for call records (Telco-A's nodal desk). */
+export async function leaOfficerAction(_: Result | null, f: FormData) {
+  return run(async () => D.leaOfficer(await me(), str(f, "req"), str(f, "name")));
+}
+export async function leaCallbackAction(_: Result | null, f: FormData) {
+  return run(async () => D.leaCallback(await me(), str(f, "req")));
+}
+export async function leaNumberAction(_: Result | null, f: FormData) {
+  return run(async () => D.leaNumber(await me(), str(f, "req"), str(f, "number")));
+}
+export async function leaDecideAction(_: Result | null, f: FormData) {
+  return run(async () => D.leaDecide(await me(), str(f, "req"), str(f, "outcome"), f.getAll("number").map(String), str(f, "from"), str(f, "to"), str(f, "reason"), str(f, "note")));
+}

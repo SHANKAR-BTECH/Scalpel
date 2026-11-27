@@ -134,6 +134,23 @@ export default async function Assure() {
             </ul>
           </div>
         )}
+        {d.leaByReq.size > 0 && (
+          <div className="mt-4 border-t border-[var(--line)] pt-3" data-testid="lea-ledger">
+            <p className="label">Police requests for call records</p>
+            <ul className="mt-1.5 space-y-1.5 text-[13px]">
+              {[...d.leaByReq.values()].reverse().map((x) => {
+                const c = d.leaChecks.filter((k) => k.req === x.req);
+                return (
+                  <li key={x.req} data-testid="lea-ledger-row" data-flags={x.flags.length}>
+                    <span className={`chip ${x.flags.length ? "chip-warn" : "chip-good"} mr-1.5`}>{x.outcome === "REFUSE" ? "Refused" : x.outcome === "NARROW" ? "Released less" : "Released"}</span>
+                    {x.req} · {x.numbers.length} number{x.numbers.length === 1 ? "" : "s"} · {c.filter((k) => k.kind === "number").length} looked up · {c.some((k) => k.kind === "callback") ? "called back" : "no call back"} · {userById(x.by)?.name ?? x.by} · {ago(x.at, d.now)}
+                    {x.flags.map((f) => <span key={f} className="block text-[12.5px] text-[var(--bad)]">{f}</span>)}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
       </section>
 
       <section className="mt-6 grid gap-4 lg:grid-cols-2">
