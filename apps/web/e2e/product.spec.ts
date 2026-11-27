@@ -398,3 +398,49 @@ test("Imran hunts the linked SIMs, spares the real owner of a stolen ID, and sus
   await expect(meera.getByTestId("group-ledger-row")).toHaveCount(2);
   await expect(meera.getByTestId("shop-ledger-row")).toHaveCount(1);
 });
+
+test("Meera's proof: freeze-as-asked against the team, a sampled line re-checked, then signed", async ({ browser }) => {
+  const priya = await as(browser, "priya");
+  await buildTrail(priya);
+  let acct: string | null = null;
+  for (let i = 0; i < 10 && !acct; i++) {
+    const card = priya.getByTestId("decision-card");
+    await expect(card).toBeVisible({ timeout: 30_000 });
+    const id = (await card.getAttribute("data-account"))!;
+    const hold = (await card.getByTestId("hold-amount").count()) > 0;
+    if (hold && !(await card.getByTestId("hold-amount").inputValue())) await card.getByTestId("use-ai-amount").click();
+    await card.getByTestId(`decide-${id}`).click();
+    await expect(priya.locator(`[data-testid=decision-card][data-account=${id}]`)).toHaveCount(0, { timeout: 10_000 });
+    if (hold) acct = id;
+  }
+  const vikram = await as(browser, "vikram");
+  await vikram.goto("/approvals");
+  await reviewAndApprove(vikram);
+  await expect(vikram.getByTestId("approve")).toHaveCount(0, { timeout: 10_000 });
+
+  const meera = await as(browser, "meera");
+  await meera.goto("/assure");
+  await meera.getByTestId("proof-link").first().click();
+  await meera.waitForURL("**/assure/proof/CASE-001");
+  await expect(meera.getByTestId("proof-kpis")).toBeVisible();
+  await expect(meera.getByTestId("kpi-over")).toHaveText("₹0");
+  await expect(meera.getByTestId("kpi-over-fast")).not.toHaveText("₹0");
+  await expect(meera.getByTestId("proof-undecided")).toContainText("not decided yet");
+  await expect(meera.getByTestId("proof-rules")).toContainText("Proposed, not yet in force");
+  const picks = meera.getByTestId("pick");
+  const n = await picks.count();
+  for (let i = 0; i < n; i++) {
+    const pk = picks.nth(i);
+    const [a, b, v] = await Promise.all(["data-amount", "data-before", "data-victim"].map((x) => pk.getAttribute(x)));
+    await pk.getByTestId("pick-in").fill("1");
+    await pk.getByTestId("pick-check").click();
+    await expect(pk.getByTestId("pick-check-result")).toContainText("doesn't match");
+    await pk.getByTestId("pick-in").fill(String(Math.round((Number(a) * Number(v)) / Number(b)) / 100));
+    await pk.getByTestId("pick-check").click();
+    await expect(pk.getByTestId("pick-result")).toBeVisible({ timeout: 10_000 });
+  }
+  await meera.getByTestId("proof-sign-btn").click();
+  await expect(meera.getByTestId("proof-signed")).toBeVisible({ timeout: 10_000 });
+  await meera.goto("/assure");
+  await expect(meera.getByTestId("proof-link").first()).toContainText("Signed");
+});

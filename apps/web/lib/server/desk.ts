@@ -18,6 +18,7 @@ import { checkTrail, cleanTrail, reachedOf, trailHash } from "./trailcheck";
 import type { Json } from "@scalpel/engine";
 import { REVIEW_CHECKS, SEND_BACK_CODES, spotAnswer } from "./review";
 import { sisters, protectedReason, shopAbuse, shopDocCount, blast } from "./telcogroup";
+import { caseProof, pickAnswer, MATCH } from "./proof";
 import { norm as tnorm } from "./telcodata";
 const REVIEW_LABEL: Record<string, string> = { path: "money path", amount: "amount", police: "police request", impact: "holder impact" };
 import type { TrailPin, TrailHolds } from "@/lib/trail";
@@ -61,6 +62,8 @@ export interface TelcoGroup { gid: string; alert: string; anchor: string; action
 export const GROUP_ACTIONS = ["BLOCK", "REVERIFY", "LEAVE"] as const;
 export type GroupAction = (typeof GROUP_ACTIONS)[number];
 export const GROUP_LABEL: Record<GroupAction, string> = { BLOCK: "Block them: disconnect and add to the revoked list", REVERIFY: "Stop outgoing calls and re-verify each owner", LEAVE: "Leave them alone" };
+/** Meera's re-check of one sampled line on a case's proof page. */
+export interface ProofCheck { caseId: string; pid: string; typed: number; ok: boolean; issues: string[]; sentTo: string[]; by: string; at: number }
 /** A shop (point of sale) suspended and reported to DoT, or a refused attempt. */
 export interface TelcoShop { pos: string; alert: string; outcome: "SUSPENDED" | "REFUSED"; why: string; docs: string[]; by: string; at: number }
 
@@ -79,6 +82,7 @@ export interface Desk {
   packets: Map<string, number>;
   traces: Map<string, SavedTrace>;
   groups: TelcoGroup[]; shops: TelcoShop[];
+  proofChecks: ProofCheck[]; proofSigned: Map<string, { by: string; at: number; hash: string; issues: number }>;
   trails: Map<string, SavedTrail>;
   /** Account -> the saved trail (case) that reached it. */
   trailOfAccount: Map<string, SavedTrail>;
@@ -101,6 +105,8 @@ export function fold(chain: AuditEntry[], now: number): Desk {
   const packets = new Map<string, number>();
   const groups: TelcoGroup[] = [];
   const shops: TelcoShop[] = [];
+  const proofChecks: ProofCheck[] = [];
+  const proofSigned = new Map<string, { by: string; at: number; hash: string; issues: number }>();
   const traces = new Map<string, SavedTrace>();
   const trails = new Map<string, SavedTrail>();
   const ev = (row: HoldRow, type: HoldEvent, e: AuditEntry, note?: string) => {
@@ -184,6 +190,12 @@ export function fold(chain: AuditEntry[], now: number): Desk {
       case "TELCO_SHOP":
         shops.push({ pos: p.pos, alert: p.alert, outcome: p.outcome, why: p.why, docs: p.docs ?? [], by: e.actor, at: e.at });
         break;
+      case "PROOF_CHECK":
+        proofChecks.push({ caseId: e.caseId, pid: p.pid, typed: p.typed, ok: p.ok, issues: p.issues ?? [], sentTo: p.sentTo ?? [], by: e.actor, at: e.at });
+        break;
+      case "PROOF_SIGNED":
+        proofSigned.set(e.caseId, { by: e.actor, at: e.at, hash: p.hash, issues: p.issues ?? 0 });
+        break;
       case "POLICE_PACKET":
         packets.set(p.alert, e.at);
         break;
@@ -210,7 +222,7 @@ export function fold(chain: AuditEntry[], now: number): Desk {
   const telcoByAlert = new Map(telco.map((t) => [t.alert, t] as const));
   const trailOfAccount = new Map<string, SavedTrail>();
   for (const t of trails.values()) for (const a of t.reached) if (!trailOfAccount.has(a)) trailOfAccount.set(a, t);
-  return { now, chain, telco, telcoByAlert, fri, packets, traces, groups, shops, trails, trailOfAccount, decisions: [...decisions.values()], decisionByAccount, returned, proposals: [...proposals.values()], holds: [...holds.values()], asks: [...asks.values()], actions, checks, holdByAccount, pendingByAccount };
+  return { now, chain, telco, telcoByAlert, fri, packets, traces, groups, shops, proofChecks, proofSigned, trails, trailOfAccount, decisions: [...decisions.values()], decisionByAccount, returned, proposals: [...proposals.values()], holds: [...holds.values()], asks: [...asks.values()], actions, checks, holdByAccount, pendingByAccount };
 }
 
 /** Read once per page render: the header and the page share it instead of each asking the database. */
@@ -592,6 +604,47 @@ export async function telcoShop(u: User, alertId: string, pos: string): Promise<
   await s.append([{ at: now, actor: u.id, type: "TELCO_SHOP", caseId: a.cases[0] ?? "TELCO", payload: { pos, alert: a.id, outcome: ok ? "SUSPENDED" : "REFUSED", why, docs, to: ok ? "DoT (point-of-sale report)" : null } }]);
   if (!ok) throw new DeskError(`Not suspended: ${why}`);
   return { message: `${pos} suspended: no new SIMs can be sold there. Reported to DoT with ${docs.length} reused ID document${docs.length === 1 ? "" : "s"}.` };
+}
+
+/** Meera re-performs one sampled line: she works out the victims' share of a pinned payment herself. A wrong figure
+ *  is her own slip (logged, try again). A right one confirms the line; any issue the desk can check on that line is
+ *  then sent back to the person who owns it. */
+export async function proofCheck(u: User, caseId: string, pid: string, typed: number): Promise<ActionResult> {
+  must(u.role === "auditor", "Only compliance re-checks the proof.");
+  must(Number.isFinite(typed) && typed >= 0, "Type the amount in rupees.");
+  const s = await store();
+  const now = await demoNow(s);
+  const d = fold(await s.chain(), now);
+  const pr = caseProof(d, caseId);
+  must(pr, "Unknown case.");
+  const pick = pr.picks.find((x) => x.pid === pid);
+  must(pick, "This line is not in the sample.");
+  must(!pick.check, "This line is already checked.");
+  const expected = pickAnswer(d, caseId, pid);
+  must(expected !== null, "No pinned payment to re-check on this line.");
+  const ok = Math.abs(typed - expected) <= MATCH;
+  const row = pr.rows.find((r) => r.account === pick.account)!;
+  const issues = ok ? row.issues : [];
+  const sentTo = ok && issues.length ? [...new Set([row.owner ?? "priya"])] : [];
+  await s.append([{ at: now, actor: u.id, type: "PROOF_CHECK", caseId, payload: { pid, account: pick.account, typed, expected, ok, issues, sentTo } }]);
+  if (!ok) throw new DeskError("That doesn't match the statement. Work it out again: payment × victims' money before ÷ balance before.");
+  if (sentTo.length) await s.notify(sentTo.map((to) => ({ at: now, to, text: `${u.name} re-checked ${pick.holder} on ${caseId} and sent it back: ${issues[0]}`, link: to === "vikram" ? "/approvals" : `/case/${caseId}` })));
+  return { message: issues.length ? `Your figure matches. The line has ${issues.length} issue${issues.length > 1 ? "s" : ""}: sent back.` : "Your figure matches, and the line holds up." };
+}
+
+/** Meera signs the proof once every sampled line is re-checked. The numbers' fingerprint goes into the record. */
+export async function proofSign(u: User, caseId: string): Promise<ActionResult> {
+  must(u.role === "auditor", "Only compliance signs the proof.");
+  const s = await store();
+  const now = await demoNow(s);
+  const d = fold(await s.chain(), now);
+  const pr = caseProof(d, caseId);
+  must(pr, "Unknown case.");
+  must(pr.totals.decided > 0, "Nothing on this case is decided yet.");
+  must(pr.picks.every((x) => x.check), "Re-check every sampled line first.");
+  await s.append([{ at: now, actor: u.id, type: "PROOF_SIGNED", caseId, payload: { hash: pr.hash, issues: pr.totals.red, totals: pr.totals as unknown as Json } }],
+    (c) => must(!fold(c, now).proofSigned.has(caseId), "This proof is already signed."));
+  return { message: `Signed. Fingerprint ${pr.hash} is in the tamper-proof record.` };
 }
 
 /** Call records for one alert, prepared for the police (never for the bank). Needs a police request on a linked case. */

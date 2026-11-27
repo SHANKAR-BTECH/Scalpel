@@ -39,6 +39,23 @@ export default async function Assure() {
         <div className="stat"><p className="label">Deadlines missed</p><p className={`money text-[24px] ${overdue ? "text-[var(--bad)]" : ""}`}>{overdue}</p><p className="text-[12.5px] muted"><Link className="link" href="/holds">See the clock board</Link></p></div>
       </section>
 
+      <section className="mt-6 card p-4" data-testid="proof-list">
+        <h2>The proof, case by case</h2>
+        <p className="mt-1 text-[13.5px] muted">What the team did against freezing exactly as the police asked, harm counted both ways. Re-check a sample of lines and sign each case off.</p>
+        <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+          {m.cases.map((c) => {
+            const n = c.accounts.filter((x) => d.decisionByAccount.has(x) || d.holdByAccount.has(x)).length;
+            const sg = d.proofSigned.get(c.id);
+            return (
+              <li key={c.id}><Link href={`/assure/proof/${c.id}`} className="flex items-center justify-between gap-3 rounded-xl border border-[var(--line)] px-3 py-2 text-[13.5px] hover:bg-white/70" data-testid="proof-link">
+                <span><span className="mono">{c.id}</span> <span className="muted">· {c.title}</span></span>
+                <span className={`chip shrink-0 ${sg ? "chip-good" : n ? "chip-warn" : "chip-grey"}`}>{sg ? "Signed" : n ? `${n} of ${c.accounts.length} decided` : "Not started"}</span>
+              </Link></li>
+            );
+          })}
+        </ul>
+      </section>
+
       <section className="mt-6 card p-4" data-testid="ledger">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h2>Person and AI: every decision</h2>

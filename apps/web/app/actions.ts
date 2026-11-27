@@ -66,6 +66,12 @@ export async function telcoActAction(_: Result | null, f: FormData) {
 export async function telcoDecideAction(_: Result | null, f: FormData) {
   return run(async () => D.telcoDecide(await me(), str(f, "alert"), str(f, "action"), str(f, "reason"), str(f, "note"), str(f, "report") === "on", str(f, "ceir") === "on", str(f, "second")));
 }
+export async function proofCheckAction(_: Result | null, f: FormData) {
+  return run(async () => D.proofCheck(await me(), str(f, "case"), str(f, "pid"), rupeesToPaise(str(f, "amount"))));
+}
+export async function proofSignAction(_: Result | null, f: FormData) {
+  return run(async () => D.proofSign(await me(), str(f, "case")));
+}
 export async function telcoGroupAction(_: Result | null, f: FormData) {
   return run(async () => D.telcoGroup(await me(), str(f, "alert"), str(f, "anchor"), str(f, "action"), f.getAll("sim").map(String), str(f, "note")));
 }

@@ -509,3 +509,65 @@ describe("Imran works beyond one alert: linked SIMs, the shop, who else gets cut
     expect(t.cutOff).toBeGreaterThan(0);
   });
 });
+
+import { caseProof, pickAnswer } from "@/lib/server/proof";
+import { proofCheck, proofSign } from "@/lib/server/desk";
+
+describe("The proof: harm counted both ways, re-checked by Meera", () => {
+  beforeEach(() => useStore(new MemoryStore()));
+  const meera = userById("meera")!;
+  const c = () => model().cases[0]!;
+  /** Priya's trail with the payments out pinned too, then up to 4 holds proposed and approved. */
+  async function worked(fast = false) {
+    const m = model(), vs = new Set(c().complaints.map((x) => x.victim));
+    const carries = (t: Record<string, number>) => Object.entries(t).some(([k, p]) => vs.has(k) && p > 0);
+    const outs = m.trace.exits.filter((x) => carries(x.taint) && m.accounts.has(x.from)).map((x) => ({ kind: "gone" as const, ref: x.txnId, label: x.txnId }));
+    await saveTrail(priya, c().id, [...fullPins(c().id), ...outs], {}, "");
+    const vsHold = [...m.accounts.values()].filter((x) => c().accounts.includes(x.a.id) && aiView(x, START).suggest === "HOLD").slice(0, 4);
+    for (const v of vsHold) {
+      await decideAccount(priya, v.a.id, "HOLD", "Evidence matches the suggestion", "");
+      const d = await desk();
+      const pid = d.pendingByAccount.get(v.a.id)!.pid;
+      await decide(vikram, pid, true, "", { ...CHECKED, seconds: fast ? 5 : 45, spot: spotAnswer(d, pid) });
+    }
+    return vsHold;
+  }
+
+  it("counts both columns on the same decided accounts, never more than the traced money for the team", async () => {
+    expect(caseProof(await desk(), c().id)!.totals.decided).toBe(0);
+    await worked();
+    const p = caseProof(await desk(), c().id)!;
+    expect(p.totals.decided).toBeGreaterThan(0);
+    expect(p.totals.undecided).toBe(c().accounts.length - p.totals.decided);
+    expect(p.totals.overTeam).toBe(0);
+    expect(p.totals.overFast).toBeGreaterThan(p.totals.overTeam);
+    expect(p.totals.fast).toBeGreaterThanOrEqual(p.totals.team);
+    expect(p.rules.clocks.proposed).toBe(true);
+    expect(p.rules.fast.assumed).toBe(true);
+    expect(JSON.stringify(p)).not.toContain("expected");
+  });
+
+  it("Meera's wrong figure is her own slip; a right one on a rushed approval sends the line back; then she signs", async () => {
+    await worked(true);
+    let d = await desk();
+    const p = caseProof(d, c().id)!;
+    expect(p.picks.length).toBeGreaterThan(0);
+    await expect(proofSign(meera, c().id)).rejects.toThrow(/Re-check/);
+    const first = p.picks[0]!;
+    const ans = pickAnswer(d, c().id, first.pid)!;
+    expect(Math.abs(Math.round((first.amount * first.victimBefore) / first.balanceBefore) - ans)).toBeLessThanOrEqual(100_00);
+    await expect(proofCheck(meera, c().id, first.pid, ans + 50_000_00)).rejects.toThrow(/doesn't match/);
+    await expect(proofCheck(vikram, c().id, first.pid, ans)).rejects.toThrow(/compliance/);
+    const r = await proofCheck(meera, c().id, first.pid, ans);
+    expect(r.message).toMatch(/sent back/);
+    d = await desk();
+    expect(d.proofChecks.map((x) => x.ok)).toEqual([false, true]);
+    expect(d.proofChecks.at(-1)!.sentTo).toEqual(["vikram"]);
+    for (const x of p.picks.slice(1)) await proofCheck(meera, c().id, x.pid, pickAnswer(d, c().id, x.pid)!);
+    await proofSign(meera, c().id);
+    await expect(proofSign(meera, c().id)).rejects.toThrow(/already/);
+    const s = (await desk()).proofSigned.get(c().id)!;
+    expect(s.hash).toBe(caseProof(await desk(), c().id)!.hash);
+    expect(s.issues).toBeGreaterThan(0);
+  });
+});

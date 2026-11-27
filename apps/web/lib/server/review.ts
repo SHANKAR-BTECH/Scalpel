@@ -34,12 +34,12 @@ const caseShare = (caseId: string) => {
 };
 
 /** One pinned payment out of the account, chosen by the proposal's id (same every time, unknown in advance). */
-function spotOf(pid: string, account: string, caseId: string, pinned: Set<string>) {
+export function spotOf(pid: string, account: string, caseId: string, pinned: Set<string>, salt = "") {
   const m = model();
   const share = caseShare(caseId);
   const cands = [...m.trace.flows, ...m.trace.exits].filter((f) => f.from === account && pinned.has(f.txnId) && share(f.taint) >= 100_00);
   if (!cands.length) return null;
-  const k = parseInt(createHash("sha256").update(pid).digest("hex").slice(0, 8), 16) % cands.length;
+  const k = parseInt(createHash("sha256").update(pid + salt).digest("hex").slice(0, 8), 16) % cands.length;
   const f = cands.sort((a, b) => a.txnId.localeCompare(b.txnId))[k]!;
   return { f, expected: Math.round(share(f.taint)) };
 }
